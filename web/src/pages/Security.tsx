@@ -9,6 +9,7 @@ import type { VaultData } from "../hooks/useVault";
 import { fmtAmount, fmtDuration } from "../lib/format";
 import { computeMaxLoss } from "../lib/maxLoss";
 import { Mode, MODE_LABEL, ROLE_GUARDIAN, ROLE_OWNER, roleNames } from "../lib/types";
+import { Identicon } from "../components/Identicon";
 
 export function Security({ vault, onChanged }: { vault: VaultData; onChanged: () => void }) {
   const { address } = useAccount();
@@ -28,20 +29,21 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
       <div className="page-head">
         <div>
           <h1>Security</h1>
-          <p className="muted">Guardians, security modes, recovery and the maximum-loss view.</p>
+          <p>Guardians, security modes, recovery and the maximum-loss view.</p>
         </div>
         <ModeBadge mode={vault.mode} />
       </div>
 
       <div className="grid grid-2">
-        <Card title="Security mode" subtitle="Anyone with owner or guardian authority can raise the mode instantly. Lowering it is governance plus guardian confirmation, and leaving Lockdown also waits for the policy-change delay.">
+        <Card title="Security mode" subtitle="Owners and guardians can raise the mode instantly. Lowering it is governance plus guardian confirmation; leaving Lockdown also waits for the policy-change delay.">
           <KV
             rows={[
               ["Current", MODE_LABEL[vault.mode]],
-              ["Elevated means", "every transfer is one tier higher and per-transaction and daily caps are halved"],
-              ["Lockdown means", "no outgoing execution and no security-reducing changes; deposits, tightening, recovery and guardians keep working"],
+              ["Elevated", "every transfer is one tier higher; per-transaction and daily caps are halved"],
+              ["Lockdown", "no outgoing execution, no security-reducing changes; deposits, tightening, recovery and guardians keep working"],
             ]}
           />
+          <div style={{ height: 16 }} />
           <Field label="Reason (recorded onchain, 31 characters)">
             <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="phishing incident" maxLength={31} />
           </Field>
@@ -53,7 +55,7 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
             )}
             {vault.mode < Mode.LOCKDOWN && (
               <Button kind="danger" disabled={!(roles & (ROLE_OWNER | ROLE_GUARDIAN)) || tx.busy} onClick={() => call("raiseMode", [Mode.LOCKDOWN, r32])}>
-                Freeze (Lockdown)
+                Freeze vault
               </Button>
             )}
             {vault.mode > Mode.NORMAL && (
@@ -69,15 +71,19 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
           {guardians.length === 0 ? (
             <div className="notice notice-bad">No guardian configured. Critical transfers cannot be confirmed and nobody independent can veto.</div>
           ) : (
-            <ul className="plain">
+            <ul className="list" style={{ margin: "0 -24px" }}>
               {guardians.map((g) => (
-                <li key={g.address} style={{ padding: "4px 0" }}>
-                  <Address value={g.address} /> <span className="muted small">{roleNames(g.roles).join(", ")}</span>
+                <li key={g.address}>
+                  <Identicon address={g.address} size={32} />
+                  <div className="grow">
+                    <div className="title"><Address value={g.address} copy /></div>
+                    <div className="sub">{roleNames(g.roles).join(", ")}</div>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
-          <p className="small muted" style={{ marginTop: 8 }}>
+          <p className="caption" style={{ marginTop: 12 }}>
             Veto: any single guardian. Confirmations and recovery: {vault.policy.guardianThreshold} of {guardians.length}.
           </p>
         </Card>
@@ -112,9 +118,9 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
         <Posture vault={vault} />
       </Card>
 
-      <Card title="Mode history">
+      <Card flush title="Mode history">
         {vault.modeHistory.length === 0 ? (
-          <p className="muted">No mode changes recorded.</p>
+          <Empty>No mode changes recorded.</Empty>
         ) : (
           <table>
             <thead>
@@ -122,22 +128,16 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
                 <th>Change</th>
                 <th>By</th>
                 <th>Reason</th>
-                <th>Tx</th>
+                <th>Transaction</th>
               </tr>
             </thead>
             <tbody>
               {[...vault.modeHistory].reverse().map((h, i) => (
                 <tr key={i}>
-                  <td>
-                    {MODE_LABEL[h.previous]} → {MODE_LABEL[h.mode]}
-                  </td>
-                  <td>
-                    <Address value={h.by} />
-                  </td>
+                  <td>{MODE_LABEL[h.previous]} → {MODE_LABEL[h.mode]}</td>
+                  <td><Address value={h.by} /></td>
                   <td>{h.reason}</td>
-                  <td>
-                    <TxLink hash={h.txHash} />
-                  </td>
+                  <td><TxLink hash={h.txHash} /></td>
                 </tr>
               ))}
             </tbody>
@@ -148,14 +148,19 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
   );
 }
 
+function Empty({ children }: { children: React.ReactNode }) {
+  return <div className="empty">{children}</div>;
+}
+
 function MaxLoss({ vault }: { vault: VaultData }) {
+  const first = vault.assets[0];
   return (
     <Card title="Maximum possible loss" subtitle="Conservative upper bound per asset under the stated assumptions. Never a guarantee.">
       {vault.assets.map((a) => {
         const l = computeMaxLoss(vault.policy, a.limits, a.balance, vault.mode);
         return (
-          <div key={a.address} style={{ marginBottom: 12 }}>
-            <strong>{a.symbol}</strong>
+          <div key={a.address} style={{ marginBottom: 16 }}>
+            <div className="overline" style={{ marginBottom: 4 }}>{a.symbol}</div>
             <KV
               rows={[
                 ["Could leave with no delay", `${fmtAmount(l.immediate, a.decimals, a.symbol)} (${l.immediateBinding})`],
@@ -167,13 +172,34 @@ function MaxLoss({ vault }: { vault: VaultData }) {
           </div>
         );
       })}
-      <ul className="assumptions">
-        {computeMaxLoss(vault.policy, vault.assets[0]?.limits ?? { approved: false, lowMax: 0n, highMax: 0n, perTxMax: 0n, dailyMax: 0n }, 0n, vault.mode).assumptions.map((s) => (
-          <li key={s}>{s}</li>
-        ))}
-      </ul>
+      {first && (
+        <ul className="assumptions">
+          {computeMaxLoss(vault.policy, first.limits, first.balance, vault.mode).assumptions.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
+}
+
+export type PostureItem = { ok: "ok" | "warn" | "bad"; text: string };
+
+/** Pure posture checks from policy and membership. The EOA check needs the chain and lives in the component. */
+export function postureItems(vault: VaultData): PostureItem[] {
+  const p = vault.policy;
+  const g = vault.counts.guardians;
+  return [
+    { ok: g > 0 ? "ok" : "bad", text: g > 0 ? `${g} independent guardian${g === 1 ? "" : "s"} configured` : "No guardian: nobody independent can veto or freeze" },
+    { ok: p.guardianRequiredCritical ? "ok" : "warn", text: p.guardianRequiredCritical ? "Critical transfers need guardian confirmation" : "Critical transfers do not need a guardian" },
+    { ok: p.delayCritical >= 24 * 3600 ? "ok" : "warn", text: `Critical delay ${fmtDuration(p.delayCritical)}` },
+    { ok: p.recipientActivationDelay > 0 ? "ok" : "bad", text: p.recipientActivationDelay > 0 ? `New recipients wait ${fmtDuration(p.recipientActivationDelay)}` : "New recipients can be paid immediately" },
+    { ok: vault.assets.every((a) => a.limits.dailyMax > 0n) ? "ok" : "warn", text: vault.assets.every((a) => a.limits.dailyMax > 0n) ? "24h outflow cap on every asset" : "Some assets have no 24h cap" },
+    { ok: p.envelopeBps > 0 ? "ok" : "warn", text: p.envelopeBps > 0 ? `Circuit breaker at ${p.envelopeBps / 100}% per ${fmtDuration(p.envelopeWindow)}` : "No loss envelope configured" },
+    { ok: p.policyChangeDelay > 0 ? "ok" : "bad", text: p.policyChangeDelay > 0 ? `Security-reducing changes wait ${fmtDuration(p.policyChangeDelay)}` : "Policy can be weakened instantly" },
+    { ok: p.recoveryDelay > 0 && g > 0 ? "ok" : "warn", text: `Recovery configured (${fmtDuration(p.recoveryDelay)} delay)` },
+    { ok: p.approvalsLow >= 2 ? "ok" : "warn", text: p.approvalsLow >= 2 ? "Routine payments need two approvals" : "Routine payments need a single approval" },
+  ];
 }
 
 /** Security posture indicator: confirmed controls and obvious weaknesses. */
@@ -196,23 +222,12 @@ export function Posture({ vault, compact = false }: { vault: VaultData; compact?
     staleTime: 60_000,
   });
   const eoaSigners = codeMap ? signers.filter((s) => !codeMap[s.address.toLowerCase()]).length : null;
-  const p = vault.policy;
-  const items: Array<{ ok: "ok" | "warn" | "bad"; text: string }> = [
-    { ok: vault.counts.guardians > 0 ? "ok" : "bad", text: vault.counts.guardians > 0 ? `${vault.counts.guardians} independent guardian${vault.counts.guardians === 1 ? "" : "s"} configured` : "No guardian: nobody independent can veto or freeze" },
-    { ok: p.guardianRequiredCritical ? "ok" : "warn", text: p.guardianRequiredCritical ? "Critical transfers need guardian confirmation" : "Critical transfers do not need a guardian" },
-    { ok: p.delayCritical >= 24 * 3600 ? "ok" : "warn", text: `Critical delay ${fmtDuration(p.delayCritical)}` },
-    { ok: p.recipientActivationDelay > 0 ? "ok" : "bad", text: p.recipientActivationDelay > 0 ? `New recipients wait ${fmtDuration(p.recipientActivationDelay)}` : "New recipients can be paid immediately" },
-    { ok: vault.assets.every((a) => a.limits.dailyMax > 0n) ? "ok" : "warn", text: vault.assets.every((a) => a.limits.dailyMax > 0n) ? "24h outflow cap on every asset" : "Some assets have no 24h cap" },
-    { ok: p.envelopeBps > 0 ? "ok" : "warn", text: p.envelopeBps > 0 ? `Circuit breaker at ${p.envelopeBps / 100}% per ${fmtDuration(p.envelopeWindow)}` : "No loss envelope configured" },
-    { ok: p.policyChangeDelay > 0 ? "ok" : "bad", text: p.policyChangeDelay > 0 ? `Security-reducing changes wait ${fmtDuration(p.policyChangeDelay)}` : "Policy can be weakened instantly" },
-    { ok: p.recoveryDelay > 0 && vault.counts.guardians > 0 ? "ok" : "warn", text: `Recovery configured (${fmtDuration(p.recoveryDelay)} delay)` },
-    { ok: p.approvalsLow >= 2 ? "ok" : "warn", text: p.approvalsLow >= 2 ? "Routine payments need two approvals" : "Routine payments need a single approval" },
-  ];
+  const items = postureItems(vault);
   if (eoaSigners !== null) {
     items.push({ ok: eoaSigners === 0 ? "ok" : "warn", text: eoaSigners === 0 ? "All signers are smart-contract accounts" : `${eoaSigners} of ${signers.length} signers are externally-owned keys` });
   }
   return (
-    <ul className={`plain posture ${compact ? "small" : ""}`}>
+    <ul className={`posture ${compact ? "small" : ""}`}>
       {items.map((i) => (
         <li key={i.text}>
           <span className={`dot ${i.ok}`} />

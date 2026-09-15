@@ -22,7 +22,7 @@ export function Recipients({ vault, onChanged }: { vault: VaultData; onChanged: 
     <>
       <div className="page-head">
         <div>
-          <h1>Recipients</h1>
+          <h1>Address book</h1>
           <p className="muted">Recipients are security objects, not just addresses. New ones serve an activation delay of {fmtDuration(vault.policy.recipientActivationDelay)} before normal policy applies.</p>
         </div>
       </div>

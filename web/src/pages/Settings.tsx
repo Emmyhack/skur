@@ -2,19 +2,24 @@ import { useMemo, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { isAddress, keccak256, stringToHex } from "viem";
 import { SkurFactoryAbi } from "../abi/SkurFactory";
-import { Address, Badge, Button, Card, Field, KV, TxStatus } from "../components/ui";
+import { Address, Badge, Button, Card, Field, KV, Switch, TxStatus } from "../components/ui";
+import { Identicon } from "../components/Identicon";
 import { useTx } from "../hooks/useTx";
 import { ARK_DEVNET_EXPLORER, ARK_DEVNET_FAUCET, ARK_DEVNET_RPC, DEPLOYMENTS, NATIVE_ASSET } from "../config/chain";
-import { fmtDuration } from "../lib/format";
+import { fmtDuration, short } from "../lib/format";
 import { validateCounts, validatePolicy, policyToContract } from "../lib/policy";
 import { TEMPLATES, type TemplateId } from "../lib/templates";
 import { ROLE_APPROVER, ROLE_EXECUTOR, ROLE_GUARDIAN, ROLE_OWNER } from "../lib/types";
+import { useTheme } from "../state/theme";
+import { useVaultLabel } from "../state/vaultLabel";
 
 export function Settings({ vaultAddress, onSelect }: { vaultAddress: `0x${string}` | null; onSelect: (a: `0x${string}` | null) => void }) {
   const [input, setInput] = useState(vaultAddress ?? "");
   const client = usePublicClient();
   const { address } = useAccount();
   const [checking, setChecking] = useState<string | null>(null);
+  const { theme, toggle } = useTheme();
+  const [label, setLabel] = useVaultLabel(vaultAddress);
 
   const select = async () => {
     if (!isAddress(input) || !client) return;
@@ -29,46 +34,54 @@ export function Settings({ vaultAddress, onSelect }: { vaultAddress: `0x${string
       <div className="page-head">
         <div>
           <h1>Settings</h1>
-          <p className="muted">Vault selection, network, and vault creation. Nothing here is stored anywhere except this browser.</p>
+          <p>Vault selection, appearance, network, and vault creation. Nothing here is stored anywhere except this browser.</p>
         </div>
       </div>
 
       <div className="grid grid-2">
-        <Card title="Vault">
+        <Card title="Vault" subtitle="Open any Skur vault by address. The name is private to this browser; the chain only knows the address.">
+          {vaultAddress && (
+            <div className="inline" style={{ marginBottom: 16, gap: 12 }}>
+              <Identicon address={vaultAddress} size={40} />
+              <div style={{ flex: 1 }}>
+                <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Treasury vault" maxLength={40} style={{ height: 36 }} />
+              </div>
+            </div>
+          )}
           <Field label="Vault address">
             <input value={input} onChange={(e) => setInput(e.target.value.trim())} placeholder="0x…" />
           </Field>
           <div className="inline">
-            <Button onClick={select} disabled={!isAddress(input)}>
-              Open vault
-            </Button>
+            <Button onClick={select} disabled={!isAddress(input)}>Open vault</Button>
             {DEPLOYMENTS.demoVault && (
               <Button kind="secondary" onClick={() => { setInput(DEPLOYMENTS.demoVault); onSelect(DEPLOYMENTS.demoVault); }}>
                 Use demo vault
               </Button>
             )}
-            {vaultAddress && (
-              <Button kind="ghost" onClick={() => onSelect(null)}>
-                Clear
-              </Button>
-            )}
+            {vaultAddress && <Button kind="ghost" onClick={() => onSelect(null)}>Clear</Button>}
           </div>
           {checking && <div className="notice notice-warn">{checking}</div>}
           <MyVaults onSelect={(a) => { setInput(a); onSelect(a); }} me={address} />
         </Card>
-        <Card title="Network" subtitle="If this interface disappears, the vault stays reachable through these endpoints and the verified contracts.">
-          <KV
-            rows={[
-              ["Chain", "Ark Constellation devnet · id 9000 · KASH"],
-              ["RPC", <code key="rpc">{ARK_DEVNET_RPC}</code>],
-              ["Explorer", <a key="ex" href={ARK_DEVNET_EXPLORER} target="_blank" rel="noreferrer">{ARK_DEVNET_EXPLORER}</a>],
-              ["Faucet", <a key="f" href={ARK_DEVNET_FAUCET} target="_blank" rel="noreferrer">{ARK_DEVNET_FAUCET}</a>],
-              ["Factory", <Address key="fa" value={DEPLOYMENTS.factory} />],
-              ["Vault implementation", <Address key="im" value={DEPLOYMENTS.vaultImplementation} />],
-              ["Test stablecoin (sUSD)", <Address key="us" value={DEPLOYMENTS.testUsd} />],
-            ]}
-          />
-        </Card>
+
+        <div>
+          <Card title="Appearance">
+            <Switch on={theme === "dark"} onChange={toggle} label={theme === "dark" ? "Dark mode" : "Light mode"} />
+          </Card>
+          <Card title="Network" subtitle="If this interface disappears, the vault stays reachable through these endpoints and the verified contracts.">
+            <KV
+              rows={[
+                ["Chain", "Ark Constellation devnet · 9000 · KASH"],
+                ["RPC", <code key="rpc">{ARK_DEVNET_RPC}</code>],
+                ["Explorer", <a key="ex" className="link brand" href={ARK_DEVNET_EXPLORER} target="_blank" rel="noreferrer">Blockscout</a>],
+                ["Faucet", <a key="f" className="link brand" href={ARK_DEVNET_FAUCET} target="_blank" rel="noreferrer">Request devnet KASH</a>],
+                ["Factory", <Address key="fa" value={DEPLOYMENTS.factory} />],
+                ["Vault implementation", <Address key="im" value={DEPLOYMENTS.vaultImplementation} />],
+                ["Test stablecoin (sUSD)", <Address key="us" value={DEPLOYMENTS.testUsd} />],
+              ]}
+            />
+          </Card>
+        </div>
       </div>
 
       <CreateVault onCreated={(a) => { setInput(a); onSelect(a); }} />
@@ -86,16 +99,13 @@ function MyVaults({ me, onSelect }: { me?: `0x${string}`; onSelect: (a: `0x${str
   };
   if (!me) return null;
   return (
-    <div style={{ marginTop: 12 }}>
-      <Button kind="ghost" onClick={load}>
-        Find vaults created with my address
-      </Button>
-      {list && (list.length === 0 ? <p className="muted small">None found in the factory registry.</p> : list.map((a) => (
-        <div key={a} className="inline" style={{ padding: "4px 0" }}>
+    <div style={{ marginTop: 16 }}>
+      <button className="link brand" onClick={load}>Find vaults created with my address</button>
+      {list && (list.length === 0 ? <p className="caption">None found in the factory registry.</p> : list.map((a) => (
+        <div key={a} className="inline" style={{ padding: "6px 0" }}>
+          <Identicon address={a} size={24} />
           <Address value={a} />
-          <Button kind="ghost" onClick={() => onSelect(a)}>
-            open
-          </Button>
+          <Button kind="ghost" size="sm" onClick={() => onSelect(a)}>Open</Button>
         </div>
       )))}
     </div>
@@ -133,7 +143,7 @@ function CreateVault({ onCreated }: { onCreated: (a: `0x${string}`) => void }) {
   }, [template, counts, members]);
 
   const setRow = (i: number, patch: Partial<MemberRow>) => setMembers((ms) => ms.map((m, j) => (j === i ? { ...m, ...patch } : m)));
-  const toggle = (i: number, b: number) =>
+  const toggleRole = (i: number, b: number) =>
     setRow(i, { roles: b === ROLE_GUARDIAN ? (members[i].roles & ROLE_GUARDIAN ? 0 : ROLE_GUARDIAN) : ((members[i].roles & b ? members[i].roles & ~b : members[i].roles | b) & ~ROLE_GUARDIAN) });
 
   const create = () => {
@@ -148,13 +158,13 @@ function CreateVault({ onCreated }: { onCreated: (a: `0x${string}`) => void }) {
   };
 
   return (
-    <Card title="Create a vault" subtitle="Pick a template, name the signers and guardians, sign once. The vault is a minimal proxy over the audited implementation; the factory keeps no authority over it.">
-      <div className="templates" style={{ marginBottom: 14 }}>
+    <Card title="Create a vault" subtitle="Pick a template, name the signers and guardians, sign once. The vault is a minimal proxy over the verified implementation; the factory keeps no authority over it.">
+      <div className="templates" style={{ marginBottom: 20 }}>
         {TEMPLATES.map((t) => (
           <button key={t.id} className={`template ${templateId === t.id ? "active" : ""}`} onClick={() => setTemplateId(t.id)}>
             <strong>{t.name}</strong>
-            <span className="small muted">{t.tagline}</span>
-            <div className="small muted" style={{ marginTop: 6 }}>
+            <span className="caption">{t.tagline}</span>
+            <div className="caption" style={{ marginTop: 6 }}>
               critical delay {fmtDuration(t.policy.delayCritical)} · new recipient {fmtDuration(t.policy.recipientActivationDelay)} · envelope {t.policy.envelopeBps / 100}%/day
             </div>
           </button>
@@ -174,50 +184,45 @@ function CreateVault({ onCreated }: { onCreated: (a: `0x${string}`) => void }) {
         <tbody>
           {members.map((m, i) => (
             <tr key={i}>
-              <td>
-                <input value={m.address} onChange={(e) => setRow(i, { address: e.target.value.trim() })} placeholder="0x…" />
+              <td style={{ width: "45%" }}>
+                <div className="inline" style={{ flexWrap: "nowrap" }}>
+                  {isAddress(m.address) ? <Identicon address={m.address} size={28} /> : <span className="token-ico" style={{ width: 28, height: 28 }}>?</span>}
+                  <input value={m.address} onChange={(e) => setRow(i, { address: e.target.value.trim() })} placeholder="0x…" style={{ height: 36 }} />
+                </div>
               </td>
               {[ROLE_OWNER, ROLE_APPROVER, ROLE_EXECUTOR, ROLE_GUARDIAN].map((b) => (
                 <td key={b}>
-                  <input type="checkbox" style={{ width: "auto" }} checked={Boolean(m.roles & b)} onChange={() => toggle(i, b)} />
+                  <input type="checkbox" checked={Boolean(m.roles & b)} onChange={() => toggleRole(i, b)} />
                 </td>
               ))}
               <td>
-                <Button kind="ghost" onClick={() => setMembers((ms) => ms.filter((_, j) => j !== i))}>
-                  remove
-                </Button>
+                <Button kind="ghost" size="sm" onClick={() => setMembers((ms) => ms.filter((_, j) => j !== i))}>Remove</Button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="inline" style={{ marginTop: 10 }}>
-        <Button kind="secondary" onClick={() => setMembers((ms) => [...ms, { address: "", roles: ROLE_APPROVER }])}>
-          Add member
-        </Button>
+      <div className="row" style={{ marginTop: 16 }}>
+        <Button kind="secondary" onClick={() => setMembers((ms) => [...ms, { address: "", roles: ROLE_APPROVER }])}>Add member</Button>
         <Field label="Salt (makes the address predictable)">
           <input value={salt} onChange={(e) => setSalt(e.target.value)} />
         </Field>
       </div>
-      <p className="small muted">
+      <p className="caption">
         {counts.owners} owners · {counts.approvers} approvers · {counts.executors} executors · {counts.guardians} guardians. Template needs {template.minSigners}+ signers and {template.minGuardians}+ guardians. Assets approved at creation: sUSD and KASH.
       </p>
       {errors.length > 0 && (
         <div className="notice notice-bad">
-          {errors.map((e) => (
-            <div key={e}>{e}</div>
-          ))}
+          <div>
+            {errors.map((e) => (
+              <div key={e}>{e}</div>
+            ))}
+          </div>
         </div>
       )}
-      <div className="inline">
-        <Button onClick={create} disabled={!address || errors.length > 0 || tx.busy}>
-          Create vault
-        </Button>
-        {created && (
-          <Badge tone="ok">
-            Created <Address value={created} />
-          </Badge>
-        )}
+      <div className="inline" style={{ marginTop: 8 }}>
+        <Button onClick={create} disabled={!address || errors.length > 0 || tx.busy}>Create vault</Button>
+        {created && <Badge tone="ok">Created {short(created)}</Badge>}
       </div>
       <TxStatus state={tx.state} />
     </Card>
