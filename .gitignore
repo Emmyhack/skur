@@ -1,0 +1,19 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/**/dry-run/
+
+# node
+node_modules/
+web/dist/
+web/coverage/
+
+# tooling
+.DS_Store
+*.log
+crytic-export/
