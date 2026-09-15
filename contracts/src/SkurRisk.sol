@@ -25,7 +25,12 @@ library SkurRisk {
     /// @notice Exposure of a transfer as basis points of the current asset balance, capped at 100%.
     function exposureBps(uint256 amount, uint256 balance) internal pure returns (uint16) {
         if (amount == 0) return 0;
+        // casting to 'uint16' is safe because BPS is the constant 10_000, well inside uint16
+        // forge-lint: disable-next-line(unsafe-typecast)
         if (balance == 0 || amount >= balance) return uint16(BPS);
+        // casting to 'uint16' is safe because the branch above guarantees amount < balance,
+        // so the quotient is strictly below BPS (10_000)
+        // forge-lint: disable-next-line(unsafe-typecast)
         return uint16((amount * BPS) / balance);
     }
 
