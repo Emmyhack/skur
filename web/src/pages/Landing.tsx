@@ -26,12 +26,15 @@ const FAQ: Array<[string, string]> = [
   ["Has it been audited?", "Not yet. The contracts are verified on the explorer, covered by 95 tests including stateful invariant tests, and clean under static analysis. Do not put real value behind Skur before an independent audit."],
 ];
 
-/** Public landing page, section for section after safe.global. */
+const HERO_CELLS: Array<[number, number]> = [[0, 130], [130, 260], [1180, 0], [1310, 0], [1310, 130], [910, 390], [1050, 260], [520, 0]];
+
+/** Public landing page. */
 export function Landing({ onLaunch }: { onLaunch: () => void }) {
   useEffect(() => {
     const m = window.location.hash.match(/#\/#(.+)$/);
     if (m) setTimeout(() => document.getElementById(m[1])?.scrollIntoView({ behavior: "smooth" }), 50);
   }, []);
+  const words = "Treasury security that".split(" ");
 
   return (
     <MarketingShell page="landing" onLaunch={onLaunch}>
@@ -39,22 +42,34 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
         <a href="#/security">Skur V1 is live on the Ark Constellation devnet. Every control runs onchain <span>→</span></a>
       </div>
 
-      <div className="tape" />
-      <section className="hero hero2">
+      <section className="hero">
+        <div className="grid-bg" />
+        {HERO_CELLS.map(([x, y], i) => <span key={i} className="cell" style={{ left: x, top: y, animationDelay: `${i * 0.55}s`, animationDuration: `${5 + (i % 4)}s` }} />)}
         <div className="wrap">
-          <div>
-            <div className="eyebrow"><b>12 invariants</b> enforced by the vault, not by a server</div>
-            <h1 style={{ animation: "rise 0.7s var(--ease) 0.08s both" }}>Treasury security that <span className="mark-hl">assumes compromise</span></h1>
-            <p className="sub">An approval proves someone was authorised. Skur decides whether the payment is safe: how much can move, where it can go, and how long the risky ones wait, even when your signers are compromised.</p>
-            <div className="cta-row">
-              <button className="btn btn-accent btn-lg" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
-              <a className="btn btn-white btn-lg" href="#/product">See how it works</a>
-            </div>
-            <div className="hero-meta"><span>Self-custodial</span><span>Ark Constellation devnet · 9000</span><span>Verified source</span></div>
+          <div className="eyebrow"><b>12 invariants</b> enforced by the vault, not by a server</div>
+          <h1>
+            {words.map((w, i) => (
+              <span key={i} className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + i * 0.06}s both`, marginRight: "0.22em" }}>{w}</span>
+            ))}
+            <span className="mark-hl">
+              {["assumes", "compromise"].map((w, i) => (
+                <span key={w} className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + (words.length + i) * 0.06}s both`, marginRight: i === 0 ? "0.22em" : 0 }}>{w}</span>
+              ))}
+            </span>
+          </h1>
+          <p className="sub">An approval proves someone was authorised. Skur decides whether the payment is safe: how much can move, where it can go, and how long the risky ones wait, even when your signers are compromised.</p>
+          <div className="cta-row">
+            <button className="btn btn-accent btn-lg" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
+            <a className="btn btn-white btn-lg" href="#/product">See how it works</a>
           </div>
-          <div className="side"><ScoreTicker /></div>
+          <div className="hero-meta"><span>Self-custodial</span><span>Ark Constellation devnet · 9000</span><span>Verified source</span></div>
+          <div className="mockwrap">
+            <div className="mock"><AppMockup /></div>
+            <div className="float"><ScoreTicker /></div>
+          </div>
         </div>
       </section>
+      <div className="tape" />
 
       <section className="light" style={{ paddingTop: 72 }}>
         <div className="wrap center" style={{ textAlign: "center" }}>

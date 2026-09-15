@@ -62,8 +62,11 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
 export function SubHero({ eyebrow, title, sub, onLaunch, children }: { eyebrow: string; title: ReactNode; sub: string; onLaunch: () => void; children?: ReactNode }) {
   return (
     <>
-    <div className="tape" />
     <section className="hero sub-hero">
+      <div className="grid-bg" />
+      {[[0, 130], [1310, 0], [1180, 260], [130, 390], [910, 390]].map(([x, y], i) => (
+        <span key={i} className="cell" style={{ left: x, top: y, animationDelay: `${i * 0.6}s` }} />
+      ))}
       <div className="wrap">
         <div className="eyebrow">{eyebrow}</div>
         <h1 style={{ fontSize: 64, lineHeight: "66px", maxWidth: 860 }}>{title}</h1>
@@ -74,6 +77,7 @@ export function SubHero({ eyebrow, title, sub, onLaunch, children }: { eyebrow: 
         </div>
       </div>
     </section>
+    <div className="tape" />
     </>
   );
 }
