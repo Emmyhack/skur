@@ -47,22 +47,22 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
           <button className={tab === "watch" ? "active" : ""} onClick={() => setTab("watch")}>Watch a vault</button>
         </div>
         <div className="entry-note">
-          <span className="tag-new">New</span> Skur V1 is live on Ark Constellation devnet <IconArrowRight width={16} height={16} style={{ marginLeft: "auto", color: "var(--accent)" }} />
+          <span className="tag-new">New</span> Skur V1 is live on the Ark Constellation devnet <IconArrowRight width={16} height={16} style={{ marginLeft: "auto", color: "var(--accent)" }} />
         </div>
 
         {tab === "accounts" ? (
           <div className="entry-card">
             <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
             <h2>Get started</h2>
-            <p>Connect your wallet to create a Skur vault or open one you are a member of</p>
+            <p>Connect a wallet to create a vault, or open one you belong to.</p>
             {isConnected && address ? (
               <>
                 <Button block onClick={onCreate}>Create new vault</Button>
                 <div className="or">OR</div>
                 {mine === null ? (
-                  <button className="link accent" onClick={loadMine}>Show vaults created with my wallet</button>
+                  <button className="link accent" onClick={loadMine}>Find vaults created with this wallet</button>
                 ) : mine.length === 0 ? (
-                  <p className="caption">No vaults were created with this wallet on the factory. You can still open any vault by address.</p>
+                  <p className="caption">This wallet has not created a vault yet. You can still open any vault by address.</p>
                 ) : (
                   <div className="stack" style={{ textAlign: "left" }}>
                     {mine.map((v) => (
@@ -92,7 +92,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
           <div className="entry-card">
             <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
             <h2>Watch a vault</h2>
-            <p>Read any Skur vault's balances, policy and queue without a wallet.</p>
+            <p>Read any vault's balances, policy and queue. No wallet needed.</p>
             <Field label="Vault address">
               <input value={watch} onChange={(e) => setWatch(e.target.value.trim())} placeholder="0x…" style={{ textAlign: "left" }} />
             </Field>
@@ -104,7 +104,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
             )}
           </div>
         )}
-        <p className="caption">By continuing you interact directly with verified contracts on Ark Constellation devnet. Nothing here is custodial.</p>
+        <p className="caption">You interact directly with verified contracts on the Ark Constellation devnet. Skur never holds keys or funds.</p>
       </div>
 
       <div className="entry-foot">

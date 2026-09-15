@@ -37,7 +37,7 @@ export function Simulator({ vault }: { vault: VaultData | undefined }) {
         <div>
           <div className="gauge">
             <div className="ring" style={{ ["--pct" as string]: pct }}><span>{stopped}/{results.length}</span></div>
-            <div><div className="v" style={{ fontSize: 18 }}>Scenarios stopped or delayed</div><div className="l">verdicts from the contract's own rules</div></div>
+            <div><div className="v" style={{ fontSize: 18 }}>Scenarios stopped or delayed</div><div className="l">verdicts use the contract's own rules</div></div>
           </div>
         </div>
         <div><div className="v">{results.filter((r) => r.verdict === "blocked" || r.verdict === "impossible").length}</div><div className="l">Blocked outright</div></div>
@@ -78,7 +78,7 @@ export function Simulator({ vault }: { vault: VaultData | undefined }) {
           </div>
         ))}
       </Reveal>
-      <p className="caption">"Blocked" and "Not possible" mean the contract refuses. "Delayed" means guardians get a veto window. "Escalated" means more approvals are needed but no delay applies. "Would succeed" is a gap to fix before activating the policy.</p>
+      <p className="caption">Blocked and Not possible mean the contract refuses. Delayed means guardians get a veto window. Escalated means more approvals are needed but nothing waits. Would succeed is a gap to close before the policy goes live.</p>
     </>
   );
 }

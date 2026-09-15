@@ -44,15 +44,15 @@ export function Members({ vault, onChanged }: { vault: VaultData; onChanged: () 
     <>
       <Section title="Members">
         <h4>Signers</h4>
-        <p className="desc">Owners run governance, approvers confirm payments, executors execute once every condition holds. A member can hold several of these.</p>
+        <p className="desc">Owners govern, approvers confirm payments, executors execute once every condition holds. A member may hold several of these roles.</p>
         <div className="inline" style={{ marginBottom: 12 }}>
           <Button kind="secondary" size="sm" onClick={() => { setTarget(""); setBits(ROLE_APPROVER); setDialog(true); }} disabled={!isOwner} icon={<IconPlus width={14} height={14} />}>Add member</Button>
         </div>
         {signers.map((m) => <Row key={m.address} m={m} />)}
 
         <h4 style={{ marginTop: 32 }}>Guardians</h4>
-        <p className="desc">Guardians can freeze the vault, veto risky or security-reducing proposals, confirm critical transfers and start recovery. They can never hold a treasury role or move funds.</p>
-        {guardians.length === 0 ? <div className="notice notice-bad">No guardian configured. Nobody independent can veto or freeze.</div> : guardians.map((m) => <Row key={m.address} m={m} />)}
+        <p className="desc">Guardians can freeze the vault, veto risky or security-reducing proposals, confirm critical transfers and start a recovery. The contract will not let them hold a treasury role, so they can never move funds.</p>
+        {guardians.length === 0 ? <div className="notice notice-bad">No guardian configured. Nobody independent can veto a proposal or freeze the vault.</div> : guardians.map((m) => <Row key={m.address} m={m} />)}
       </Section>
 
       <Section title="Required confirmations">
@@ -64,7 +64,7 @@ export function Members({ vault, onChanged }: { vault: VaultData; onChanged: () 
           <div><dt>Governance change</dt><dd>{vault.policy.governanceThreshold} of {vault.counts.owners} owners{" "}(+ {fmtDuration(vault.policy.policyChangeDelay)} if security-reducing)</dd></div>
           <div><dt>Recovery</dt><dd>{vault.policy.guardianThreshold} of {vault.counts.guardians} guardians, then {fmtDuration(vault.policy.recoveryDelay)}; any owner can cancel</dd></div>
         </dl>
-        <p className="caption" style={{ marginTop: 12 }}>Thresholds are part of the policy. Lowering any of them waits {fmtDuration(vault.policy.policyChangeDelay)} and can be vetoed by a guardian.</p>
+        <p className="caption" style={{ marginTop: 12 }}>Thresholds are part of the policy. Lowering any of them waits {fmtDuration(vault.policy.policyChangeDelay)}, and any guardian can veto the change.</p>
       </Section>
 
       {dialog && (
@@ -78,7 +78,7 @@ export function Members({ vault, onChanged }: { vault: VaultData; onChanged: () 
           </div>
           {isAddress(target) && (
             <div className={`notice ${bits === 0 || !reducing ? "notice-ok" : "notice-warn"}`}>
-              {bits === 0 ? "Removing a member applies as soon as owners approve." : reducing ? `Adding authority or weakening the guardian layer is security-reducing: it waits ${fmtDuration(vault.policy.policyChangeDelay)} and any guardian can veto it.` : "Reducing authority applies as soon as owners approve."}
+              {bits === 0 ? "Removing a member takes effect as soon as owners approve." : reducing ? `Adding authority or weakening the guardian layer loosens security: it waits ${fmtDuration(vault.policy.policyChangeDelay)} and any guardian can veto it.` : "Reducing a member's authority takes effect as soon as owners approve."}
             </div>
           )}
           <TxStatus state={tx.state} />

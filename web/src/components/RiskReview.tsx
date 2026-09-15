@@ -48,7 +48,7 @@ export function RiskReview({ r }: { r: ReviewInput }) {
       </div>
       <div className="review-line">
         <span>Recipient</span>
-        <span>{TRUST_LABEL[r.trust]}{r.trust === Trust.UNKNOWN ? " (will be registered as New)" : ""}</span>
+        <span>{TRUST_LABEL[r.trust]}{r.trust === Trust.UNKNOWN ? " · will be registered as New" : ""}</span>
       </div>
       <div className="review-line">
         <span>Risk tier</span>
@@ -65,7 +65,7 @@ export function RiskReview({ r }: { r: ReviewInput }) {
       {r.vetoable && (
         <div className="review-line">
           <span>Guardian veto</span>
-          <span>Any guardian can cancel this before it executes.</span>
+          <span>Any guardian can cancel this at any point before it executes.</span>
         </div>
       )}
       {reasons.length > 0 && (

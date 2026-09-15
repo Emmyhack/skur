@@ -98,7 +98,7 @@ export function Assets({ vault, onSend, onNavigate }: { vault: VaultData; onSend
           </table>
         )}
         <div className="caption" style={{ padding: "14px 24px", borderTop: "1px solid var(--border)" }}>
-          Amounts above the routine threshold need more approvals; above the high threshold they also need a guardian and a delay. Exposure is computed per asset; there is no oracle in V1.
+          Payments above the routine threshold need more approvals. Above the high threshold they also need a guardian and a delay. Exposure is measured per asset; V1 has no price oracle.
         </div>
       </div>
     </>

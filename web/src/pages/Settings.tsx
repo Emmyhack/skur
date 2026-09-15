@@ -34,7 +34,7 @@ export function Settings({ vault, vaultAddress, onSwitchVault }: { vault?: Vault
                     <Address value={vaultAddress} full copy prefix="ark" />
                   </div>
                 </div>
-                <Field label="Name" hint="Stored only in this browser. Other members and the chain never see it.">
+                <Field label="Name" hint="Kept in this browser only. Other members and the chain never see it.">
                   <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={40} />
                 </Field>
                 <dl className="kv">
@@ -52,7 +52,7 @@ export function Settings({ vault, vaultAddress, onSwitchVault }: { vault?: Vault
           </Section>
           <Section title="Contract version">
             <div className="strong">Skur V1 · immutable</div>
-            <p className="desc">Vaults are EIP-1167 clones of a verified implementation with no admin and no upgrade slot. Migrating means creating a new vault and moving funds through this vault's own policy.</p>
+            <p className="desc">Every vault is a minimal proxy over one verified implementation, with no admin and no upgrade path. Moving to a new version means creating a new vault and transferring funds under this vault's own policy.</p>
             <a className="link accent" href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">View source ↗</a>
           </Section>
         </>
@@ -61,14 +61,14 @@ export function Settings({ vault, vaultAddress, onSwitchVault }: { vault?: Vault
       {tab === "appearance" && (
         <Section title="Appearance">
           <h4>Theme</h4>
-          <p className="desc">Light is the default. The choice is stored in this browser.</p>
+          <p className="desc">Light is the default. Your choice is kept in this browser.</p>
           <Switch on={theme === "dark"} onChange={toggle} label={theme === "dark" ? "Dark mode" : "Light mode"} />
         </Section>
       )}
 
       {tab === "environment" && (
         <Section title="Environment">
-          <p className="desc">If this interface disappears, the vault stays reachable through these endpoints and the verified contracts on the explorer.</p>
+          <p className="desc">If this interface ever disappears, the vault stays reachable through these endpoints and the verified contracts on the explorer.</p>
           <dl className="kv">
             <div><dt>Chain</dt><dd>Ark Constellation devnet · 9000 · KASH</dd></div>
             <div><dt>RPC</dt><dd><code>{ARK_DEVNET_RPC}</code></dd></div>

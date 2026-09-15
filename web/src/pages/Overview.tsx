@@ -48,7 +48,7 @@ export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { v
           </div>
           {showReceive && (
             <div className="notice notice-info" style={{ marginTop: 16, marginBottom: 0 }}>
-              <div>Send KASH or an approved token to <Address value={vault.address} full copy />. Deposits are always accepted, even in Lockdown.</div>
+              <div>Send KASH or any approved token to <Address value={vault.address} full copy />. Deposits are accepted in every mode, including Lockdown.</div>
             </div>
           )}
         </Card>
@@ -57,9 +57,9 @@ export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { v
           <div className={`banner ${weakest.ok === "bad" ? "warn" : ""}`}>
             <span className="glyph"><IconShield width={26} height={26} /></span>
             <div>
-              <h4>{weakest.ok === "bad" ? "Strengthen your vault" : "Your vault is well protected"}</h4>
-              <p>{weakest.text}. {weakest.ok === "bad" ? "Fix it under Policies or Members before real funds arrive." : "Review the remaining suggestions in Security."}</p>
-              <button className="cta" onClick={() => onNavigate("security")}>Review security <IconArrowRight width={16} height={16} /></button>
+              <h4>{weakest.ok === "bad" ? "Strengthen your vault before funds arrive" : "Your vault is in good shape"}</h4>
+              <p>{weakest.text}. {weakest.ok === "bad" ? "Fix it under Policies or Members." : "Everything else is confirmed; the details are under Security."}</p>
+              <button className="cta" onClick={() => onNavigate("security")}>Open Security <IconArrowRight width={16} height={16} /></button>
             </div>
             <button className="close" onClick={() => setBannerClosed(true)} title="Dismiss">✕</button>
           </div>
@@ -88,9 +88,9 @@ export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { v
 
         <Card title="Explore what's possible">
           <div className="explore">
-            <button onClick={() => onNavigate("simulator")}><IconLab className="ico" width={56} height={56} />Simulate attacks against your policy</button>
-            <button onClick={() => onNavigate("addressbook")}><IconBank className="ico" width={56} height={56} />Pre-register suppliers so payments clear faster</button>
-            <button onClick={() => onNavigate("security")}><IconGuard className="ico" width={56} height={56} />See your maximum possible loss</button>
+            <button onClick={() => onNavigate("simulator")}><IconLab className="ico" width={56} height={56} />Simulate attacks on your policy</button>
+            <button onClick={() => onNavigate("addressbook")}><IconBank className="ico" width={56} height={56} />Register suppliers early so payments clear on time</button>
+            <button onClick={() => onNavigate("security")}><IconGuard className="ico" width={56} height={56} />See the most you could lose</button>
             <button onClick={() => onNavigate("policies")}><IconClock className="ico" width={56} height={56} />Tune tiers, delays and caps</button>
           </div>
         </Card>
@@ -105,7 +105,7 @@ export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { v
               <Skeleton h={44} />
             </div>
           ) : pending.length === 0 ? (
-            <Empty>No transactions to sign</Empty>
+            <Empty>Nothing waiting for a signature</Empty>
           ) : (
             <div style={{ padding: "0 12px 12px" }}>
               {pending.slice(0, 5).map((p) => <TxRow key={String(p.id)} p={p} vault={vault} onChanged={onChanged} compact />)}

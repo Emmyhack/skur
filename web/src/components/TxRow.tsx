@@ -140,7 +140,7 @@ export function TxRow({ p, vault, onChanged, compact = false }: { p: ProposalVie
               <div className="tx-actions">
                 {canApprove && <Button onClick={() => call("approve")} disabled={tx.busy}>{roles & ROLE_GUARDIAN ? "Confirm as guardian" : "Confirm"}</Button>}
                 {Boolean(roles & executeRole) && !expired && (
-                  <Button kind={canApprove ? "secondary" : "primary"} onClick={() => call("execute")} disabled={!canExecute || tx.busy} title={lockedOut ? "Vault is in Lockdown" : timelocked ? "Timelocked" : !approvalsMet ? "Confirmations not met" : undefined} icon={lockedOut ? <IconLock width={14} height={14} /> : undefined}>Execute</Button>
+                  <Button kind={canApprove ? "secondary" : "primary"} onClick={() => call("execute")} disabled={!canExecute || tx.busy} title={lockedOut ? "The vault is in Lockdown" : timelocked ? "Still inside its delay" : !approvalsMet ? "Not enough confirmations yet" : undefined} icon={lockedOut ? <IconLock width={14} height={14} /> : undefined}>Execute</Button>
                 )}
                 {canVeto && <Button kind="danger" onClick={() => call("veto", [p.id, stringToHex("vetoed", { size: 32 })])} disabled={tx.busy}>Veto</Button>}
                 {canCancel && !expired && <Button kind="ghost" onClick={() => call("cancel")} disabled={tx.busy}>Cancel</Button>}

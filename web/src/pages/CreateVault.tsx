@@ -69,8 +69,8 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
     });
   };
 
-  const titles = ["Set up the basics", "Signers and guardians", "Review"];
-  const descs = ["Give the vault a name and pick the policy template it starts from. Every value can be changed later through governance.", "Owners run governance, approvers approve payments, executors execute. Guardians can only freeze, veto and recover; they never hold treasury roles.", "Check the policy the vault will enforce from its first block, then sign once."];
+  const titles = ["Name and template", "Signers and guardians", "Review and sign"];
+  const descs = ["Name the vault and choose the policy it starts with. Every number can be changed later through governance.", "Owners govern, approvers confirm payments, executors execute. Guardians can only freeze, veto and recover, and the contract will not let them hold a treasury role.", "This is the policy the vault will enforce from its first block. Check it, then sign once."];
 
   return (
     <div className="entry" style={{ background: "var(--canvas)" }}>
@@ -99,11 +99,11 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
             <div className="step-body">
               {step === 1 && (
                 <>
-                  <Field label="Name" hint="Private to this browser. The chain only knows the address.">
+                  <Field label="Name" hint="Kept in this browser only. The chain knows the vault by its address.">
                     <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Main treasury" maxLength={40} />
                   </Field>
                   <div className="field-label" style={{ marginBottom: 8 }}>Policy template</div>
-                  <p className="caption" style={{ marginBottom: 12 }}>Choose the profile closest to your organisation. You can tune every number under Policies afterwards.</p>
+                  <p className="caption" style={{ marginBottom: 12 }}>Pick the profile closest to your organisation. Every value can be tuned under Policies afterwards.</p>
                   <div className="templates">
                     {TEMPLATES.map((t) => (
                       <button key={t.id} className={`template ${templateId === t.id ? "active" : ""}`} onClick={() => setTemplateId(t.id)}>
@@ -116,7 +116,7 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
                     <div className="notice notice-warn" style={{ marginTop: 20 }}>
                       <div>
                         <div className="strong">No wallet connected</div>
-                        <div>You need to connect a wallet to create a vault.</div>
+                        <div>Creating a vault is a transaction your wallet signs.</div>
                         <div style={{ marginTop: 10 }}>
                           {connectors.slice(0, 1).map((c) => <Button key={c.uid} size="sm" kind="secondary" onClick={() => connect({ connector: c })}>Connect</Button>)}
                         </div>
@@ -172,7 +172,7 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
                       ["Network", "Ark Constellation devnet (9000)"],
                     ]}
                   />
-                  <p className="caption" style={{ marginTop: 16 }}>The vault is an EIP-1167 clone of the verified implementation. The factory keeps no authority over it; only the members you listed can act.</p>
+                  <p className="caption" style={{ marginTop: 16 }}>The vault is a minimal proxy over the verified implementation. The factory that creates it keeps no authority over it; only the members listed above can act.</p>
                   <TxStatus state={tx.state} />
                 </>
               )}
@@ -192,7 +192,7 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
             <h4>Your vault preview</h4>
             {!isConnected ? (
               <>
-                <p className="caption" style={{ marginBottom: 16 }}>Connect your wallet to continue</p>
+                <p className="caption" style={{ marginBottom: 16 }}>Connect a wallet to see the preview</p>
                 {connectors.slice(0, 1).map((c) => <Button key={c.uid} block onClick={() => connect({ connector: c })}>Connect</Button>)}
               </>
             ) : (

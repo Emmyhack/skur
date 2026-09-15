@@ -32,14 +32,14 @@ export function AddressBook({ vault, onChanged }: { vault: VaultData; onChanged:
       <div className="inline" style={{ marginBottom: 20 }}>
         <Button onClick={() => { setTarget(""); setDialog("register"); }} disabled={!(roles & (ROLE_OWNER | ROLE_APPROVER))} icon={<IconPlus width={16} height={16} />}>New entry</Button>
         <Button kind="secondary" onClick={() => { setTarget(""); setDialog("trust"); }} disabled={!(roles & ROLE_OWNER)}>Propose trust change</Button>
-        <span className="caption">New recipients wait {fmtDuration(vault.policy.recipientActivationDelay)} before normal policy applies.</span>
+        <span className="caption">A new recipient waits {fmtDuration(vault.policy.recipientActivationDelay)} before normal policy applies to it.</span>
       </div>
 
       <div className="card flush">
         {vault.activityLoading ? (
           <Empty>Reading recipients from the chain…</Empty>
         ) : vault.recipients.length === 0 ? (
-          <Empty icon={<IconBook width={40} height={40} />}>No entries found on Ark devnet</Empty>
+          <Empty icon={<IconBook width={40} height={40} />}>No recipients yet. Register one to start its activation clock.</Empty>
         ) : (
           <table>
             <thead>
@@ -66,7 +66,7 @@ export function AddressBook({ vault, onChanged }: { vault: VaultData; onChanged:
 
       {dialog === "register" && (
         <Modal title="New entry" onClose={() => setDialog(null)} footer={<><Button kind="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button disabled={!isAddress(target) || tx.busy} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "registerRecipient", args: [target as `0x${string}`] })}>Register</Button></>}>
-          <Field label="Address" hint="Registering starts the activation delay now, so the first payment later clears without the extra wait.">
+          <Field label="Address" hint="Registering starts the activation delay today, so the first payment later does not have to wait.">
             <input value={target} onChange={(e) => setTarget(e.target.value.trim())} placeholder="0x…" autoFocus />
           </Field>
           <TxStatus state={tx.state} />
@@ -75,7 +75,7 @@ export function AddressBook({ vault, onChanged }: { vault: VaultData; onChanged:
       {dialog === "trust" && (
         <Modal title="Propose a trust change" onClose={() => setDialog(null)} footer={<><Button kind="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button disabled={!isAddress(target) || tx.busy} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeRecipientTrust", args: [target as `0x${string}`, trust] })}>Propose</Button></>}>
           <Field label="Address"><input value={target} onChange={(e) => setTarget(e.target.value.trim())} placeholder="0x…" /></Field>
-          <Field label="Trust state" hint="Raising trust is security-reducing: it waits for the policy-change delay and any guardian can veto it. Restricting or blocking applies once owners approve.">
+          <Field label="Trust state" hint="Raising trust loosens security: it waits for the policy-change delay and any guardian can veto it. Restricting or blocking applies as soon as owners approve.">
             <select value={trust} onChange={(e) => setTrust(Number(e.target.value) as Trust)}>
               {[Trust.NEW, Trust.VERIFIED, Trust.TRUSTED, Trust.RESTRICTED, Trust.BLOCKED].map((t) => <option key={t} value={t}>{TRUST_LABEL[t]}</option>)}
             </select>

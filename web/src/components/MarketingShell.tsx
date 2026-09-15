@@ -31,9 +31,9 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
           ))}
           <div className="wrap" style={{ position: "relative" }}>
             <h2>Put a firewall in front of<br /><span>your treasury</span></h2>
-            <p className="sub">Secure, self-custodial and readable by the people who sign</p>
+            <p className="sub">Self-custodial, enforced onchain, and readable by the people who sign.</p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <a className="btn btn-white" href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Read docs</a>
+              <a className="btn btn-white" href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Read the docs</a>
               <button className="btn btn-accent" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
             </div>
           </div>
@@ -49,7 +49,7 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
             <div><h5>Resources</h5><ul><li><a href="#/#faq">FAQs</a></li><li><a href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Security model</a></li><li><a href="https://explorer.34.60.137.196.sslip.io" target="_blank" rel="noreferrer">Explorer</a></li><li><a href="https://faucet.34.60.137.196.sslip.io/" target="_blank" rel="noreferrer">Faucet</a></li></ul></div>
             <div><h5>Social</h5><ul><li><a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub</a></li></ul></div>
           </div>
-          <div className="legal"><span>Skur V1 · Ark Constellation devnet</span><span>MIT licensed. Not a guarantee against loss; read the security model.</span></div>
+          <div className="legal"><span>Skur V1 · Ark Constellation devnet</span><span>MIT licensed. Skur limits and delays damage; it is not a guarantee against loss.</span></div>
           <div className="giant">Skur</div>
         </div>
       </footer>

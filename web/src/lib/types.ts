@@ -169,15 +169,15 @@ export function roleNames(bits: number): string[] {
 }
 
 export const REASON_TEXT: Array<[number, string]> = [
-  [REASON_AMOUNT_CRITICAL, "amount is above the critical threshold for this asset"],
-  [REASON_AMOUNT_HIGH, "amount is above the routine threshold for this asset"],
-  [REASON_EXPOSURE_CRITICAL, "it would move a critical share of the vault's holdings of this asset"],
-  [REASON_EXPOSURE_HIGH, "it would move a significant share of the vault's holdings of this asset"],
-  [REASON_RECIPIENT_RESTRICTED, "the recipient is restricted"],
-  [REASON_RECIPIENT_UNKNOWN, "the recipient has never been paid by this vault"],
-  [REASON_RECIPIENT_PROBATION, "the recipient is still inside its activation delay"],
-  [REASON_VELOCITY_PRESSURE, "today's outflow is already past half of the daily limit"],
-  [REASON_MODE_ELEVATED, "the vault is in Elevated security mode"],
+  [REASON_AMOUNT_CRITICAL, "the amount is above the critical threshold for this asset"],
+  [REASON_AMOUNT_HIGH, "the amount is above the routine threshold for this asset"],
+  [REASON_EXPOSURE_CRITICAL, "it would move a critical share of the vault's holdings"],
+  [REASON_EXPOSURE_HIGH, "it would move a significant share of the vault's holdings"],
+  [REASON_RECIPIENT_RESTRICTED, "the recipient is restricted by policy"],
+  [REASON_RECIPIENT_UNKNOWN, "this vault has never paid the recipient before"],
+  [REASON_RECIPIENT_PROBATION, "the recipient is still within its activation delay"],
+  [REASON_VELOCITY_PRESSURE, "more than half of today's daily cap would be used"],
+  [REASON_MODE_ELEVATED, "the vault is in Elevated mode"],
 ];
 
 export function explainReasons(mask: number): string[] {

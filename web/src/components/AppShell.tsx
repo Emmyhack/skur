@@ -51,7 +51,7 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
           <button className="icon-btn small" title="Collapse"><IconCollapse width={16} height={16} /></button>
         </div>
         <div className="newtx">
-          <Button kind="secondary" onClick={onNewTransaction} disabled={!canPropose} icon={<IconPlus width={16} height={16} />} title={!canPropose ? (vault?.mode === Mode.LOCKDOWN ? "Vault is in Lockdown" : "Connect an owner or approver wallet") : undefined}>
+          <Button kind="secondary" onClick={onNewTransaction} disabled={!canPropose} icon={<IconPlus width={16} height={16} />} title={!canPropose ? (vault?.mode === Mode.LOCKDOWN ? "The vault is in Lockdown; no new payments until it is lowered" : "Connect an owner or approver wallet to propose a payment") : undefined}>
             New transaction
           </Button>
         </div>
@@ -77,8 +77,8 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
           {vault && vault.mode !== Mode.NORMAL && (
             <div className="promo">
               <span className="tag">{vault.mode === Mode.LOCKDOWN ? "LOCKDOWN" : "ELEVATED"}</span>
-              <h4>{vault.mode === Mode.LOCKDOWN ? "Outgoing execution is frozen" : "Every transfer is one tier higher"}</h4>
-              <p>{vault.mode === Mode.LOCKDOWN ? "Deposits, tightening changes, recovery and guardians keep working." : "Per-transaction and daily caps are halved until owners and guardians lower the mode."}</p>
+              <h4>{vault.mode === Mode.LOCKDOWN ? "Outgoing payments are frozen" : "Every payment is scored one tier higher"}</h4>
+              <p>{vault.mode === Mode.LOCKDOWN ? "Deposits, tightening changes, recovery and guardian actions still work." : "Per-transaction and daily caps are halved until owners and guardians lower the mode."}</p>
               <Button size="sm" onClick={() => onNavigate("security")}>Review</Button>
             </div>
           )}

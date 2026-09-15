@@ -108,14 +108,14 @@ export function TxFlow({ vault, onClose, onChanged, presetAsset }: { vault: Vaul
         ) : (
           <>
             <Button kind="secondary" onClick={() => setStep(1)} disabled={tx.busy}>Back</Button>
-            <Button onClick={submit} disabled={!preview || tx.busy}>Propose transaction</Button>
+            <Button onClick={submit} disabled={!preview || tx.busy}>Propose payment</Button>
           </>
         )
       }
     >
       {step === 1 ? (
         <>
-          <Field label="Recipient address" hint={validTo || !to ? "Addresses this vault has never paid are registered as New and wait their activation delay." : "Not a valid address"}>
+          <Field label="Recipient address" hint={validTo || !to ? "An address this vault has never paid is registered as New and waits out its activation delay first." : "That is not a valid address"}>
             <input value={to} onChange={(e) => setTo(e.target.value.trim())} placeholder="0x…" list="known-recipients" autoFocus />
             <datalist id="known-recipients">
               {vault.recipients.map((r) => (
@@ -137,8 +137,8 @@ export function TxFlow({ vault, onClose, onChanged, presetAsset }: { vault: Vaul
               <input value={amountText} onChange={(e) => setAmountText(e.target.value)} placeholder="0.00" inputMode="decimal" />
             </Field>
           </div>
-          <Field label="Purpose" hint="Recorded onchain in the proposal event so approvers know what they are signing.">
-            <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Invoice 1042 – design retainer" maxLength={140} />
+          <Field label="Purpose" hint="Recorded onchain with the proposal, so approvers know what they are signing.">
+            <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Invoice 1042, design retainer" maxLength={140} />
           </Field>
         </>
       ) : (
@@ -152,7 +152,7 @@ export function TxFlow({ vault, onClose, onChanged, presetAsset }: { vault: Vaul
               </div>
             </div>
           )}
-          {loadingPreview && <div className="notice notice-info">Asking the vault how it would classify this transfer…</div>}
+          {loadingPreview && <div className="notice notice-info">Asking the vault how it scores this payment…</div>}
           {previewError && <div className="notice notice-bad">{previewError}</div>}
           {preview && <RiskReview r={preview} />}
           <TxStatus state={tx.state} />

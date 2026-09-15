@@ -53,7 +53,7 @@ export function Transactions({ vault, onChanged, onNewTransaction }: { vault: Va
         <Empty>Reading proposals and history from the chain…</Empty>
       ) : list.length === 0 ? (
         <div className="card flush">
-          <Empty icon={<IconTx width={40} height={40} />}>{tab === "queue" ? "Queued transactions will appear here" : "Executed, cancelled and vetoed transactions will appear here"}</Empty>
+          <Empty icon={<IconTx width={40} height={40} />}>{tab === "queue" ? "Proposals waiting for confirmation or execution will appear here" : "Executed, cancelled and vetoed proposals will appear here"}</Empty>
         </div>
       ) : (
         groups.map(([label, items]) => (
@@ -63,7 +63,7 @@ export function Transactions({ vault, onChanged, onNewTransaction }: { vault: Va
           </div>
         ))
       )}
-      {tab === "queue" && queue.length > 0 && <p className="caption" style={{ marginTop: 12 }}>Governance proposals need owner confirmations; security-reducing ones also wait for their timelock and can be vetoed by any guardian.</p>}
+      {tab === "queue" && queue.length > 0 && <p className="caption" style={{ marginTop: 12 }}>Governance proposals need owner confirmations. Security-reducing ones also wait out their timelock, and any guardian can veto them.</p>}
     </>
   );
 }

@@ -29,7 +29,7 @@ const GROUPS: Array<{ title: string; sub: string; fields: F[] }> = [
   },
   {
     title: "Delays",
-    sub: "Timelocks give guardians a veto window and give the organisation time to notice.",
+    sub: "A delay gives guardians a veto window and gives the organisation time to notice.",
     fields: [
       { key: "delayHigh", label: "High-tier delay", hint: "Between full approval and execution.", unit: "hours" },
       { key: "delayCritical", label: "Critical delay", hint: "Also the guardian veto window.", unit: "hours" },
@@ -116,7 +116,7 @@ export function Policies({ vault, onChanged }: { vault: VaultData; onChanged: ()
         <div><div className="v">{vault.policy.envelopeBps ? fmtBps(vault.policy.envelopeBps) : "off"}</div><div className="l">Loss envelope per {fmtDuration(vault.policy.envelopeWindow)}</div></div>
       </div>
 
-      <Section title={<>Templates<small>Start from a profile instead of designing a policy from first principles. Selecting one only fills the editor.</small></>}>
+      <Section title={<>Templates<small>Start from a profile instead of designing a policy from scratch. Choosing one only fills the editor; nothing is proposed until you say so.</small></>}>
         <div className="templates">
           {TEMPLATES.map((t) => (
             <button key={t.id} className={`template ${template === t.id ? "active" : ""}`} onClick={() => { setTemplate(t.id); setDraft(t.policy); }}>
@@ -142,7 +142,7 @@ export function Policies({ vault, onChanged }: { vault: VaultData; onChanged: ()
         </Section>
       ))}
 
-      <Section title={<>Propose<small>The vault validates the policy with the same rules; the contract decides.</small></>}>
+      <Section title={<>Propose<small>The checks here mirror the contract's own validation. The contract has the final say.</small></>}>
         {errors.length > 0 && <div className="notice notice-bad"><div>{errors.map((e) => <div key={e}>{e}</div>)}</div></div>}
         {changed && errors.length === 0 && (
           <div className={`notice ${reductions.length ? "notice-warn" : "notice-ok"}`}>
@@ -155,7 +155,7 @@ export function Policies({ vault, onChanged }: { vault: VaultData; onChanged: ()
             </div>
           </div>
         )}
-        {!changed && <p className="desc">No changes yet. Edit a value above or pick a template.</p>}
+        {!changed && <p className="desc">Nothing has changed yet. Edit a value above or pick a template.</p>}
         <div className="inline">
           <Button disabled={!isOwner || !changed || errors.length > 0 || tx.busy} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposePolicy", args: [policyToContract(draft)] })}>Propose policy</Button>
           <Button kind="secondary" onClick={() => { setDraft(vault.policy); setTemplate(null); }} disabled={!changed}>Reset</Button>
@@ -166,9 +166,9 @@ export function Policies({ vault, onChanged }: { vault: VaultData; onChanged: ()
 
       <AssetLimitsSection vault={vault} onChanged={onChanged} isOwner={isOwner} />
 
-      <Section title={<>History<small>Every activation is emitted onchain.</small></>}>
+      <Section title={<>History<small>Every activated policy version is recorded onchain.</small></>}>
         {vault.policyHistory.length === 0 ? (
-          <p className="desc">No history indexed yet.</p>
+          <p className="desc">No policy versions recorded yet.</p>
         ) : (
           <dl className="kv">
             {[...vault.policyHistory].reverse().map((h) => (
@@ -205,7 +205,7 @@ function AssetLimitsSection({ vault, onChanged, isOwner }: { vault: VaultData; o
   const reductions = parsed ? limitReductions(current, parsed) : [];
 
   return (
-    <Section title={<>Asset limits<small>Per-asset tiers and caps in the asset's own units. Approving a new asset is a security-reducing change.</small></>}>
+    <Section title={<>Asset limits<small>Tiers and caps for each asset, in that asset's own units. Approving a new asset loosens security and goes through the delayed path.</small></>}>
       <div className="inline" style={{ marginBottom: 16 }}>
         {vault.assets.map((a) => (
           <button key={a.address} className={`template ${assetAddr === a.address ? "active" : ""}`} style={{ padding: "10px 14px", display: "inline-flex", alignItems: "center", gap: 8 }} onClick={() => pick(a.address)}>

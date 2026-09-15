@@ -40,7 +40,7 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
         <div><div className="v">{fmtDuration(vault.policy.delayCritical)}</div><div className="l">Critical veto window</div></div>
       </div>
 
-      <Section title={<>Security mode<small>Owners and guardians raise the mode instantly. Lowering it needs owners plus guardians, and leaving Lockdown also waits the policy-change delay.</small></>}>
+      <Section title={<>Security mode<small>Any owner or guardian can raise the mode at once. Lowering it needs owners and guardians together, and leaving Lockdown also waits out the policy-change delay.</small></>}>
         <div className="mode-hero">
           {[
             [Mode.NORMAL, "Normal", "Routine policy, standard approvals."],
@@ -67,9 +67,9 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
         <TxStatus state={tx.state} />
       </Section>
 
-      <Section title={<>Guardians<small>An independent control plane. Guardians can freeze, veto, confirm and recover, and can never move funds.</small></>}>
+      <Section title={<>Guardians<small>An independent control plane. Guardians can freeze, veto, confirm and recover, and they can never move funds.</small></>}>
         {guardians.length === 0 ? (
-          <div className="notice notice-bad">No guardian configured. Critical transfers cannot be confirmed and nobody independent can veto.</div>
+          <div className="notice notice-bad">No guardian configured. Critical transfers cannot be confirmed and nobody independent can veto or freeze.</div>
         ) : (
           guardians.map((g) => (
             <div key={g.address} className="member-row">
@@ -87,7 +87,7 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
         </dl>
       </Section>
 
-      <Section title={<>Recovery<small>Replace a lost or compromised signer with a new address holding the same roles. Executes after {fmtDuration(vault.policy.recoveryDelay)}; any owner can cancel; the vault moves to Elevated when it completes.</small></>}>
+      <Section title={<>Recovery<small>Replace a lost or compromised signer with a new address holding the same roles. It executes after {fmtDuration(vault.policy.recoveryDelay)}, any owner can cancel it, and the vault moves to Elevated when it completes.</small></>}>
         <div className="row">
           <Field label="Signer to replace">
             <input value={oldSigner} onChange={(e) => setOldSigner(e.target.value.trim())} placeholder="0x…" list="members" />
@@ -101,7 +101,7 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
         </div>
       </Section>
 
-      <Section title={<>Maximum possible loss<small>A conservative upper bound per asset under the stated assumptions. Never a guarantee.</small></>}>
+      <Section title={<>Maximum possible loss<small>A conservative upper bound for each asset under the stated assumptions. A bound, never a guarantee.</small></>}>
         {vault.assets.map((a) => {
           const l = computeMaxLoss(vault.policy, a.limits, a.balance, vault.mode);
           const share = a.balance > 0n ? Number((l.immediate * 100n) / a.balance) : 0;
@@ -121,12 +121,12 @@ export function Security({ vault, onChanged }: { vault: VaultData; onChanged: ()
         <ul className="assumptions">{computeMaxLoss(vault.policy, vault.assets[0]?.limits ?? { approved: false, lowMax: 0n, highMax: 0n, perTxMax: 0n, dailyMax: 0n }, 0n, vault.mode).assumptions.map((s) => <li key={s}>{s}</li>)}</ul>
       </Section>
 
-      <Section title={<>Security posture<small>Obvious weaknesses and confirmed controls. Not a measure of absolute security.</small></>}>
+      <Section title={<>Security posture<small>Confirmed controls and obvious weaknesses, in plain words. Not a measure of absolute security.</small></>}>
         <Posture vault={vault} />
       </Section>
 
-      <Section title={<>Mode history<small>Every change is emitted onchain with its reason.</small></>}>
-        {vault.modeHistory.length === 0 ? <p className="desc">No mode changes recorded.</p> : (
+      <Section title={<>Mode history<small>Every mode change is recorded onchain with its reason.</small></>}>
+        {vault.modeHistory.length === 0 ? <p className="desc">The mode has never changed.</p> : (
           <dl className="kv">
             {[...vault.modeHistory].reverse().map((h, i) => (
               <div key={i}><dt>{MODE_LABEL[h.previous]} → {MODE_LABEL[h.mode]}{h.reason ? ` · ${h.reason}` : ""}</dt><dd><Address value={h.by} /> · <TxLink hash={h.txHash} /></dd></div>
