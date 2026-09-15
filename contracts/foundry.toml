@@ -1,0 +1,44 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+bytecode_hash = "none"
+cbor_metadata = false
+fs_permissions = [{ access = "read-write", path = "./deployments" }]
+
+[profile.default.fuzz]
+runs = 512
+
+[profile.default.invariant]
+runs = 64
+depth = 48
+fail_on_revert = false
+
+[profile.ci.fuzz]
+runs = 4096
+
+[profile.ci.invariant]
+runs = 256
+depth = 96
+
+# Every endpoint lives here and in web/src/config/chain.ts. The sslip.io hosts are
+# devnet-only and will move to an Ark-owned domain for testnet/mainnet.
+[rpc_endpoints]
+ark_devnet = "https://evm.34.60.137.196.sslip.io"
+
+[etherscan]
+ark_devnet = { key = "blockscout", url = "https://explorer-api.34.60.137.196.sslip.io/api", chain = 9000 }
+
+[fmt]
+line_length = 120
+tab_width = 4
+
+[lint]
+exclude_lints = ["block-timestamp"]
