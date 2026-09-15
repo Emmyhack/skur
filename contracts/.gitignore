@@ -18,6 +18,3 @@ docs/
 .env
 .env.*
 !.env.example
-
-# Dependencies are restored from foundry.lock with `forge install`
-lib/

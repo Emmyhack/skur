@@ -33,10 +33,12 @@ The full record, including the deployer address, is in [contracts/deployments/90
 
 ## Quick start
 
+Dependencies are git submodules, so clone with `--recurse-submodules` (or run
+`git submodule update --init --recursive` in an existing clone).
+
 ```bash
 # contracts
 cd contracts
-forge install                  # restores forge-std and OpenZeppelin from foundry.lock
 forge build
 forge test                     # unit, fuzz and invariant suites
 slither . --filter-paths "lib/|test/|script/"
