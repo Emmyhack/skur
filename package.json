@@ -1,0 +1,16 @@
+{
+  "name": "skur",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Programmable treasury security for onchain businesses.",
+  "scripts": {
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test",
+    "contracts:slither": "cd contracts && slither . --filter-paths \"lib/|test/|script/\" --exclude-informational --exclude-optimization",
+    "abi": "python3 scripts/export-abi.py",
+    "web:dev": "cd web && npm run dev",
+    "web:build": "cd web && npm run build",
+    "web:test": "cd web && npm test",
+    "test": "npm run contracts:test && npm run web:test"
+  }
+}
