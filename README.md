@@ -23,11 +23,11 @@ Chain id 9000, native token KASH. Sources are verified on the Blockscout explore
 
 | Contract | Address |
 |---|---|
-| SkurFactory | [`0x02929b28DD9DDf57b1615c70DCCdca6b6EDA0015`](https://explorer.34.60.137.196.sslip.io/address/0x02929b28DD9DDf57b1615c70DCCdca6b6EDA0015) |
-| SkurVault implementation | [`0xFd5202675c194FBFA682622F11b80167336abba5`](https://explorer.34.60.137.196.sslip.io/address/0xFd5202675c194FBFA682622F11b80167336abba5) |
-| SkurPolicyLib | [`0x689a4b4Bb095cc9F2F9535Eaf6D71E6DD0B55837`](https://explorer.34.60.137.196.sslip.io/address/0x689a4b4Bb095cc9F2F9535Eaf6D71E6DD0B55837) |
-| SkurTestUSD (sUSD, 6 decimals, mintable) | [`0xF4AbedF17C3C8669D13C352a6002eAe5B39D772B`](https://explorer.34.60.137.196.sslip.io/address/0xF4AbedF17C3C8669D13C352a6002eAe5B39D772B) |
-| Demo vault (Startup template) | [`0xb2208Ad86B44cE75427334A117Ae27CB1b8bc4cC`](https://explorer.34.60.137.196.sslip.io/address/0xb2208Ad86B44cE75427334A117Ae27CB1b8bc4cC) |
+| SkurFactory | [`0x018c12BA8b085da81E434b9e4001e07CF48764E9`](https://explorer.34.60.137.196.sslip.io/address/0x018c12BA8b085da81E434b9e4001e07CF48764E9) |
+| SkurVault implementation | [`0xE21C7ad3a56D187848F9915bb43f88820278DeA3`](https://explorer.34.60.137.196.sslip.io/address/0xE21C7ad3a56D187848F9915bb43f88820278DeA3) |
+| SkurPolicyLib | [`0x6bAA1A24B55796d8346748EE3565e40d844bA576`](https://explorer.34.60.137.196.sslip.io/address/0x6bAA1A24B55796d8346748EE3565e40d844bA576) |
+| SkurTestUSD (sUSD, 6 decimals, mintable) | [`0x3e41424ADF6Bb69B6271ef9B0541ACD59A0d454a`](https://explorer.34.60.137.196.sslip.io/address/0x3e41424ADF6Bb69B6271ef9B0541ACD59A0d454a) |
+| Demo vault (Startup template) | [`0xCC31c7474267ca5600c2D530ebD7657A09c042Dc`](https://explorer.34.60.137.196.sslip.io/address/0xCC31c7474267ca5600c2D530ebD7657A09c042Dc) |
 
 The full record, including the deployer address, is in [contracts/deployments/9000.json](contracts/deployments/9000.json). Endpoints live only in `contracts/foundry.toml` and `web/src/config/chain.ts`.
 
