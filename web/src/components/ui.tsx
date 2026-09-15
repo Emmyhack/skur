@@ -22,13 +22,13 @@ export function Card({ title, subtitle, actions, children, className = "", flush
   );
 }
 
-export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: "ok" | "warn" | "bad" }) {
+/** Two-column section used by Safe's settings pages: label column on the left, content on the right. */
+export function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
-    <div className={`stat ${tone ? `stat-${tone}` : ""}`}>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value num">{value}</div>
-      {hint && <div className="stat-hint">{hint}</div>}
-    </div>
+    <section className="section">
+      <h3>{title}</h3>
+      <div className="body">{children}</div>
+    </section>
   );
 }
 
@@ -38,14 +38,13 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   return <span className={`pill pill-${tone}`}>{children}</span>;
 }
 
-/** "1 out of 2" confirmation pill, the way Safe shows signature progress in its queue. */
-export function ConfirmPill({ have, need, label = "" }: { have: number; need: number; label?: string }) {
+/** "1 out of 2" confirmation pill, the way Safe shows signature progress. */
+export function ConfirmPill({ have, need }: { have: number; need: number }) {
   const done = have >= need;
   return (
-    <span className={`pill ${done ? "pill-ok" : "pill-review"}`} title={label}>
+    <span className={`pill ${done ? "pill-ok" : "pill-review"}`}>
       {done ? <IconCheck width={12} height={12} /> : null}
       {have} out of {need}
-      {label ? ` ${label}` : ""}
     </span>
   );
 }
@@ -54,20 +53,16 @@ export function TierBadge({ tier }: { tier: Tier }) {
   const tone: Tone = tier === Tier.LOW ? "ok" : tier === Tier.HIGH ? "warn" : "bad";
   return <Badge tone={tone}>{TIER_LABEL[tier]} risk</Badge>;
 }
-
 export function ModeBadge({ mode }: { mode: Mode }) {
   const tone: Tone = mode === Mode.NORMAL ? "ok" : mode === Mode.ELEVATED ? "warn" : "bad";
   return <Badge tone={tone}>{MODE_LABEL[mode]}</Badge>;
 }
-
 export function StatusBadge({ status }: { status: Status }) {
   const tone: Tone = status === Status.EXECUTED ? "ok" : status === Status.PENDING ? "review" : status === Status.VETOED ? "bad" : "neutral";
   return <Badge tone={tone}>{STATUS_LABEL[status]}</Badge>;
 }
-
 export function TrustBadge({ trust }: { trust: Trust }) {
-  const tone: Tone =
-    trust === Trust.TRUSTED || trust === Trust.VERIFIED ? "ok" : trust === Trust.NEW ? "info" : trust === Trust.UNKNOWN ? "neutral" : "bad";
+  const tone: Tone = trust === Trust.TRUSTED || trust === Trust.VERIFIED ? "ok" : trust === Trust.NEW ? "info" : trust === Trust.UNKNOWN ? "neutral" : "bad";
   return <Badge tone={tone}>{TRUST_LABEL[trust]}</Badge>;
 }
 
@@ -79,25 +74,18 @@ export function CopyButton({ value, small = true }: { value: string; small?: boo
     return () => clearTimeout(t);
   }, [ok]);
   return (
-    <button
-      className={`icon-btn ${small ? "small" : ""}`}
-      title="Copy"
-      onClick={(e) => {
-        e.stopPropagation();
-        navigator.clipboard?.writeText(value).then(() => setOk(true));
-      }}
-    >
+    <button className={`icon-btn ${small ? "small" : ""}`} title="Copy" onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(value).then(() => setOk(true)); }}>
       {ok ? <IconCheck width={14} height={14} /> : <IconCopy width={14} height={14} />}
     </button>
   );
 }
 
-export function Address({ value, label, full = false, copy = false }: { value: string; label?: string; full?: boolean; copy?: boolean }) {
+export function Address({ value, label, full = false, copy = false, prefix }: { value: string; label?: string; full?: boolean; copy?: boolean; prefix?: string }) {
   return (
     <span className="addr">
       {label ? <span className="strong">{label}</span> : null}
       <a href={explorerAddress(value)} target="_blank" rel="noreferrer" title={value}>
-        <code>{full ? value : short(value)}</code>
+        <code>{prefix ? <b>{prefix}:</b> : null}{full ? value : short(value)}</code>
       </a>
       {copy && <CopyButton value={value} />}
     </span>
@@ -113,9 +101,11 @@ export function TxLink({ hash }: { hash: string }) {
   );
 }
 
-export function Button({ children, onClick, kind = "primary", disabled, type = "button", title, size, block, icon }: { children: ReactNode; onClick?: () => void; kind?: "primary" | "secondary" | "danger" | "ghost" | "brand"; disabled?: boolean; type?: "button" | "submit"; title?: string; size?: "sm"; block?: boolean; icon?: ReactNode }) {
+export type ButtonKind = "primary" | "secondary" | "dark" | "danger" | "ghost" | "white" | "black";
+
+export function Button({ children, onClick, kind = "primary", disabled, type = "button", title, size, block, icon, className = "" }: { children: ReactNode; onClick?: () => void; kind?: ButtonKind; disabled?: boolean; type?: "button" | "submit"; title?: string; size?: "sm" | "lg"; block?: boolean; icon?: ReactNode; className?: string }) {
   return (
-    <button type={type} className={`btn btn-${kind} ${size === "sm" ? "btn-sm" : ""} ${block ? "btn-block" : ""}`} onClick={onClick} disabled={disabled} title={title}>
+    <button type={type} className={`btn btn-${kind} ${size ? `btn-${size}` : ""} ${block ? "btn-block" : ""} ${className}`} onClick={onClick} disabled={disabled} title={title}>
       {icon}
       {children}
     </button>
@@ -135,22 +125,20 @@ export function Field({ label, children, hint }: { label: ReactNode; children: R
 export function TxStatus({ state }: { state: TxState }) {
   if (state.phase === "idle") return null;
   if (state.phase === "error") return <div className="notice notice-bad">{state.message}</div>;
-  if (state.phase === "done")
-    return (
-      <div className="notice notice-ok">
-        <span>Confirmed onchain.</span> <TxLink hash={state.hash} />
-      </div>
-    );
-  if (state.phase === "mining")
-    return (
-      <div className="notice notice-info">
-        <span>Waiting for the block…</span> <TxLink hash={state.hash} />
-      </div>
-    );
+  if (state.phase === "done") return <div className="notice notice-ok"><span>Confirmed onchain.</span> <TxLink hash={state.hash} /></div>;
+  if (state.phase === "mining") return <div className="notice notice-info"><span>Waiting for the block…</span> <TxLink hash={state.hash} /></div>;
   return <div className="notice notice-info">{state.phase === "simulating" ? "Checking the transaction against the vault policy…" : "Confirm in your wallet…"}</div>;
 }
 
-export function Empty({ children }: { children: ReactNode }) {
+export function Empty({ children, icon }: { children: ReactNode; icon?: ReactNode }) {
+  if (icon) {
+    return (
+      <div className="empty-illus">
+        <div className="glyph">{icon}</div>
+        <div>{children}</div>
+      </div>
+    );
+  }
   return <div className="empty">{children}</div>;
 }
 
@@ -189,13 +177,13 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
   );
 }
 
-export function TokenIcon({ symbol }: { symbol: string }) {
+export function TokenIcon({ symbol, size = 32 }: { symbol: string; size?: number }) {
   const s = symbol.toUpperCase();
-  const glyph = s.includes("USD") ? "$" : s.slice(0, 1);
   const stable = s.includes("USD");
+  const native = s === "KASH";
   return (
-    <span className="token-ico" style={stable ? { background: "var(--brand-bg)", color: "var(--success-dark)" } : undefined}>
-      {glyph}
+    <span className={`token-ico ${stable ? "stable" : native ? "native" : ""}`} style={{ width: size, height: size }}>
+      {stable ? "$" : s.slice(0, 1)}
     </span>
   );
 }
@@ -214,9 +202,7 @@ export function Modal({ title, onClose, children, footer, steps }: { title: Reac
             <h4>{title}</h4>
             {steps && <div className="steps" style={{ marginTop: 6 }}>{steps}</div>}
           </div>
-          <button className="icon-btn small" onClick={onClose} title="Close">
-            <IconClose width={16} height={16} />
-          </button>
+          <button className="icon-btn small" onClick={onClose} title="Close"><IconClose width={16} height={16} /></button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
