@@ -4,14 +4,14 @@ import { IconChevronRight } from "./icons";
 
 export type MarketingPage = "landing" | "product" | "solutions" | "security";
 
-/** Nav, closing CTA and footer shared by every marketing page, after safe.global. */
+/** Nav, closing CTA and footer shared by every marketing page. */
 export function MarketingShell({ page, onLaunch, children, hideCta = false }: { page: MarketingPage; onLaunch: () => void; children: ReactNode; hideCta?: boolean }) {
   const scrolled = useScrolled();
   return (
     <div className="land">
       <header className={`land-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="wrap">
-          <a className="logo" href="#/"><span className="mark">S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></a>
+          <a className="logo" href="#/"><span className="mark">S</span><span>Skur</span></a>
           <nav>
             <a href="#/product" className={page === "product" ? "on" : ""}>Product</a>
             <a href="#/solutions" className={page === "solutions" ? "on" : ""}>Solutions</a>
@@ -19,17 +19,17 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
             <a href="#/#faq">FAQ</a>
             <a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub ↗</a>
           </nav>
-          <button className="btn btn-accent" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
+          <div className="nav-right">
+            <span className="netchip">Ark devnet · 9000</span>
+            <button className="btn btn-accent" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
+          </div>
         </div>
       </header>
       {children}
       {!hideCta && (
         <section className="cta">
-          <div className="grid-bg" style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(#e9ecef 1px, transparent 1px), linear-gradient(90deg, #e9ecef 1px, transparent 1px)", backgroundSize: "131px 131px" }} />
-          {[[0, 0], [1310, 0], [520, 260], [780, 0], [130, 390], [1050, 390]].map(([x, y], i) => (
-            <span key={i} className="cell" style={{ position: "absolute", width: 130, height: 130, left: x, top: y, background: "linear-gradient(180deg, rgba(33,37,41,0) 0%, rgba(33,37,41,0.2) 100%)", animation: `cell ${5 + i}s ease-in-out infinite`, animationDelay: `${i * 0.4}s` }} />
-          ))}
           <div className="wrap" style={{ position: "relative" }}>
+            <div className="secno" style={{ justifyContent: "center" }}>Start here</div>
             <h2>Put a firewall in front of<br /><span>your treasury</span></h2>
             <p className="sub">Self-custodial, enforced onchain, and readable by the people who sign.</p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -39,6 +39,7 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
           </div>
         </section>
       )}
+      <div className="tape" />
       <footer className="land-footer">
         <div className="wrap">
           <div className="cols">
@@ -60,11 +61,9 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
 /** Hero used by the product, solutions and security pages. */
 export function SubHero({ eyebrow, title, sub, onLaunch, children }: { eyebrow: string; title: ReactNode; sub: string; onLaunch: () => void; children?: ReactNode }) {
   return (
+    <>
+    <div className="tape" />
     <section className="hero sub-hero">
-      <div className="grid-bg" />
-      {[[0, 130], [1310, 0], [1180, 260], [130, 390], [910, 390]].map(([x, y], i) => (
-        <span key={i} className="cell" style={{ left: x, top: y, animationDelay: `${i * 0.6}s` }} />
-      ))}
       <div className="wrap">
         <div className="eyebrow">{eyebrow}</div>
         <h1 style={{ fontSize: 64, lineHeight: "66px", maxWidth: 860 }}>{title}</h1>
@@ -75,5 +74,6 @@ export function SubHero({ eyebrow, title, sub, onLaunch, children }: { eyebrow: 
         </div>
       </div>
     </section>
+    </>
   );
 }

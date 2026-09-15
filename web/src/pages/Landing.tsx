@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { MarketingShell } from "../components/MarketingShell";
 import { AppMockup } from "../components/Mockup";
+import { ScoreTicker } from "../components/Ticker";
 import { Reveal } from "../components/Reveal";
 import { IconArrowRight, IconCheck, IconChevronRight } from "../components/icons";
 import { useCountUp } from "../lib/motion";
@@ -14,8 +15,6 @@ function Stat({ n, label }: { n: number; label: string }) {
     </div>
   );
 }
-
-const HERO_CELLS: Array<[number, number]> = [[0, 130], [130, 260], [1180, 0], [1310, 0], [1310, 130], [390, 520], [910, 390], [1050, 260], [780, 650], [520, 0]];
 
 const FAQ: Array<[string, string]> = [
   ["What is Skur?", "A self-custodial treasury vault whose security requirements rise and fall with the risk of each transaction. It keeps multisignature approval and adds onchain rules about how much can move, where it can go and how long risky payments wait."],
@@ -33,7 +32,6 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
     const m = window.location.hash.match(/#\/#(.+)$/);
     if (m) setTimeout(() => document.getElementById(m[1])?.scrollIntoView({ behavior: "smooth" }), 50);
   }, []);
-  const words = "Treasury security that assumes compromise".split(" ");
 
   return (
     <MarketingShell page="landing" onLaunch={onLaunch}>
@@ -41,27 +39,25 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
         <a href="#/security">Skur V1 is live on the Ark Constellation devnet. Every control runs onchain <span>→</span></a>
       </div>
 
-      <section className="hero">
-        <div className="grid-bg" />
-        {HERO_CELLS.map(([x, y], i) => <span key={i} className="cell" style={{ left: x, top: y, animationDelay: `${i * 0.55}s`, animationDuration: `${5 + (i % 4)}s` }} />)}
+      <div className="tape" />
+      <section className="hero hero2">
         <div className="wrap">
-          <div className="eyebrow"><b>12 SECURITY INVARIANTS</b> · ENFORCED BY THE VAULT, NOT BY A SERVER</div>
-          <h1>
-            {words.map((w, i) => (
-              <span key={i} className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + i * 0.06}s both`, marginRight: "0.22em" }}>{w}</span>
-            ))}
-          </h1>
-          <p className="sub">An approval proves someone was authorised. Skur decides whether the payment is safe: how much can move, where it can go, and how long the risky ones wait, even when your signers are compromised.</p>
-          <div className="cta-row">
-            <button className="btn btn-accent btn-lg" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
-            <a className="btn btn-white btn-lg" href="#/product">See how it works</a>
+          <div>
+            <div className="eyebrow"><b>12 invariants</b> enforced by the vault, not by a server</div>
+            <h1 style={{ animation: "rise 0.7s var(--ease) 0.08s both" }}>Treasury security that <span className="mark-hl">assumes compromise</span></h1>
+            <p className="sub">An approval proves someone was authorised. Skur decides whether the payment is safe: how much can move, where it can go, and how long the risky ones wait, even when your signers are compromised.</p>
+            <div className="cta-row">
+              <button className="btn btn-accent btn-lg" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
+              <a className="btn btn-white btn-lg" href="#/product">See how it works</a>
+            </div>
+            <div className="hero-meta"><span>Self-custodial</span><span>Ark Constellation devnet · 9000</span><span>Verified source</span></div>
           </div>
-          <div className="mock"><AppMockup /></div>
+          <div className="side"><ScoreTicker /></div>
         </div>
       </section>
 
       <section className="light" style={{ paddingTop: 72 }}>
-        <div className="wrap" style={{ textAlign: "center" }}>
+        <div className="wrap center" style={{ textAlign: "center" }}>
           <Reveal>
             <h2 style={{ fontSize: 30 }}>Made for teams that hold real money onchain</h2>
             <p className="lead" style={{ marginBottom: 32 }}>Startups, DAOs, funds, nonprofits and family offices that need more than a signature count between a stolen key and the treasury.</p>
@@ -79,6 +75,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
       <section className="dark" id="product">
         <div className="wrap">
           <Reveal>
+            <div className="secno">01 / Controls</div>
             <h2>Your treasury, under control</h2>
             <p className="lead">Every rule below is contract code, not a setting on our server. If Skur disappeared tomorrow, your vault and its policy would not.</p>
           </Reveal>
@@ -90,11 +87,11 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
                   {["1,000 sUSD to a known supplier", "12,000 sUSD to a new address", "60,000 sUSD, 24% of holdings"].map((t) => <span key={t} style={{ background: "#343a40", padding: "10px 16px", borderRadius: 8, fontSize: 14 }}>{t}</span>)}
                 </div>
-                <div style={{ width: 96, height: 96, borderRadius: "50%", border: "6px solid #343a40", boxShadow: "0 0 0 2px #ff206e inset", display: "grid", placeItems: "center", background: "#212529", fontWeight: 800, color: "#fff", animation: "float 4s ease-in-out infinite" }}>S</div>
+                <div style={{ width: 96, height: 96, borderRadius: "50%", border: "6px solid #343a40", boxShadow: "0 0 0 2px #ffd000 inset", display: "grid", placeItems: "center", background: "#212529", fontWeight: 800, color: "#fff", animation: "float 4s ease-in-out infinite" }}>S</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
-                  <span style={{ background: "#ff206e", color: "#fff", padding: "10px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14 }}>Low · 1 approval · executes now</span>
-                  <span style={{ background: "#4d3a05", color: "#fff3cd", padding: "10px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14 }}>High · 2 approvals · waits 1 day</span>
-                  <span style={{ background: "#4a1c22", color: "#f8d7da", padding: "10px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14 }}>Critical · 2 + a guardian · 1 day · vetoable</span>
+                  <span style={{ background: "#ffd000", color: "#212529", padding: "10px 16px", borderRadius: 6, fontWeight: 700, fontSize: 14 }}>Low · 1 approval · executes now</span>
+                  <span style={{ background: "#4d3a05", color: "#fff3cd", padding: "10px 16px", borderRadius: 6, fontWeight: 700, fontSize: 14 }}>High · 2 approvals · waits 1 day</span>
+                  <span style={{ background: "#4a1c22", color: "#f8d7da", padding: "10px 16px", borderRadius: 6, fontWeight: 700, fontSize: 14 }}>Critical · 2 + a guardian · 1 day · vetoable</span>
                 </div>
               </div>
             </div>
@@ -102,8 +99,8 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
               <h3>Recipient trust</h3>
               <p>Recipients are security objects, not strings. A never-seen address serves an activation delay and is treated as higher risk until it has. Owners can verify, trust, restrict or block anyone.</p>
               <div className="art" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[["New", "activates in 23h", "#1b3a5c", "#cfe2ff"], ["Verified", "normal policy", "#1b4332", "#d1e7dd"], ["Restricted", "always critical", "#4d3a05", "#fff3cd"], ["Blocked", "refused", "#4a1c22", "#f8d7da"]].map(([s, d, bg, fg]) => (
-                  <div key={s} style={{ display: "flex", justifyContent: "space-between", background: "#212529", padding: "12px 14px", borderRadius: 8 }}><span>0x{s.slice(0, 2).toLowerCase()}4f…a1c2</span><span style={{ background: bg, color: fg, padding: "2px 10px", borderRadius: 6, fontWeight: 700, fontSize: 12 }}>{s} · {d}</span></div>
+                {[["New", "activates in 23h", "#1b3a5c", "#cfe2ff", "0x7c4f…41e2"], ["Verified", "normal policy", "#1b4332", "#d1e7dd", "0x3a91…c0de"], ["Restricted", "always critical", "#4d3a05", "#fff3cd", "0xe2b7…9f10"], ["Blocked", "refused", "#4a1c22", "#f8d7da", "0x0d55…77aa"]].map(([s, d, bg, fg, addr]) => (
+                  <div key={s} style={{ display: "flex", justifyContent: "space-between", background: "#212529", padding: "12px 14px", borderRadius: 6 }}><span className="mono" style={{ fontSize: 13 }}>{addr}</span><span style={{ background: bg, color: fg, padding: "2px 10px", borderRadius: 6, fontWeight: 700, fontSize: 12 }}>{s} · {d}</span></div>
                 ))}
               </div>
             </div>
@@ -114,7 +111,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#adb5bd" }}><span>Left the vault today</span><span>98,000 of 100,000 sUSD</span></div>
                 <div style={{ height: 10, background: "#343a40", borderRadius: 5, margin: "8px 0 16px", overflow: "hidden" }}><div style={{ width: "98%", height: "100%", background: "#ffcd39", borderRadius: 5, transformOrigin: "left", animation: "grow 1.4s var(--ease)" }} /></div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#adb5bd" }}><span>Loss envelope, 24 hours</span><span>25,000 sUSD, then Lockdown</span></div>
-                <div style={{ height: 10, background: "#343a40", borderRadius: 5, margin: "8px 0", overflow: "hidden" }}><div style={{ width: "40%", height: "100%", background: "#ff206e", borderRadius: 5, transformOrigin: "left", animation: "grow 1.8s var(--ease)" }} /></div>
+                <div style={{ height: 10, background: "#343a40", borderRadius: 5, margin: "8px 0", overflow: "hidden" }}><div style={{ width: "40%", height: "100%", background: "#ffd000", borderRadius: 5, transformOrigin: "left", animation: "grow 1.8s var(--ease)" }} /></div>
               </div>
             </div>
             <div className="bcard">
@@ -122,7 +119,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
               <p>A second control plane that can freeze, veto, confirm and recover, and that can never withdraw. Stealing one role is not enough.</p>
               <div className="art" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={{ background: "#212529", borderRadius: 8, padding: 14 }}><div style={{ color: "#adb5bd", fontSize: 12, marginBottom: 6 }}>Treasury signers</div>Propose · Approve · Execute</div>
-                <div style={{ background: "#212529", borderRadius: 8, padding: 14, border: "1px solid #ff206e" }}><div style={{ color: "#ff206e", fontSize: 12, marginBottom: 6 }}>Guardians</div>Freeze · Veto · Recover<br /><span style={{ color: "#adb5bd", fontSize: 12 }}>never withdraw</span></div>
+                <div style={{ background: "#212529", borderRadius: 8, padding: 14, border: "1px solid #ffd000" }}><div style={{ color: "#ffd000", fontSize: 12, marginBottom: 6 }}>Guardians</div>Freeze · Veto · Recover<br /><span style={{ color: "#adb5bd", fontSize: 12 }}>never withdraw</span></div>
               </div>
             </div>
             <div className="bcard" id="simulator">
@@ -137,6 +134,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
       <section className="dark" id="security" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <Reveal>
+            <div className="secno">02 / Guarantees</div>
             <h2>Security a finance team can read</h2>
             <p className="lead">Every control fits in one sentence, and every one is checked at execution, not only at approval.</p>
           </Reveal>
@@ -160,6 +158,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
         <div className="wrap">
           <Reveal className="shield">
             <div>
+              <div className="secno">03 / Policy firewall</div>
               <h2>A firewall around the policy itself</h2>
               <p>Changing the rules is as dangerous as moving the money. An attacker who can lower a threshold never needs to touch the withdrawal path.</p>
               <ul>
@@ -175,7 +174,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
 
       <section className="dark" style={{ paddingTop: 0 }}>
         <div className="wrap">
-          <Reveal><h2>Not every multisig is the same</h2></Reveal>
+          <Reveal><div className="secno">04 / Compared</div><h2>Not every multisig is the same</h2></Reveal>
           <Reveal className="compare">
             <table>
               <thead>
@@ -208,6 +207,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
       <section className="light" id="solutions">
         <div className="wrap">
           <Reveal>
+            <div className="secno">05 / Who it is for</div>
             <h2>Two roles. Two kinds of power.</h2>
             <p className="lead">Finance teams move the money. Guardians hold the brake. Neither can do the other's job.</p>
           </Reveal>
@@ -231,6 +231,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
       <section className="white">
         <div className="wrap">
           <Reveal>
+            <div className="secno">06 / Lifecycle</div>
             <h2>How a payment moves</h2>
             <p className="lead">Requirements are fixed at step one. Limits are checked again at step four.</p>
           </Reveal>
@@ -245,7 +246,7 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
 
       <section className="white" id="faq" style={{ paddingTop: 0 }}>
         <div className="wrap">
-          <Reveal><h2>Questions, answered plainly</h2></Reveal>
+          <Reveal><div className="secno">07 / Questions</div><h2>Questions, answered plainly</h2></Reveal>
           <Reveal className="faq">
             <div style={{ marginTop: 48 }}>
               {FAQ.map(([q, a]) => (

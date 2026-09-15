@@ -92,6 +92,7 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
       </aside>
 
       <main className="main">
+        <div className={`mode-strip ${vault?.mode === Mode.ELEVATED ? "elevated" : vault?.mode === Mode.LOCKDOWN ? "tape thin run" : ""}`} />
         <div className="main-inner">
           <div className="header-row">
             {vaultAddress ? (

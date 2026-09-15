@@ -52,7 +52,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
 
         {tab === "accounts" ? (
           <div className="entry-card">
-            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
+            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 4, background: "var(--accent)", color: "#212529", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span style={{ fontFamily: "Space Grotesk, sans-serif" }}>Skur</span></div>
             <h2>Get started</h2>
             <p>Connect a wallet to create a vault, or open one you belong to.</p>
             {isConnected && address ? (
@@ -90,7 +90,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
           </div>
         ) : (
           <div className="entry-card">
-            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
+            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 4, background: "var(--accent)", color: "#212529", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span style={{ fontFamily: "Space Grotesk, sans-serif" }}>Skur</span></div>
             <h2>Watch a vault</h2>
             <p>Read any vault's balances, policy and queue. No wallet needed.</p>
             <Field label="Vault address">
