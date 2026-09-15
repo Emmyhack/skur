@@ -49,6 +49,7 @@ export function Transactions({ vault, onChanged, onNewTransaction }: { vault: Va
         </div>
       </div>
 
+      {vault.logsFailed && <div className="notice notice-warn" style={{ marginBottom: 16 }}>The chain's event log could not be read, so purposes and history details are missing. Proposals below come straight from contract state.</div>}
       {vault.activityLoading ? (
         <Empty>Reading proposals and history from the chain…</Empty>
       ) : list.length === 0 ? (

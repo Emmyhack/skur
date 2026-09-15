@@ -7,6 +7,7 @@ import { wagmiConfig } from "./wagmi";
 import "./styles.css";
 
 const queryClient = new QueryClient();
+if (import.meta.env.DEV) (window as unknown as { __qc: QueryClient }).__qc = queryClient;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

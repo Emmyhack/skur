@@ -184,6 +184,16 @@ h1, h2, h3, .display, .balance-card .amount, .scorecard .v, .stats .v { font-fam
 
 /* ================================================================== app shell */
 .shell { display: flex; min-height: 100vh; }
+.shell.collapsed { --sidebar: 68px; }
+.shell.collapsed .sidebar { padding: 12px 8px 16px; }
+.shell.collapsed .lbl, .shell.collapsed .nav-group, .shell.collapsed .promo, .shell.collapsed .nav .count, .shell.collapsed .tag-new { display: none; }
+.shell.collapsed .home-pill { padding: 0 8px; }
+.shell.collapsed .sidebar-top { flex-direction: column; gap: 6px; }
+.shell.collapsed .nav button { justify-content: center; padding: 0; }
+.shell.collapsed .nav button.active::before { left: -6px; }
+.shell.collapsed .newtx .btn { font-size: 0; gap: 0; padding: 0; }
+.shell.collapsed .newtx .btn svg { width: 16px; height: 16px; }
+.sidebar { transition: width 0.25s var(--ease), padding 0.25s var(--ease); }
 .sidebar { width: var(--sidebar); flex: none; background: var(--panel); border-right: 1px solid var(--border); padding: 12px 10px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .home-pill { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px 0 8px; border-radius: 6px; font-family: "Space Grotesk", sans-serif; background: var(--accent-bg); color: var(--text); font-weight: 700; cursor: pointer; border: 0; align-self: flex-start; transition: background 0.15s; }
 .home-pill:hover { background: var(--accent-bg-2); }
@@ -708,5 +718,4 @@ input:read-only { color: var(--text-2); }
 .mode-strip { height: 6px; margin: -20px -24px 16px; background: transparent; transition: background 0.3s; }
 .mode-strip.elevated { background: #ffd000; }
 .mode-strip.tape { background: repeating-linear-gradient(-45deg, #ffd000 0 16px, #212529 16px 32px); background-size: 45.25px 100%; }
-.banner.lock { border-top: 10px solid; border-image: repeating-linear-gradient(-45deg, #ffd000 0 16px, #212529 16px 32px) 10; }
 @media (prefers-reduced-motion: reduce) { .tape.run, .mark-hl, .ticker .prog.on i, .ticker .why li, .ticker .tier { animation: none; } .mark-hl { background-size: 100% 100%; } .ticker .prog.on i { width: 100%; } }
