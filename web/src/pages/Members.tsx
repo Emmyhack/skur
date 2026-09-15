@@ -2,95 +2,88 @@ import { useState } from "react";
 import { useAccount } from "wagmi";
 import { isAddress } from "viem";
 import { SkurVaultAbi } from "../abi/SkurVault";
-import { Address, Badge, Button, Card, Field, TxStatus } from "../components/ui";
+import { Badge, Button, CopyButton, Field, Modal, Section, TxStatus } from "../components/ui";
+import { Identicon } from "../components/Identicon";
+import { IconPlus } from "../components/icons";
 import { useTx } from "../hooks/useTx";
 import type { VaultData } from "../hooks/useVault";
 import { fmtDuration } from "../lib/format";
 import { ROLE_APPROVER, ROLE_EXECUTOR, ROLE_GUARDIAN, ROLE_OWNER, roleNames } from "../lib/types";
 
+/** Mirrors Safe's Settings › Setup: "Members" and "Required confirmations" as label/content sections. */
 export function Members({ vault, onChanged }: { vault: VaultData; onChanged: () => void }) {
   const { address } = useAccount();
   const me = vault.members.find((m) => m.address.toLowerCase() === address?.toLowerCase());
   const isOwner = Boolean((me?.roles ?? 0) & ROLE_OWNER);
-  const tx = useTx(onChanged);
+  const tx = useTx(() => { onChanged(); setDialog(false); });
+  const [dialog, setDialog] = useState(false);
   const [target, setTarget] = useState("");
-  const [bits, setBits] = useState(0);
-  const toggle = (b: number) => setBits((x) => (x & b ? x & ~b : b === ROLE_GUARDIAN ? ROLE_GUARDIAN : (x | b) & ~ROLE_GUARDIAN));
+  const [bits, setBits] = useState(ROLE_APPROVER);
+  const signers = vault.members.filter((m) => !(m.roles & ROLE_GUARDIAN));
+  const guardians = vault.members.filter((m) => m.roles & ROLE_GUARDIAN);
   const existing = vault.members.find((m) => m.address.toLowerCase() === target.toLowerCase());
   const adds = existing ? bits & ~existing.roles : bits;
-  const reducing = adds !== 0 || (existing && existing.roles & ROLE_GUARDIAN && !(bits & ROLE_GUARDIAN));
+  const reducing = adds !== 0 || Boolean(existing && existing.roles & ROLE_GUARDIAN && !(bits & ROLE_GUARDIAN));
+  const toggle = (b: number) => setBits((x) => (b === ROLE_GUARDIAN ? (x & ROLE_GUARDIAN ? 0 : ROLE_GUARDIAN) : ((x & b ? x & ~b : x | b) & ~ROLE_GUARDIAN)));
+  const edit = (addr: string, roles: number) => { setTarget(addr); setBits(roles); setDialog(true); };
+
+  const Row = ({ m }: { m: { address: `0x${string}`; roles: number } }) => (
+    <div className="member-row">
+      <Identicon address={m.address} size={36} />
+      <a className="addr" href={`https://explorer.34.60.137.196.sslip.io/address/${m.address}`} target="_blank" rel="noreferrer" title="View on explorer"><b>ark:</b>{m.address}</a>
+      <CopyButton value={m.address} />
+      <span className="roles">{roleNames(m.roles).map((r) => <Badge key={r} tone={r === "Guardian" ? "warn" : r === "Owner" ? "brand" : "neutral"}>{r}</Badge>)}</span>
+      <span className="tools">
+        <Button size="sm" kind="ghost" onClick={() => edit(m.address, m.roles)} disabled={!isOwner}>Edit</Button>
+        <Button size="sm" kind="ghost" onClick={() => edit(m.address, 0)} disabled={!isOwner}>Remove</Button>
+      </span>
+    </div>
+  );
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Members</h1>
-          <p className="muted">Owners run governance, approvers approve payments, executors execute, guardians can only freeze, veto and recover. Guardians never hold treasury roles.</p>
+      <Section title="Members">
+        <h4>Signers</h4>
+        <p className="desc">Owners govern, approvers confirm payments, executors execute once every condition holds. A member may hold several of these roles.</p>
+        <div className="inline" style={{ marginBottom: 12 }}>
+          <Button kind="secondary" size="sm" onClick={() => { setTarget(""); setBits(ROLE_APPROVER); setDialog(true); }} disabled={!isOwner} icon={<IconPlus width={14} height={14} />}>Add member</Button>
         </div>
-      </div>
+        {signers.map((m) => <Row key={m.address} m={m} />)}
 
-      <div className="grid grid-2">
-        <Card title="Current members">
-          <table>
-            <thead>
-              <tr>
-                <th>Address</th>
-                <th>Roles</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vault.members.map((m) => (
-                <tr key={m.address}>
-                  <td>
-                    <Address value={m.address} />
-                    {m.address.toLowerCase() === address?.toLowerCase() && <span className="muted small"> (you)</span>}
-                  </td>
-                  <td className="inline">
-                    {roleNames(m.roles).map((r) => (
-                      <Badge key={r} tone={r === "Guardian" ? "info" : "neutral"}>
-                        {r}
-                      </Badge>
-                    ))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="small muted" style={{ marginTop: 10 }}>
-            {vault.counts.owners} owners · {vault.counts.approvers} approvers · {vault.counts.executors} executors · {vault.counts.guardians} guardians. Governance threshold {vault.policy.governanceThreshold}; critical transfers need {vault.policy.approvalsCritical} approvals.
-          </p>
-        </Card>
+        <h4 style={{ marginTop: 32 }}>Guardians</h4>
+        <p className="desc">Guardians can freeze the vault, veto risky or security-reducing proposals, confirm critical transfers and start a recovery. The contract will not let them hold a treasury role, so they can never move funds.</p>
+        {guardians.length === 0 ? <div className="notice notice-bad">No guardian configured. Nobody independent can veto a proposal or freeze the vault.</div> : guardians.map((m) => <Row key={m.address} m={m} />)}
+      </Section>
 
-        <Card title="Propose a membership change" subtitle={`Owner governance. Adding authority waits ${fmtDuration(vault.policy.policyChangeDelay)} and is vetoable; removing authority applies once approved.`}>
-          <Field label="Member address">
-            <input value={target} onChange={(e) => setTarget(e.target.value.trim())} placeholder="0x…" />
-          </Field>
-          <Field label="Roles (leave all unchecked to remove)">
-            <div className="inline">
-              {[
-                [ROLE_OWNER, "Owner"],
-                [ROLE_APPROVER, "Approver"],
-                [ROLE_EXECUTOR, "Executor"],
-                [ROLE_GUARDIAN, "Guardian"],
-              ].map(([b, label]) => (
-                <label key={String(b)} className="inline">
-                  <input type="checkbox" style={{ width: "auto" }} checked={Boolean(bits & Number(b))} onChange={() => toggle(Number(b))} /> {label}
-                </label>
-              ))}
-            </div>
-          </Field>
+      <Section title="Required confirmations">
+        <p className="desc" style={{ marginBottom: 8 }}>A routine transfer requires the confirmation of:</p>
+        <div className="strong" style={{ fontSize: 16, marginBottom: 16 }}>{vault.policy.approvalsLow} out of {vault.counts.approvers} approvers.</div>
+        <dl className="kv">
+          <div><dt>High-risk transfer</dt><dd>{vault.policy.approvalsHigh} of {vault.counts.approvers} approvers, then {fmtDuration(vault.policy.delayHigh)}</dd></div>
+          <div><dt>Critical transfer</dt><dd>{vault.policy.approvalsCritical} of {vault.counts.approvers} approvers{vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} of ${vault.counts.guardians} guardians` : ""}, then {fmtDuration(vault.policy.delayCritical)}</dd></div>
+          <div><dt>Governance change</dt><dd>{vault.policy.governanceThreshold} of {vault.counts.owners} owners{" "}(+ {fmtDuration(vault.policy.policyChangeDelay)} if security-reducing)</dd></div>
+          <div><dt>Recovery</dt><dd>{vault.policy.guardianThreshold} of {vault.counts.guardians} guardians, then {fmtDuration(vault.policy.recoveryDelay)}; any owner can cancel</dd></div>
+        </dl>
+        <p className="caption" style={{ marginTop: 12 }}>Thresholds are part of the policy. Lowering any of them waits {fmtDuration(vault.policy.policyChangeDelay)}, and any guardian can veto the change.</p>
+      </Section>
+
+      {dialog && (
+        <Modal title={existing ? (bits === 0 ? "Remove member" : "Change roles") : "Add member"} onClose={() => setDialog(false)} footer={<><Button kind="secondary" onClick={() => setDialog(false)}>Cancel</Button><Button disabled={!isAddress(target) || tx.busy || (existing?.roles === bits)} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeMember", args: [target as `0x${string}`, bits] })}>Propose</Button></>}>
+          <Field label="Member address"><input value={target} onChange={(e) => setTarget(e.target.value.trim())} placeholder="0x…" /></Field>
+          <div className="field-label" style={{ marginBottom: 8 }}>Roles (none = remove)</div>
+          <div className="inline" style={{ gap: 16, marginBottom: 16 }}>
+            {[[ROLE_OWNER, "Owner"], [ROLE_APPROVER, "Approver"], [ROLE_EXECUTOR, "Executor"], [ROLE_GUARDIAN, "Guardian"]].map(([b, label]) => (
+              <label key={String(b)} className="inline"><input type="checkbox" checked={Boolean(bits & Number(b))} onChange={() => toggle(Number(b))} /> {label}</label>
+            ))}
+          </div>
           {isAddress(target) && (
-            <p className="small muted">
-              {existing ? `Currently ${roleNames(existing.roles).join(" + ") || "none"}. ` : "Not a member yet. "}
-              {bits === 0 ? "This removes the member." : reducing ? "This adds authority or weakens the guardian layer: delayed and vetoable." : "This only reduces authority: immediate once approved."}
-            </p>
+            <div className={`notice ${bits === 0 || !reducing ? "notice-ok" : "notice-warn"}`}>
+              {bits === 0 ? "Removing a member takes effect as soon as owners approve." : reducing ? `Adding authority or weakening the guardian layer loosens security: it waits ${fmtDuration(vault.policy.policyChangeDelay)} and any guardian can veto it.` : "Reducing a member's authority takes effect as soon as owners approve."}
+            </div>
           )}
-          <Button disabled={!isAddress(target) || !isOwner || tx.busy} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeMember", args: [target as `0x${string}`, bits] })}>
-            Propose
-          </Button>
           <TxStatus state={tx.state} />
-        </Card>
-      </div>
+        </Modal>
+      )}
     </>
   );
 }

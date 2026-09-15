@@ -1,99 +1,126 @@
+import { useState } from "react";
+import { NATIVE_ASSET } from "../config/chain";
 import type { VaultData } from "../hooks/useVault";
-import { fmtAmount, fmtBps, fmtDuration, fmtRelative } from "../lib/format";
-import { computeMaxLoss } from "../lib/maxLoss";
-import { Kind, Mode, Status } from "../lib/types";
-import { ProposalCard } from "../components/ProposalCard";
-import { Card, Empty, ModeBadge, Stat } from "../components/ui";
-import { Posture } from "./Security";
+import { fmtAmount, fmtDuration } from "../lib/format";
+import { Mode, Status } from "../lib/types";
+import { TxRow } from "../components/TxRow";
+import { Skeleton } from "../components/Reveal";
+import { Address, Button, Card, Empty, TokenIcon } from "../components/ui";
+import { IconArrowRight, IconBank, IconClock, IconGuard, IconLab, IconReceive, IconSend, IconShield } from "../components/icons";
+import { postureItems } from "./Security";
+import type { AppPage } from "../components/AppShell";
 
-export function Overview({ vault, onChanged, onNavigate }: { vault: VaultData; onChanged: () => void; onNavigate: (p: "transactions" | "security") => void }) {
+function splitAmount(s: string): [string, string] {
+  const [int, frac] = s.split(".");
+  return [int, frac ? `.${frac}` : ".00"];
+}
+
+/** app.safe.global/home: Total balance card, promo banner, Top assets, "Explore what's possible", Pending transactions. */
+export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { vault: VaultData; onChanged: () => void; onNavigate: (p: AppPage) => void; onNewTransaction: () => void }) {
+  const [showReceive, setShowReceive] = useState(false);
+  const [bannerClosed, setBannerClosed] = useState(false);
   const pending = vault.proposals.filter((p) => p.status === Status.PENDING);
-  const needsMe = pending.length;
-  const stable = vault.assets.find((a) => a.address !== "0x0000000000000000000000000000000000000000") ?? vault.assets[0];
-  const loss = stable ? computeMaxLoss(vault.policy, stable.limits, stable.balance, vault.mode) : null;
+  const stable = vault.assets.find((a) => a.address !== NATIVE_ASSET) ?? vault.assets[0];
+  const native = vault.assets.find((a) => a.address === NATIVE_ASSET);
+  const items = postureItems(vault);
+  const weakest = items.find((i) => i.ok === "bad") ?? items.find((i) => i.ok === "warn");
+  const [intPart, decPart] = stable ? splitAmount(fmtAmount(stable.balance, stable.decimals, undefined, 2)) : ["0", ".00"];
+  const canPropose = vault.mode !== Mode.LOCKDOWN;
 
   return (
-    <>
-      <div className="page-head">
-        <div>
-          <h1>Overview</h1>
-          <p className="muted">Treasury position, pending approvals and security posture.</p>
-        </div>
-        <ModeBadge mode={vault.mode} />
-      </div>
-
-      <div className="grid grid-4" style={{ marginBottom: 18 }}>
-        {vault.assets.map((a) => (
-          <Stat key={a.address} label={`${a.symbol} balance`} value={fmtAmount(a.balance, a.decimals)} hint={a.limits.approved ? "approved asset" : "not approved"} />
-        ))}
-        <Stat label="Pending proposals" value={needsMe} hint={`${vault.executedCount} executed`} tone={needsMe ? "warn" : undefined} />
-        <Stat label="Members" value={vault.members.length} hint={`${vault.counts.guardians} guardian${vault.counts.guardians === 1 ? "" : "s"}`} tone={vault.counts.guardians ? "ok" : "bad"} />
-        {loss && stable && (
-          <Stat
-            label="Max loss without delay"
-            value={fmtAmount(loss.immediate, stable.decimals, stable.symbol)}
-            hint={`bounded by ${loss.immediateBinding}`}
-            tone={vault.mode === Mode.LOCKDOWN ? "ok" : loss.immediate * 5n > stable.balance ? "bad" : "ok"}
-          />
-        )}
-      </div>
-
-      <div className="grid grid-2">
-        <Card title="Outflow today" subtitle="Cumulative accounting per asset. Splitting a payment does not help.">
-          {vault.assets.map((a) => {
-            const v = vault.velocity[a.address.toLowerCase()];
-            if (!v) return null;
-            const pct = v.dailyMax ? Number((v.daySpent * 100n) / v.dailyMax) : 0;
-            const epct = v.envelope ? Number((v.envelopeSpent * 100n) / v.envelope) : 0;
-            return (
-              <div key={a.address} style={{ marginBottom: 12 }}>
-                <div className="inline" style={{ justifyContent: "space-between" }}>
-                  <strong>{a.symbol}</strong>
-                  <span className="small muted">
-                    {fmtAmount(v.daySpent, a.decimals)} / {v.dailyMax ? fmtAmount(v.dailyMax, a.decimals) : "no daily cap"}
-                  </span>
-                </div>
-                {v.dailyMax > 0n && (
-                  <div className={`bar ${pct > 80 ? "bad" : pct > 50 ? "warn" : ""}`}>
-                    <i style={{ width: `${Math.min(100, pct)}%` }} />
-                  </div>
-                )}
-                {v.envelope > 0n && (
-                  <div className="small muted" style={{ marginTop: 4 }}>
-                    Loss envelope: {fmtAmount(v.envelopeSpent, a.decimals)} of {fmtAmount(v.envelope, a.decimals)} ({epct}%)
-                    {v.envelopeResetsAt > 0n ? ` · resets ${fmtRelative(v.envelopeResetsAt)}` : " · window not started"}
-                  </div>
-                )}
+    <div className="overview-grid">
+      <div>
+        <Card className="balance-card">
+          <div className="balance-row">
+            <div>
+              <div className="label">Total balance</div>
+              <div className="amount num">
+                {intPart}
+                <span className="dec">{decPart}</span> <span className="dec" style={{ fontSize: 24 }}>{stable?.symbol}</span>
               </div>
-            );
-          })}
+              <div className="caption" style={{ marginTop: 6 }}>{native ? `+ ${fmtAmount(native.balance, native.decimals, native.symbol)}` : ""} · policy v{vault.policyVersion} · {vault.members.length} members</div>
+            </div>
+            <div className="actions">
+              <Button onClick={onNewTransaction} disabled={!canPropose} icon={<IconSend width={16} height={16} />}>Send</Button>
+              <Button className="hi" onClick={() => setShowReceive((s) => !s)} icon={<IconReceive width={16} height={16} />}>Receive</Button>
+              <Button onClick={() => onNavigate("simulator")} icon={<IconLab width={16} height={16} />}>Simulate</Button>
+            </div>
+          </div>
+          {showReceive && (
+            <div className="notice notice-info" style={{ marginTop: 16, marginBottom: 0 }}>
+              <div>Send KASH or any approved token to <Address value={vault.address} full copy />. Deposits are accepted in every mode, including Lockdown.</div>
+            </div>
+          )}
         </Card>
-        <Card title="Security posture" subtitle="Confirmed controls and obvious weaknesses. Not a measure of absolute security." actions={<a href="#security" onClick={(e) => { e.preventDefault(); onNavigate("security"); }}>Details</a>}>
-          <Posture vault={vault} compact />
+
+        {weakest && !bannerClosed && (
+          <div className={`banner ${weakest.ok === "bad" ? "warn" : ""}`}>
+            <span className="glyph"><IconShield width={26} height={26} /></span>
+            <div>
+              <h4>{weakest.ok === "bad" ? "Strengthen your vault before funds arrive" : "Your vault is in good shape"}</h4>
+              <p>{weakest.text}. {weakest.ok === "bad" ? "Fix it under Policies or Members." : "Everything else is confirmed; the details are under Security."}</p>
+              <button className="cta" onClick={() => onNavigate("security")}>Open Security <IconArrowRight width={16} height={16} /></button>
+            </div>
+            <button className="close" onClick={() => setBannerClosed(true)} title="Dismiss">✕</button>
+          </div>
+        )}
+
+        <Card flush title="Top assets" actions={<button className="link" onClick={() => onNavigate("assets")}>View all ›</button>}>
+          <ul className="list">
+            {vault.assets.map((a) => {
+              const v = vault.velocity[a.address.toLowerCase()];
+              return (
+                <li key={a.address}>
+                  <TokenIcon symbol={a.symbol} />
+                  <div className="grow">
+                    <div className="title">{a.symbol === "KASH" ? "KASH" : a.symbol === "sUSD" ? "Skur Test USD" : a.symbol}</div>
+                    <div className="sub">{fmtAmount(a.balance, a.decimals)} {a.symbol}</div>
+                  </div>
+                  <div className="right">
+                    <div className="strong num">{fmtAmount(a.balance, a.decimals)}</div>
+                    <div className="sub">{v && v.dailyMax ? `${fmtAmount(v.daySpent, a.decimals)} of ${fmtAmount(v.dailyMax, a.decimals)} today` : "no daily cap"}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+
+        <Card title="Explore what's possible">
+          <div className="explore">
+            <button onClick={() => onNavigate("simulator")}><IconLab className="ico" width={56} height={56} />Simulate attacks on your policy</button>
+            <button onClick={() => onNavigate("addressbook")}><IconBank className="ico" width={56} height={56} />Register suppliers early so payments clear on time</button>
+            <button onClick={() => onNavigate("security")}><IconGuard className="ico" width={56} height={56} />See the most you could lose</button>
+            <button onClick={() => onNavigate("policies")}><IconClock className="ico" width={56} height={56} />Tune tiers, delays and caps</button>
+          </div>
         </Card>
       </div>
 
-      <Card title="Policy at a glance" subtitle={`Version ${vault.policyVersion}`}>
-        <div className="grid grid-3">
-          <div>
-            <div className="muted small">Approvals by tier</div>
-            <div>Low {vault.policy.approvalsLow} · High {vault.policy.approvalsHigh} · Critical {vault.policy.approvalsCritical}{vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} guardian` : ""}</div>
-          </div>
-          <div>
-            <div className="muted small">Delays</div>
-            <div>High {fmtDuration(vault.policy.delayHigh)} · Critical {fmtDuration(vault.policy.delayCritical)} · New recipient {fmtDuration(vault.policy.recipientActivationDelay)}</div>
-          </div>
-          <div>
-            <div className="muted small">Exposure escalation</div>
-            <div>High ≥ {fmtBps(vault.policy.highExposureBps)} · Critical ≥ {fmtBps(vault.policy.criticalExposureBps)}{vault.policy.hardBlockExposureBps ? ` · blocked > ${fmtBps(vault.policy.hardBlockExposureBps)}` : ""}</div>
-          </div>
-        </div>
-      </Card>
-
-      <Card title="Needs attention" subtitle="Pending proposals, newest first." actions={<a href="#transactions" onClick={(e) => { e.preventDefault(); onNavigate("transactions"); }}>All transactions</a>}>
-        {pending.length === 0 ? <Empty>Nothing pending.</Empty> : pending.slice(0, 5).map((p) => <ProposalCard key={String(p.id)} p={p} vault={vault} onChanged={onChanged} />)}
-        {pending.some((p) => p.kind !== Kind.TRANSFER) && <p className="small muted">Governance proposals need owner approvals; security-reducing ones wait for their timelock.</p>}
-      </Card>
-    </>
+      <div>
+        <Card flush title="Pending transactions" actions={pending.length > 0 ? <button className="link" onClick={() => onNavigate("transactions")}>View all ›</button> : undefined}>
+          {vault.activityLoading ? (
+            <div style={{ padding: "12px 24px 20px" }}>
+              <Skeleton h={44} style={{ marginBottom: 8 }} />
+              <Skeleton h={44} style={{ marginBottom: 8 }} />
+              <Skeleton h={44} />
+            </div>
+          ) : pending.length === 0 ? (
+            <Empty>Nothing waiting for a signature</Empty>
+          ) : (
+            <div style={{ padding: "0 12px 12px" }}>
+              {pending.slice(0, 5).map((p) => <TxRow key={String(p.id)} p={p} vault={vault} onChanged={onChanged} compact />)}
+            </div>
+          )}
+        </Card>
+        <Card title="Policy at a glance" actions={<button className="link" onClick={() => onNavigate("policies")}>Edit ›</button>}>
+          <dl className="kv">
+            <div><dt>Approvals</dt><dd>Low {vault.policy.approvalsLow} · High {vault.policy.approvalsHigh} · Critical {vault.policy.approvalsCritical}{vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} guardian` : ""}</dd></div>
+            <div><dt>Delays</dt><dd>High {fmtDuration(vault.policy.delayHigh)} · Critical {fmtDuration(vault.policy.delayCritical)}</dd></div>
+            <div><dt>New recipients wait</dt><dd>{fmtDuration(vault.policy.recipientActivationDelay)}</dd></div>
+            <div><dt>Circuit breaker</dt><dd>{vault.policy.envelopeBps ? `${vault.policy.envelopeBps / 100}% per ${fmtDuration(vault.policy.envelopeWindow)}` : "off"}</dd></div>
+          </dl>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -47,7 +47,7 @@ export function computeMaxLoss(policy: Policy, limits: AssetLimits, balance: big
       }
       if (envelope !== 0n && envelope < immediate) {
         immediate = envelope;
-        immediateBinding = "loss envelope (circuit breaker)";
+        immediateBinding = "loss envelope";
       }
     } else {
       immediate = 0n;

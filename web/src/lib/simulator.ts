@@ -101,7 +101,7 @@ export function runScenarios(ctx: SimContext): ScenarioResult[] {
     out.push({
       id: "single-signer-new-address",
       title: "One finance signer compromised",
-      narrative: `Attacker with a single approver key proposes ${fmt(amount, ctx)} to a never-seen address.`,
+      narrative: `An attacker holding a single approver key proposes ${fmt(amount, ctx)} to an address the vault has never paid.`,
       verdict: r.verdict,
       detail: r.detail,
     });
@@ -113,7 +113,7 @@ export function runScenarios(ctx: SimContext): ScenarioResult[] {
     out.push({
       id: "three-signers-40pct",
       title: "Three signers compromised, 40% withdrawal",
-      narrative: `Attacker with three approver keys proposes ${fmt(amount, ctx)} (40% of holdings) to a verified recipient.`,
+      narrative: `An attacker holding three approver keys proposes ${fmt(amount, ctx)}, 40% of holdings, to a verified recipient.`,
       verdict: r.verdict,
       detail: r.detail,
     });
@@ -151,14 +151,14 @@ export function runScenarios(ctx: SimContext): ScenarioResult[] {
       verdict = "blocked";
     }
     if (caps.dailyMax !== 0n && (each * 2n) > caps.dailyMax / 2n) {
-      detail.push("Velocity pressure escalates later transfers to HIGH once half the daily cap is spent.");
+      detail.push("Once half the daily cap is spent, every further payment is scored HIGH.");
       if (verdict === "allowed") verdict = "escalated";
     }
-    if (verdict === "allowed") detail.push("No cumulative cap is configured: the split drain would succeed. Configure a daily cap or envelope.");
+    if (verdict === "allowed") detail.push("No cumulative cap is configured, so the split drain would succeed. Set a daily cap or a loss envelope.");
     out.push({
       id: "split-drain",
       title: "Drain split into twenty transfers",
-      narrative: `Twenty transfers of ${fmt(each, ctx)} (${fmt(total, ctx)} total) within one day.`,
+      narrative: `Twenty payments of ${fmt(each, ctx)}, ${fmt(total, ctx)} in total, inside one day.`,
       verdict,
       detail,
     });
@@ -170,11 +170,11 @@ export function runScenarios(ctx: SimContext): ScenarioResult[] {
     detail.push(`It needs ${ctx.policy.governanceThreshold} owner approval${ctx.policy.governanceThreshold === 1 ? "" : "s"}, and cannot be created at all while the vault is in Lockdown.`);
     detail.push("Until it activates, in-flight proposals keep their pinned requirements.");
     const verdict: Verdict = ctx.policy.policyChangeDelay > 0 ? "delayed" : "allowed";
-    if (verdict === "allowed") detail.push("Policy-change delay is 0: a compromised owner quorum could relax the policy immediately. Set a delay.");
+    if (verdict === "allowed") detail.push("The policy-change delay is 0, so a compromised owner quorum could loosen the policy at once. Set a delay.");
     out.push({
       id: "policy-weaken",
       title: "Attacker weakens the policy, then withdraws",
-      narrative: "A compromised owner quorum proposes lower approvals and caps before draining.",
+      narrative: "A compromised owner quorum lowers approvals and caps before trying to drain the vault.",
       verdict,
       detail,
     });
@@ -184,10 +184,10 @@ export function runScenarios(ctx: SimContext): ScenarioResult[] {
     out.push({
       id: "guardian-compromised",
       title: "Guardian key compromised",
-      narrative: "Attacker holds a guardian key and tries to withdraw.",
+      narrative: "An attacker holding a guardian key tries to withdraw.",
       verdict: "impossible",
       detail: [
-        "Guardians hold no treasury role: they cannot propose, approve or execute transfers, and cannot be given treasury roles.",
+        "Guardians hold no treasury role: they cannot propose, approve or execute payments, and the contract refuses to give them treasury roles.",
         `The worst a guardian can do is freeze the vault or propose a recovery that waits ${fmtDuration(ctx.policy.recoveryDelay)} and any owner can cancel.`,
       ],
     });
@@ -198,8 +198,8 @@ export function runScenarios(ctx: SimContext): ScenarioResult[] {
     const r = single(ctx, amount, Trust.VERIFIED, false, Mode.ELEVATED, 2);
     out.push({
       id: "elevated-routine",
-      title: "Routine payment while Elevated",
-      narrative: `During an incident the vault is Elevated; a ${fmt(amount, ctx)} routine payment is proposed.`,
+      title: "Routine payment during an incident",
+      narrative: `The vault is in Elevated mode and a ${fmt(amount, ctx)} routine payment is proposed.`,
       verdict: r.verdict,
       detail: r.detail,
     });
