@@ -188,7 +188,7 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
           </div>
 
           <aside className="preview">
-            <div className="wordmark-lg" style={{ fontSize: 20 }}><span className="mark" style={{ width: 24, height: 24, borderRadius: 6, background: "var(--lime)", color: "#121312", display: "grid", placeItems: "center", fontSize: 13 }}>S</span></div>
+            <div className="wordmark-lg" style={{ fontSize: 20 }}><span className="mark" style={{ width: 24, height: 24, borderRadius: 6, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 13 }}>S</span></div>
             <h4>Your vault preview</h4>
             {!isConnected ? (
               <>

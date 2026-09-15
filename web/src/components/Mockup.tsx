@@ -39,7 +39,7 @@ export function AppMockup({ variant = "overview" }: { variant?: "overview" | "qu
         )}
         {variant === "queue" && (
           <div className="pn" style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontWeight: 700, color: "var(--lime)", borderBottom: "2px solid var(--lime)", display: "inline-block", paddingBottom: 6 }}>Queue</div>
+            <div style={{ fontWeight: 700, color: "var(--accent)", borderBottom: "2px solid var(--accent)", display: "inline-block", paddingBottom: 6 }}>Queue</div>
             <div className="li"><span>↗ Send 12,000 sUSD to 0x4F…a1c2</span><span className="rv">High risk · 1 out of 2</span></div>
             <div className="li"><span>↗ Send 60,000 sUSD to 0x9B…77e0</span><span className="rv">Critical · guardian · 1d</span></div>
             <div className="li"><span>⚙ Lower approvals to 1</span><span className="rv">Security-reducing · vetoable</span></div>

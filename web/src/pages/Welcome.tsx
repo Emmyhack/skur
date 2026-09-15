@@ -47,12 +47,12 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
           <button className={tab === "watch" ? "active" : ""} onClick={() => setTab("watch")}>Watch a vault</button>
         </div>
         <div className="entry-note">
-          <span className="tag-new">New</span> Skur V1 is live on Ark Constellation devnet <IconArrowRight width={16} height={16} style={{ marginLeft: "auto", color: "var(--lime)" }} />
+          <span className="tag-new">New</span> Skur V1 is live on Ark Constellation devnet <IconArrowRight width={16} height={16} style={{ marginLeft: "auto", color: "var(--accent)" }} />
         </div>
 
         {tab === "accounts" ? (
           <div className="entry-card">
-            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--lime)", color: "#121312", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
+            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
             <h2>Get started</h2>
             <p>Connect your wallet to create a Skur vault or open one you are a member of</p>
             {isConnected && address ? (
@@ -60,7 +60,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
                 <Button block onClick={onCreate}>Create new vault</Button>
                 <div className="or">OR</div>
                 {mine === null ? (
-                  <button className="link lime" onClick={loadMine}>Show vaults created with my wallet</button>
+                  <button className="link accent" onClick={loadMine}>Show vaults created with my wallet</button>
                 ) : mine.length === 0 ? (
                   <p className="caption">No vaults were created with this wallet on the factory. You can still open any vault by address.</p>
                 ) : (
@@ -74,7 +74,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
                 )}
                 {DEPLOYMENTS.demoVault && (
                   <p className="caption" style={{ marginTop: 16, marginBottom: 0 }}>
-                    or open the <button className="link lime" onClick={() => onOpen(DEPLOYMENTS.demoVault)}>demo vault</button>
+                    or open the <button className="link accent" onClick={() => onOpen(DEPLOYMENTS.demoVault)}>demo vault</button>
                   </p>
                 )}
               </>
@@ -90,7 +90,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
           </div>
         ) : (
           <div className="entry-card">
-            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--lime)", color: "#121312", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
+            <div className="wordmark-lg"><span className="mark" style={{ width: 28, height: 28, borderRadius: 7, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 15 }}>S</span><span>Skur<span className="brace">{"{"}</span>Vault<span className="brace">{"}"}</span></span></div>
             <h2>Watch a vault</h2>
             <p>Read any Skur vault's balances, policy and queue without a wallet.</p>
             <Field label="Vault address">
@@ -99,7 +99,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
             <Button block disabled={!isAddress(watch)} onClick={() => onOpen(watch as `0x${string}`)}>Open vault</Button>
             {DEPLOYMENTS.demoVault && (
               <p className="caption" style={{ marginTop: 16, marginBottom: 0 }}>
-                or open the <button className="link lime" onClick={() => onOpen(DEPLOYMENTS.demoVault)}>demo vault</button>
+                or open the <button className="link accent" onClick={() => onOpen(DEPLOYMENTS.demoVault)}>demo vault</button>
               </p>
             )}
           </div>

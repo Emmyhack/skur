@@ -4,6 +4,7 @@ import type { VaultData } from "../hooks/useVault";
 import { fmtAmount, fmtDuration } from "../lib/format";
 import { Mode, Status } from "../lib/types";
 import { TxRow } from "../components/TxRow";
+import { Skeleton } from "../components/Reveal";
 import { Address, Button, Card, Empty, TokenIcon } from "../components/ui";
 import { IconArrowRight, IconBank, IconClock, IconGuard, IconLab, IconReceive, IconSend, IconShield } from "../components/icons";
 import { postureItems } from "./Security";
@@ -98,7 +99,11 @@ export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { v
       <div>
         <Card flush title="Pending transactions" actions={pending.length > 0 ? <button className="link" onClick={() => onNavigate("transactions")}>View all ›</button> : undefined}>
           {vault.activityLoading ? (
-            <Empty>Loading the queue…</Empty>
+            <div style={{ padding: "12px 24px 20px" }}>
+              <Skeleton h={44} style={{ marginBottom: 8 }} />
+              <Skeleton h={44} style={{ marginBottom: 8 }} />
+              <Skeleton h={44} />
+            </div>
           ) : pending.length === 0 ? (
             <Empty>No transactions to sign</Empty>
           ) : (

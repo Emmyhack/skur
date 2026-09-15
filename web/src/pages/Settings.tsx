@@ -53,7 +53,7 @@ export function Settings({ vault, vaultAddress, onSwitchVault }: { vault?: Vault
           <Section title="Contract version">
             <div className="strong">Skur V1 · immutable</div>
             <p className="desc">Vaults are EIP-1167 clones of a verified implementation with no admin and no upgrade slot. Migrating means creating a new vault and moving funds through this vault's own policy.</p>
-            <a className="link lime" href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">View source ↗</a>
+            <a className="link accent" href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">View source ↗</a>
           </Section>
         </>
       )}
@@ -61,7 +61,7 @@ export function Settings({ vault, vaultAddress, onSwitchVault }: { vault?: Vault
       {tab === "appearance" && (
         <Section title="Appearance">
           <h4>Theme</h4>
-          <p className="desc">Dark is the default, like the rest of the app. The choice is stored in this browser.</p>
+          <p className="desc">Light is the default. The choice is stored in this browser.</p>
           <Switch on={theme === "dark"} onChange={toggle} label={theme === "dark" ? "Dark mode" : "Light mode"} />
         </Section>
       )}
@@ -73,8 +73,8 @@ export function Settings({ vault, vaultAddress, onSwitchVault }: { vault?: Vault
             <div><dt>Chain</dt><dd>Ark Constellation devnet · 9000 · KASH</dd></div>
             <div><dt>RPC</dt><dd><code>{ARK_DEVNET_RPC}</code></dd></div>
             <div><dt>WebSocket</dt><dd><code>{ARK_DEVNET_WS}</code></dd></div>
-            <div><dt>Explorer</dt><dd><a className="link lime" href={ARK_DEVNET_EXPLORER} target="_blank" rel="noreferrer">Blockscout ↗</a></dd></div>
-            <div><dt>Faucet</dt><dd><a className="link lime" href={ARK_DEVNET_FAUCET} target="_blank" rel="noreferrer">Request devnet KASH ↗</a></dd></div>
+            <div><dt>Explorer</dt><dd><a className="link accent" href={ARK_DEVNET_EXPLORER} target="_blank" rel="noreferrer">Blockscout ↗</a></dd></div>
+            <div><dt>Faucet</dt><dd><a className="link accent" href={ARK_DEVNET_FAUCET} target="_blank" rel="noreferrer">Request devnet KASH ↗</a></dd></div>
             <div><dt>Test stablecoin (sUSD)</dt><dd><Address value={DEPLOYMENTS.testUsd} /></dd></div>
           </dl>
         </Section>

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { SkurVaultAbi } from "../abi/SkurVault";
-import { Badge, Button, Card, Field, TxLink, TxStatus } from "../components/ui";
+import { Badge, Button, Section, TxLink, TxStatus } from "../components/ui";
+import { TokenIcon } from "../components/ui";
 import { useTx } from "../hooks/useTx";
 import type { VaultData } from "../hooks/useVault";
 import { fmtAmount, fmtBps, fmtDate, fmtDuration, parseAmount } from "../lib/format";
@@ -9,187 +10,193 @@ import { limitReductions, policyReductions, policyToContract, validateCounts, va
 import { TEMPLATES, type TemplateId } from "../lib/templates";
 import { ROLE_OWNER, type AssetLimits, type Policy } from "../lib/types";
 
-const HOURS = 3600;
+const H = 3600;
+type Unit = "count" | "hours" | "bps" | "bool";
+type F = { key: keyof Policy; label: string; hint: string; unit: Unit; max?: number };
 
-const FIELDS: Array<{ key: keyof Policy; label: string; unit: "count" | "hours" | "bps" | "bool"; hint: string }> = [
-  { key: "approvalsLow", label: "Approvals · Low tier", unit: "count", hint: "Routine payments." },
-  { key: "approvalsHigh", label: "Approvals · High tier", unit: "count", hint: "" },
-  { key: "approvalsCritical", label: "Approvals · Critical tier", unit: "count", hint: "" },
-  { key: "governanceThreshold", label: "Owner approvals for governance", unit: "count", hint: "Policy, limits, members, trust, mode." },
-  { key: "guardianThreshold", label: "Guardian confirmations", unit: "count", hint: "For critical transfers, leaving lockdown and recovery." },
-  { key: "guardianRequiredCritical", label: "Guardian required for Critical", unit: "bool", hint: "" },
-  { key: "delayHigh", label: "High-tier delay", unit: "hours", hint: "" },
-  { key: "delayCritical", label: "Critical delay (veto window)", unit: "hours", hint: "" },
-  { key: "recipientActivationDelay", label: "New-recipient activation delay", unit: "hours", hint: "" },
-  { key: "policyChangeDelay", label: "Security-reducing change delay", unit: "hours", hint: "" },
-  { key: "recoveryDelay", label: "Recovery delay", unit: "hours", hint: "Owners can cancel during it." },
-  { key: "proposalTtl", label: "Proposal lifetime", unit: "hours", hint: "Must exceed the longest delay by 1h." },
-  { key: "highExposureBps", label: "Exposure → High", unit: "bps", hint: "% of asset holdings." },
-  { key: "criticalExposureBps", label: "Exposure → Critical", unit: "bps", hint: "" },
-  { key: "hardBlockExposureBps", label: "Exposure hard block", unit: "bps", hint: "0 disables." },
-  { key: "envelopeBps", label: "Loss envelope", unit: "bps", hint: "% of holdings per window; trips Lockdown. 0 disables." },
-  { key: "envelopeWindow", label: "Envelope window", unit: "hours", hint: "" },
+const GROUPS: Array<{ title: string; sub: string; fields: F[] }> = [
+  {
+    title: "Approvals",
+    sub: "How many confirmations each tier needs. Guardians confirm critical transfers in addition to approvers.",
+    fields: [
+      { key: "approvalsLow", label: "Low tier", hint: "Routine payments under the routine threshold.", unit: "count" },
+      { key: "approvalsHigh", label: "High tier", hint: "Larger payments, new recipients, elevated posture.", unit: "count" },
+      { key: "approvalsCritical", label: "Critical tier", hint: "Very large or high-exposure payments.", unit: "count" },
+      { key: "guardianRequiredCritical", label: "Guardian required for Critical", hint: "An independent sign-off on the largest transfers.", unit: "bool" },
+      { key: "guardianThreshold", label: "Guardian confirmations", hint: "For critical transfers, leaving Lockdown and recovery.", unit: "count" },
+      { key: "governanceThreshold", label: "Owner approvals for governance", hint: "Policy, limits, members, trust, mode changes.", unit: "count" },
+    ],
+  },
+  {
+    title: "Delays",
+    sub: "Timelocks give guardians a veto window and give the organisation time to notice.",
+    fields: [
+      { key: "delayHigh", label: "High-tier delay", hint: "Between full approval and execution.", unit: "hours" },
+      { key: "delayCritical", label: "Critical delay", hint: "Also the guardian veto window.", unit: "hours" },
+      { key: "recipientActivationDelay", label: "New-recipient activation", hint: "A never-seen address cannot be paid sooner.", unit: "hours" },
+      { key: "policyChangeDelay", label: "Security-reducing change delay", hint: "Any loosening waits this long and can be vetoed.", unit: "hours" },
+      { key: "recoveryDelay", label: "Recovery delay", hint: "Owners can cancel a recovery during it.", unit: "hours" },
+      { key: "proposalTtl", label: "Proposal lifetime", hint: "Must exceed the longest delay by at least 1h.", unit: "hours" },
+    ],
+  },
+  {
+    title: "Exposure",
+    sub: "Share of the asset's holdings that a single payment may move before it is escalated or refused.",
+    fields: [
+      { key: "highExposureBps", label: "Escalate to High at", hint: "Percent of holdings.", unit: "bps", max: 100 },
+      { key: "criticalExposureBps", label: "Escalate to Critical at", hint: "", unit: "bps", max: 100 },
+      { key: "hardBlockExposureBps", label: "Refuse above", hint: "0 disables the hard block.", unit: "bps", max: 100 },
+    ],
+  },
+  {
+    title: "Circuit breaker",
+    sub: "Cumulative outflow per window as a share of holdings. The transfer that would exceed it is not paid; the vault enters Lockdown.",
+    fields: [
+      { key: "envelopeBps", label: "Loss envelope", hint: "0 disables the breaker.", unit: "bps", max: 100 },
+      { key: "envelopeWindow", label: "Envelope window", hint: "At least 1 hour.", unit: "hours" },
+    ],
+  },
 ];
 
+function Control({ f, value, onChange }: { f: F; value: number | boolean; onChange: (v: number | boolean) => void }) {
+  if (f.unit === "bool") {
+    return (
+      <select value={value ? "1" : "0"} onChange={(e) => onChange(e.target.value === "1")}>
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+    );
+  }
+  if (f.unit === "count") {
+    const n = Number(value);
+    return (
+      <span className="stepper">
+        <button onClick={() => onChange(Math.max(0, n - 1))} type="button">−</button>
+        <input type="number" min={0} value={n} onChange={(e) => onChange(Math.max(0, Number(e.target.value)))} />
+        <button onClick={() => onChange(n + 1)} type="button">+</button>
+      </span>
+    );
+  }
+  if (f.unit === "hours") {
+    return (
+      <span className="unit">
+        <input type="number" min={0} step={1} value={Number(value) / H} onChange={(e) => onChange(Math.round(Number(e.target.value) * H))} />
+        <span>hours</span>
+      </span>
+    );
+  }
+  return (
+    <span className="unit">
+      <input type="number" min={0} max={f.max ?? 100} step={0.5} value={Number(value) / 100} onChange={(e) => onChange(Math.round(Number(e.target.value) * 100))} />
+      <span>%</span>
+    </span>
+  );
+}
+
+/** Policy editor laid out like Safe's settings: a label column, then grouped controls with live validation. */
 export function Policies({ vault, onChanged }: { vault: VaultData; onChanged: () => void }) {
   const { address } = useAccount();
   const me = vault.members.find((m) => m.address.toLowerCase() === address?.toLowerCase());
   const isOwner = Boolean((me?.roles ?? 0) & ROLE_OWNER);
   const [draft, setDraft] = useState<Policy>(vault.policy);
   const [template, setTemplate] = useState<TemplateId | null>(null);
-  const tx = useTx(onChanged);
-
-  const errors = useMemo(
-    () => [...validatePolicy(draft), ...validateCounts(draft, vault.counts.owners, vault.counts.approvers, vault.counts.executors, vault.counts.guardians)],
-    [draft, vault.counts],
-  );
+  const tx = useTx(() => { onChanged(); });
+  const errors = useMemo(() => [...validatePolicy(draft), ...validateCounts(draft, vault.counts.owners, vault.counts.approvers, vault.counts.executors, vault.counts.guardians)], [draft, vault.counts]);
   const reductions = useMemo(() => policyReductions(vault.policy, draft), [vault.policy, draft]);
   const changed = JSON.stringify(draft) !== JSON.stringify(vault.policy);
-
   const set = (k: keyof Policy, v: number | boolean) => setDraft((d) => ({ ...d, [k]: v }));
+  const changedKeys = new Set((Object.keys(draft) as Array<keyof Policy>).filter((k) => draft[k] !== vault.policy[k]));
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Policies</h1>
-          <p className="muted">Version {vault.policyVersion}. Loosening any control waits {fmtDuration(vault.policy.policyChangeDelay)} and can be vetoed by a guardian. Tightening applies as soon as owners approve.</p>
-        </div>
+      <div className="scorecard">
+        <div><div className="v">v{vault.policyVersion}</div><div className="l">Active policy version</div></div>
+        <div><div className="v">{vault.policy.approvalsLow}·{vault.policy.approvalsHigh}·{vault.policy.approvalsCritical}</div><div className="l">Approvals low · high · critical</div></div>
+        <div><div className="v">{fmtDuration(vault.policy.delayCritical)}</div><div className="l">Critical delay & veto window</div></div>
+        <div><div className="v">{vault.policy.envelopeBps ? fmtBps(vault.policy.envelopeBps) : "off"}</div><div className="l">Loss envelope per {fmtDuration(vault.policy.envelopeWindow)}</div></div>
       </div>
 
-      <Card title="Templates" subtitle="Start from a profile instead of designing a policy from first principles. Selecting one only fills the editor.">
+      <Section title={<>Templates<small>Start from a profile instead of designing a policy from first principles. Selecting one only fills the editor.</small></>}>
         <div className="templates">
           {TEMPLATES.map((t) => (
             <button key={t.id} className={`template ${template === t.id ? "active" : ""}`} onClick={() => { setTemplate(t.id); setDraft(t.policy); }}>
               <strong>{t.name}</strong>
-              <span className="small muted">{t.tagline}</span>
-              <div className="small muted" style={{ marginTop: 6 }}>
-                needs {t.minSigners}+ signers, {t.minGuardians}+ guardian{t.minGuardians === 1 ? "" : "s"}
-              </div>
+              <span className="caption">{t.tagline}</span>
             </button>
           ))}
         </div>
-      </Card>
+      </Section>
 
-      <Card
-        title="Policy editor"
-        subtitle="Values are validated with the same rules the contract applies."
-        actions={
-          <>
-            <Button kind="secondary" onClick={() => { setDraft(vault.policy); setTemplate(null); }} disabled={!changed}>
-              Reset
-            </Button>
-            <Button disabled={!isOwner || !changed || errors.length > 0 || tx.busy} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposePolicy", args: [policyToContract(draft)] })}>
-              Propose policy
-            </Button>
-          </>
-        }
-      >
-        <div className="grid grid-3">
-          {FIELDS.map((f) => (
-            <Field key={f.key} label={f.label} hint={f.hint || undefined}>
-              {f.unit === "bool" ? (
-                <select value={draft[f.key] ? "1" : "0"} onChange={(e) => set(f.key, e.target.value === "1")}>
-                  <option value="1">Yes</option>
-                  <option value="0">No</option>
-                </select>
-              ) : f.unit === "hours" ? (
-                <input type="number" min={0} step={1} value={Number(draft[f.key]) / HOURS} onChange={(e) => set(f.key, Math.round(Number(e.target.value) * HOURS))} />
-              ) : f.unit === "bps" ? (
-                <input type="number" min={0} max={100} step={0.5} value={Number(draft[f.key]) / 100} onChange={(e) => set(f.key, Math.round(Number(e.target.value) * 100))} />
-              ) : (
-                <input type="number" min={0} step={1} value={Number(draft[f.key])} onChange={(e) => set(f.key, Number(e.target.value))} />
-              )}
-            </Field>
+      {GROUPS.map((g) => (
+        <Section key={g.title} title={<>{g.title}<small>{g.sub}</small></>}>
+          {g.fields.map((f) => (
+            <div key={f.key} className={`pfield ${changedKeys.has(f.key) ? "changed" : ""}`}>
+              <div>
+                <div className="lbl">{f.label}</div>
+                {f.hint && <div className="hint">{f.hint}</div>}
+                {changedKeys.has(f.key) && <div className="hint">was {f.unit === "bool" ? (vault.policy[f.key] ? "Yes" : "No") : f.unit === "hours" ? fmtDuration(Number(vault.policy[f.key])) : f.unit === "bps" ? fmtBps(Number(vault.policy[f.key])) : String(vault.policy[f.key])}</div>}
+              </div>
+              <Control f={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
+            </div>
           ))}
-        </div>
-        {errors.length > 0 && (
-          <div className="notice notice-bad">
-            {errors.map((e) => (
-              <div key={e}>{e}</div>
-            ))}
-          </div>
-        )}
+        </Section>
+      ))}
+
+      <Section title={<>Propose<small>The vault validates the policy with the same rules; the contract decides.</small></>}>
+        {errors.length > 0 && <div className="notice notice-bad"><div>{errors.map((e) => <div key={e}>{e}</div>)}</div></div>}
         {changed && errors.length === 0 && (
           <div className={`notice ${reductions.length ? "notice-warn" : "notice-ok"}`}>
-            {reductions.length ? (
-              <>
-                <strong>Security-reducing change.</strong> It will wait {fmtDuration(vault.policy.policyChangeDelay)} after owner approval and any guardian can veto it: {reductions.join("; ")}.
-              </>
-            ) : (
-              <>
-                <strong>Tightening-only change.</strong> It activates as soon as {vault.policy.governanceThreshold} owner{vault.policy.governanceThreshold === 1 ? "" : "s"} approve.
-              </>
-            )}
+            <div>
+              {reductions.length ? (
+                <><strong>Security-reducing change.</strong> It waits {fmtDuration(vault.policy.policyChangeDelay)} after {vault.policy.governanceThreshold} owner approval{vault.policy.governanceThreshold === 1 ? "" : "s"} and any guardian can veto it: {reductions.join("; ")}.</>
+              ) : (
+                <><strong>Tightening-only change.</strong> It activates as soon as {vault.policy.governanceThreshold} owner{vault.policy.governanceThreshold === 1 ? "" : "s"} approve.</>
+              )}
+            </div>
           </div>
         )}
+        {!changed && <p className="desc">No changes yet. Edit a value above or pick a template.</p>}
+        <div className="inline">
+          <Button disabled={!isOwner || !changed || errors.length > 0 || tx.busy} onClick={() => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposePolicy", args: [policyToContract(draft)] })}>Propose policy</Button>
+          <Button kind="secondary" onClick={() => { setDraft(vault.policy); setTemplate(null); }} disabled={!changed}>Reset</Button>
+          {!isOwner && <span className="caption">Connect an owner wallet to propose.</span>}
+        </div>
         <TxStatus state={tx.state} />
-      </Card>
+      </Section>
 
-      <AssetLimitsEditor vault={vault} onChanged={onChanged} isOwner={isOwner} />
+      <AssetLimitsSection vault={vault} onChanged={onChanged} isOwner={isOwner} />
 
-      <Card title="Policy history" subtitle="Every activation is emitted onchain.">
+      <Section title={<>History<small>Every activation is emitted onchain.</small></>}>
         {vault.policyHistory.length === 0 ? (
-          <p className="muted">No history indexed.</p>
+          <p className="desc">No history indexed yet.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Version</th>
-                <th>Activated</th>
-                <th>Transaction</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...vault.policyHistory].reverse().map((h) => (
-                <tr key={h.version}>
-                  <td>v{h.version}</td>
-                  <td>{fmtDate(h.activatedAt)}</td>
-                  <td>
-                    <TxLink hash={h.txHash} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <dl className="kv">
+            {[...vault.policyHistory].reverse().map((h) => (
+              <div key={h.version}><dt>Version {h.version}</dt><dd>{fmtDate(h.activatedAt)} · <TxLink hash={h.txHash} /></dd></div>
+            ))}
+          </dl>
         )}
-      </Card>
+      </Section>
     </>
   );
 }
 
-function AssetLimitsEditor({ vault, onChanged, isOwner }: { vault: VaultData; onChanged: () => void; isOwner: boolean }) {
+function AssetLimitsSection({ vault, onChanged, isOwner }: { vault: VaultData; onChanged: () => void; isOwner: boolean }) {
   const tx = useTx(onChanged);
   const [assetAddr, setAssetAddr] = useState<string>(vault.assets[0]?.address ?? "");
   const meta = vault.assets.find((a) => a.address === assetAddr);
   const decimals = meta?.decimals ?? 18;
-  const [text, setText] = useState(() => ({
-    approved: meta?.limits.approved ?? true,
-    lowMax: meta ? fmtAmount(meta.limits.lowMax, decimals, undefined, 6) : "",
-    highMax: meta ? fmtAmount(meta.limits.highMax, decimals, undefined, 6) : "",
-    perTxMax: meta ? fmtAmount(meta.limits.perTxMax, decimals, undefined, 6) : "",
-    dailyMax: meta ? fmtAmount(meta.limits.dailyMax, decimals, undefined, 6) : "",
-  }));
-  const pick = (addr: string) => {
-    setAssetAddr(addr);
-    const m = vault.assets.find((a) => a.address === addr);
-    if (m) {
-      setText({
-        approved: m.limits.approved,
-        lowMax: fmtAmount(m.limits.lowMax, m.decimals, undefined, 6),
-        highMax: fmtAmount(m.limits.highMax, m.decimals, undefined, 6),
-        perTxMax: fmtAmount(m.limits.perTxMax, m.decimals, undefined, 6),
-        dailyMax: fmtAmount(m.limits.dailyMax, m.decimals, undefined, 6),
-      });
-    } else {
-      setText({ approved: true, lowMax: "", highMax: "", perTxMax: "0", dailyMax: "0" });
-    }
-  };
+  const fresh = (m?: typeof meta) => ({
+    approved: m?.limits.approved ?? true,
+    lowMax: m ? fmtAmount(m.limits.lowMax, m.decimals, undefined, 6) : "",
+    highMax: m ? fmtAmount(m.limits.highMax, m.decimals, undefined, 6) : "",
+    perTxMax: m ? fmtAmount(m.limits.perTxMax, m.decimals, undefined, 6) : "0",
+    dailyMax: m ? fmtAmount(m.limits.dailyMax, m.decimals, undefined, 6) : "0",
+  });
+  const [text, setText] = useState(() => fresh(meta));
+  const pick = (addr: string) => { setAssetAddr(addr); setText(fresh(vault.assets.find((a) => a.address === addr))); };
   const parsed: AssetLimits | null = (() => {
-    const l = parseAmount(text.lowMax || "0", decimals);
-    const h = parseAmount(text.highMax || "0", decimals);
-    const p = parseAmount(text.perTxMax || "0", decimals);
-    const d = parseAmount(text.dailyMax || "0", decimals);
+    const l = parseAmount(text.lowMax || "0", decimals), h = parseAmount(text.highMax || "0", decimals), p = parseAmount(text.perTxMax || "0", decimals), d = parseAmount(text.dailyMax || "0", decimals);
     if (l === null || h === null || p === null || d === null) return null;
     return { approved: text.approved, lowMax: l, highMax: h, perTxMax: p, dailyMax: d };
   })();
@@ -198,57 +205,28 @@ function AssetLimitsEditor({ vault, onChanged, isOwner }: { vault: VaultData; on
   const reductions = parsed ? limitReductions(current, parsed) : [];
 
   return (
-    <Card title="Asset limits" subtitle="Per-asset tiers and caps, in the asset's own units. Approving a new asset is a security-reducing change.">
-      <div className="row">
-        <Field label="Asset">
-          <input value={assetAddr} onChange={(e) => pick(e.target.value.trim())} list="assets" placeholder="0x… (address(0) is KASH)" />
-          <datalist id="assets">
-            {vault.assets.map((a) => (
-              <option key={a.address} value={a.address}>
-                {a.symbol}
-              </option>
-            ))}
-          </datalist>
-        </Field>
-        <Field label="Approved">
-          <select value={text.approved ? "1" : "0"} onChange={(e) => setText((t) => ({ ...t, approved: e.target.value === "1" }))}>
-            <option value="1">Yes</option>
-            <option value="0">No</option>
-          </select>
-        </Field>
+    <Section title={<>Asset limits<small>Per-asset tiers and caps in the asset's own units. Approving a new asset is a security-reducing change.</small></>}>
+      <div className="inline" style={{ marginBottom: 16 }}>
+        {vault.assets.map((a) => (
+          <button key={a.address} className={`template ${assetAddr === a.address ? "active" : ""}`} style={{ padding: "10px 14px", display: "inline-flex", alignItems: "center", gap: 8 }} onClick={() => pick(a.address)}>
+            <TokenIcon symbol={a.symbol} size={22} /> {a.symbol}
+          </button>
+        ))}
+        <input value={assetAddr} onChange={(e) => pick(e.target.value.trim())} placeholder="or paste a token address" style={{ maxWidth: 320, height: 40 }} />
       </div>
-      <div className="row">
-        <Field label={`Low tier up to (${meta?.symbol ?? "units"})`}>
-          <input value={text.lowMax} onChange={(e) => setText((t) => ({ ...t, lowMax: e.target.value }))} />
-        </Field>
-        <Field label="High tier up to">
-          <input value={text.highMax} onChange={(e) => setText((t) => ({ ...t, highMax: e.target.value }))} />
-        </Field>
-        <Field label="Per-transaction cap (0 = none)">
-          <input value={text.perTxMax} onChange={(e) => setText((t) => ({ ...t, perTxMax: e.target.value }))} />
-        </Field>
-        <Field label="Daily cap (0 = none)">
-          <input value={text.dailyMax} onChange={(e) => setText((t) => ({ ...t, dailyMax: e.target.value }))} />
-        </Field>
-      </div>
-      {meta && (
-        <p className="small muted">
-          Current: low ≤ {fmtAmount(current.lowMax, decimals)}, high ≤ {fmtAmount(current.highMax, decimals)}, per-tx {current.perTxMax ? fmtAmount(current.perTxMax, decimals) : "none"}, daily {current.dailyMax ? fmtAmount(current.dailyMax, decimals) : "none"} · exposure thresholds {fmtBps(vault.policy.highExposureBps)} / {fmtBps(vault.policy.criticalExposureBps)}
-        </p>
-      )}
-      {errors.length > 0 && <div className="notice notice-bad">{errors.join(" ")}</div>}
-      {errors.length === 0 && (
-        <div className={`notice ${reductions.length ? "notice-warn" : "notice-ok"}`}>
-          {reductions.length ? <>Security-reducing: {reductions.join("; ")}. Delayed and vetoable.</> : <>Tightening-only: applies once owners approve.</>}
-        </div>
+      <div className="pfield"><div><div className="lbl">Approved</div><div className="hint">Unapproved assets cannot be paid out.</div></div><select value={text.approved ? "1" : "0"} onChange={(e) => setText((t) => ({ ...t, approved: e.target.value === "1" }))}><option value="1">Yes</option><option value="0">No</option></select></div>
+      <div className="pfield"><div><div className="lbl">Routine up to</div><div className="hint">At or below this amount a payment is Low tier.</div></div><input value={text.lowMax} onChange={(e) => setText((t) => ({ ...t, lowMax: e.target.value }))} /></div>
+      <div className="pfield"><div><div className="lbl">High up to</div><div className="hint">Above this a payment is Critical.</div></div><input value={text.highMax} onChange={(e) => setText((t) => ({ ...t, highMax: e.target.value }))} /></div>
+      <div className="pfield"><div><div className="lbl">Per-transaction cap</div><div className="hint">0 = no cap.</div></div><input value={text.perTxMax} onChange={(e) => setText((t) => ({ ...t, perTxMax: e.target.value }))} /></div>
+      <div className="pfield"><div><div className="lbl">Daily cap</div><div className="hint">Cumulative per 24h bucket. 0 = no cap.</div></div><input value={text.dailyMax} onChange={(e) => setText((t) => ({ ...t, dailyMax: e.target.value }))} /></div>
+      {errors.length > 0 ? <div className="notice notice-bad">{errors.join(" ")}</div> : (
+        <div className={`notice ${reductions.length ? "notice-warn" : "notice-ok"}`}>{reductions.length ? <>Security-reducing: {reductions.join("; ")}. Delayed {fmtDuration(vault.policy.policyChangeDelay)} and vetoable.</> : <>Tightening-only: applies once owners approve.</>}</div>
       )}
       <div className="inline">
-        <Button disabled={!isOwner || !parsed || errors.length > 0 || tx.busy || !assetAddr} onClick={() => parsed && tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeAssetLimits", args: [assetAddr as `0x${string}`, parsed] })}>
-          Propose limits
-        </Button>
+        <Button disabled={!isOwner || !parsed || errors.length > 0 || tx.busy || !assetAddr} onClick={() => parsed && tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeAssetLimits", args: [assetAddr as `0x${string}`, parsed] })}>Propose limits</Button>
         {reductions.length > 0 && <Badge tone="warn">Delayed {fmtDuration(vault.policy.policyChangeDelay)}</Badge>}
       </div>
       <TxStatus state={tx.state} />
-    </Card>
+    </Section>
   );
 }

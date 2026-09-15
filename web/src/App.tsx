@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppShell, type AppPage } from "./components/AppShell";
+import { Skeleton } from "./components/Reveal";
 import { TxFlow } from "./components/TxFlow";
 import { Empty } from "./components/ui";
 import { useInvalidateVault, useVault } from "./hooks/useVault";
@@ -10,9 +11,12 @@ import { Landing } from "./pages/Landing";
 import { Members } from "./pages/Members";
 import { Overview } from "./pages/Overview";
 import { Policies } from "./pages/Policies";
+import { Product } from "./pages/Product";
 import { Security } from "./pages/Security";
+import { SecurityPage } from "./pages/SecurityPage";
 import { Settings } from "./pages/Settings";
 import { Simulator } from "./pages/Simulator";
+import { Solutions } from "./pages/Solutions";
 import { Transactions } from "./pages/Transactions";
 import { Welcome } from "./pages/Welcome";
 import { ThemeContext, useThemeState } from "./state/theme";
@@ -20,19 +24,21 @@ import { useVaultAddress } from "./state/vaultAddress";
 
 /**
  * Routes, patterned on safe.global -> app.safe.global:
- *   #/                landing (marketing)
- *   #/welcome         get started: connect, create or watch a vault
- *   #/new-vault       create flow
- *   #/app/<page>      the vault app (overview, assets, transactions, addressbook, members, settings, policies, security, simulator)
+ *   #/  #/product  #/solutions  #/security     marketing
+ *   #/welcome  #/new-vault                     onboarding
+ *   #/app/<page>                               the vault app
  */
-type Route = { kind: "landing" } | { kind: "welcome" } | { kind: "create" } | { kind: "app"; page: AppPage };
+type Route = { kind: "landing" } | { kind: "product" } | { kind: "solutions" } | { kind: "securitypage" } | { kind: "welcome" } | { kind: "create" } | { kind: "app"; page: AppPage };
 
 const APP_PAGES: AppPage[] = ["overview", "assets", "transactions", "addressbook", "members", "settings", "policies", "security", "simulator"];
 const LEGACY: Record<string, AppPage> = { home: "overview", recipients: "addressbook" };
 
 function readRoute(): Route {
-  const raw = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const raw = window.location.hash.replace(/^#\/?/, "").split("?")[0].split("#")[0];
   if (raw === "" || raw === "/") return { kind: "landing" };
+  if (raw === "product") return { kind: "product" };
+  if (raw === "solutions") return { kind: "solutions" };
+  if (raw === "security") return { kind: "securitypage" };
   if (raw === "welcome") return { kind: "welcome" };
   if (raw === "new-vault") return { kind: "create" };
   const seg = raw.replace(/^app\//, "");
@@ -42,9 +48,24 @@ function readRoute(): Route {
 }
 
 function go(route: Route) {
-  const hash = route.kind === "landing" ? "#/" : route.kind === "welcome" ? "#/welcome" : route.kind === "create" ? "#/new-vault" : `#/app/${route.page}`;
+  const hash = route.kind === "landing" ? "#/" : route.kind === "product" ? "#/product" : route.kind === "solutions" ? "#/solutions" : route.kind === "securitypage" ? "#/security" : route.kind === "welcome" ? "#/welcome" : route.kind === "create" ? "#/new-vault" : `#/app/${route.page}`;
   if (window.location.hash !== hash) window.location.hash = hash;
   window.scrollTo({ top: 0 });
+}
+
+function LoadingVault() {
+  return (
+    <div className="overview-grid">
+      <div>
+        <div className="card"><Skeleton w={120} h={14} /><Skeleton w={280} h={40} style={{ marginTop: 10 }} /><Skeleton w={220} h={12} style={{ marginTop: 10 }} /></div>
+        <div className="card"><Skeleton w={100} h={14} /><Skeleton h={48} style={{ marginTop: 14 }} /><Skeleton h={48} style={{ marginTop: 8 }} /></div>
+      </div>
+      <div>
+        <div className="card"><Skeleton w={160} h={14} /><Skeleton h={60} style={{ marginTop: 14 }} /></div>
+        <div className="card"><Skeleton w={120} h={14} /><Skeleton h={14} style={{ marginTop: 14 }} /><Skeleton h={14} style={{ marginTop: 8 }} /><Skeleton h={14} style={{ marginTop: 8 }} /></div>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -61,19 +82,20 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  // The landing page is always light; the app follows the theme setting.
+  const marketing = route.kind === "landing" || route.kind === "product" || route.kind === "solutions" || route.kind === "securitypage";
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", route.kind === "landing" ? "light" : themeState.theme);
-  }, [route.kind, themeState.theme]);
+    document.documentElement.setAttribute("data-theme", marketing ? "light" : themeState.theme);
+  }, [marketing, themeState.theme]);
 
   const navigate = (page: AppPage) => go({ kind: "app", page });
   const openFlow = (asset?: `0x${string}`) => setFlow({ open: true, asset });
-  const openVault = (a: `0x${string}`) => {
-    setVaultAddress(a);
-    go({ kind: "app", page: "overview" });
-  };
+  const openVault = (a: `0x${string}`) => { setVaultAddress(a); go({ kind: "app", page: "overview" }); };
+  const launch = () => go({ kind: "welcome" });
 
-  if (route.kind === "landing") return <Landing onLaunch={() => go({ kind: "welcome" })} />;
+  if (route.kind === "landing") return <Landing onLaunch={launch} />;
+  if (route.kind === "product") return <Product onLaunch={launch} />;
+  if (route.kind === "solutions") return <Solutions onLaunch={launch} />;
+  if (route.kind === "securitypage") return <SecurityPage onLaunch={launch} />;
 
   return (
     <ThemeContext.Provider value={themeState}>
@@ -81,36 +103,36 @@ export default function App() {
       {route.kind === "create" && <CreateVault onCreated={openVault} onCancel={() => go({ kind: "welcome" })} />}
       {route.kind === "app" && (
         <>
-          <AppShell page={route.page} onNavigate={navigate} onHome={() => go({ kind: "welcome" })} vault={vault} vaultAddress={vaultAddress} onNewTransaction={() => openFlow()} onSwitchVault={() => go({ kind: "welcome" })}>
-            {route.page === "settings" ? (
-              <Settings vault={vault} vaultAddress={vaultAddress} onSwitchVault={() => go({ kind: "welcome" })} />
-            ) : route.page === "simulator" ? (
-              <Simulator vault={vault} />
-            ) : !vaultAddress ? (
-              <Empty>No vault selected. <button className="link lime" onClick={() => go({ kind: "welcome" })}>Open one</button>.</Empty>
-            ) : error ? (
-              <div className="notice notice-bad">Could not read the vault: {(error as Error).message}</div>
-            ) : isLoading || !vault ? (
-              <Empty>Reading vault state from the chain…</Empty>
-            ) : route.page === "overview" ? (
-              <Overview vault={vault} onChanged={invalidate} onNavigate={navigate} onNewTransaction={() => openFlow()} />
-            ) : route.page === "assets" ? (
-              <Assets vault={vault} onSend={(a) => openFlow(a)} onNavigate={navigate} />
-            ) : route.page === "transactions" ? (
-              <Transactions vault={vault} onChanged={invalidate} onNewTransaction={() => openFlow()} />
-            ) : route.page === "addressbook" ? (
-              <AddressBook vault={vault} onChanged={invalidate} />
-            ) : route.page === "members" ? (
-              <Members vault={vault} onChanged={invalidate} />
-            ) : route.page === "policies" ? (
-              <Policies vault={vault} onChanged={invalidate} />
-            ) : (
-              <Security vault={vault} onChanged={invalidate} />
-            )}
+          <AppShell page={route.page} onNavigate={navigate} onHome={launch} vault={vault} vaultAddress={vaultAddress} onNewTransaction={() => openFlow()} onSwitchVault={launch}>
+            <div className="page-enter" key={route.page}>
+              {route.page === "settings" ? (
+                <Settings vault={vault} vaultAddress={vaultAddress} onSwitchVault={launch} />
+              ) : route.page === "simulator" ? (
+                <Simulator vault={vault} />
+              ) : !vaultAddress ? (
+                <Empty>No vault selected. <button className="link accent" onClick={launch}>Open one</button>.</Empty>
+              ) : error ? (
+                <div className="notice notice-bad">Could not read the vault: {(error as Error).message}</div>
+              ) : isLoading || !vault ? (
+                <LoadingVault />
+              ) : route.page === "overview" ? (
+                <Overview vault={vault} onChanged={invalidate} onNavigate={navigate} onNewTransaction={() => openFlow()} />
+              ) : route.page === "assets" ? (
+                <Assets vault={vault} onSend={(a) => openFlow(a)} onNavigate={navigate} />
+              ) : route.page === "transactions" ? (
+                <Transactions vault={vault} onChanged={invalidate} onNewTransaction={() => openFlow()} />
+              ) : route.page === "addressbook" ? (
+                <AddressBook vault={vault} onChanged={invalidate} />
+              ) : route.page === "members" ? (
+                <Members vault={vault} onChanged={invalidate} />
+              ) : route.page === "policies" ? (
+                <Policies vault={vault} onChanged={invalidate} />
+              ) : (
+                <Security vault={vault} onChanged={invalidate} />
+              )}
+            </div>
           </AppShell>
-          {flow.open && vault && (
-            <TxFlow vault={vault} presetAsset={flow.asset} onClose={() => setFlow({ open: false })} onChanged={() => { invalidate(); navigate("transactions"); }} />
-          )}
+          {flow.open && vault && <TxFlow vault={vault} presetAsset={flow.asset} onClose={() => setFlow({ open: false })} onChanged={() => { invalidate(); navigate("transactions"); }} />}
         </>
       )}
     </ThemeContext.Provider>

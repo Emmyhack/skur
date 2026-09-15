@@ -11,7 +11,7 @@ function initial(): Theme {
   } catch {
     /* ignore */
   }
-  return "dark";
+  return "light";
 }
 
 export function useThemeState(): { theme: Theme; toggle: () => void } {
