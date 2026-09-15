@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { arkDevnet, explorerAddress, NATIVE_ASSET } from "../config/chain";
 import { fmtAmount } from "../lib/format";
@@ -28,6 +28,8 @@ const SECURITY_NAV: Array<[AppPage, string, ReactNode]> = [
 
 /** Safe{Wallet} application layout: full-height sidebar with the Home pill, content column with the account pill row. */
 export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewTransaction, onSwitchVault, children }: { page: AppPage; onNavigate: (p: AppPage) => void; onHome: () => void; vault?: VaultData; vaultAddress: `0x${string}` | null; onNewTransaction: () => void; onSwitchVault: () => void; children: ReactNode }) {
+  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem("skur.sidebar") === "collapsed"; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem("skur.sidebar", collapsed ? "collapsed" : "open"); } catch { /* ignore */ } }, [collapsed]);
   const { address, isConnected, chainId } = useAccount();
   const { connectors, connect, isPending } = useConnect();
   const { disconnect } = useDisconnect();
@@ -42,13 +44,13 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
   const canPropose = Boolean((me?.roles ?? 0) & 3) && vault?.mode !== Mode.LOCKDOWN;
 
   return (
-    <div className="shell">
+    <div className={`shell ${collapsed ? "collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="sidebar-top">
           <button className="home-pill" onClick={onHome}>
-            <span className="mark">S</span> Home
+            <span className="mark">S</span><span className="lbl">Home</span>
           </button>
-          <button className="icon-btn small" title="Collapse"><IconCollapse width={16} height={16} /></button>
+          <button className="icon-btn small" title={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-pressed={collapsed} onClick={() => setCollapsed((c) => !c)}><IconCollapse width={16} height={16} /></button>
         </div>
         <div className="newtx">
           <Button kind="secondary" onClick={onNewTransaction} disabled={!canPropose} icon={<IconPlus width={16} height={16} />} title={!canPropose ? (vault?.mode === Mode.LOCKDOWN ? "The vault is in Lockdown; no new payments until it is lowered" : "Connect an owner or approver wallet to propose a payment") : undefined}>
@@ -59,7 +61,7 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
           {MAIN_NAV.map(([id, text, ico]) => (
             <button key={id} className={page === id ? "active" : ""} onClick={() => onNavigate(id)}>
               <span className="ico">{ico}</span>
-              {text}
+              <span className="lbl">{text}</span>
               {id === "transactions" && pending > 0 && <span className="count">{pending}</span>}
             </button>
           ))}
@@ -69,7 +71,7 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
           {SECURITY_NAV.map(([id, text, ico]) => (
             <button key={id} className={page === id ? "active" : ""} onClick={() => onNavigate(id)}>
               <span className="ico">{ico}</span>
-              {text}
+              <span className="lbl">{text}</span>
             </button>
           ))}
         </nav>
@@ -83,10 +85,8 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
             </div>
           )}
           <nav className="nav">
-            <a className="nav-link" href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer" style={{ display: "contents" }}>
-              <button><span className="ico"><IconDocs /></span>Docs<span className="tag-new" style={{ marginLeft: "auto" }}>V1</span></button>
-            </a>
-            <button onClick={() => onNavigate("simulator")}><span className="ico"><IconHelp /></span>Help</button>
+            <button onClick={() => window.open("https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md", "_blank", "noopener")}><span className="ico"><IconDocs /></span><span className="lbl">Docs</span><span className="tag-new" style={{ marginLeft: "auto" }}>V1</span></button>
+            <button onClick={() => onNavigate("simulator")}><span className="ico"><IconHelp /></span><span className="lbl">Help</span></button>
           </nav>
         </div>
       </aside>

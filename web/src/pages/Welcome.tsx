@@ -60,9 +60,9 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
                 <Button block onClick={onCreate}>Create new vault</Button>
                 <div className="or">OR</div>
                 {mine === null ? (
-                  <button className="link accent" onClick={loadMine}>Find vaults created with this wallet</button>
+                  <button className="link accent" onClick={loadMine}>Find vaults this wallet belongs to</button>
                 ) : mine.length === 0 ? (
-                  <p className="caption">This wallet has not created a vault yet. You can still open any vault by address.</p>
+                  <p className="caption">This wallet is not a member of any vault yet. You can still open any vault by address.</p>
                 ) : (
                   <div className="stack" style={{ textAlign: "left" }}>
                     {mine.map((v) => (

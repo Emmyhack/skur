@@ -49,11 +49,11 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
           <div className="eyebrow"><b>12 invariants</b> enforced by the vault, not by a server</div>
           <h1>
             {words.map((w, i) => (
-              <span key={i} className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + i * 0.06}s both`, marginRight: "0.22em" }}>{w}</span>
+              <span key={i}><span className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + i * 0.06}s both` }}>{w}</span>{" "}</span>
             ))}
             <span className="mark-hl">
               {["assumes", "compromise"].map((w, i) => (
-                <span key={w} className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + (words.length + i) * 0.06}s both`, marginRight: i === 0 ? "0.22em" : 0 }}>{w}</span>
+                <span key={w}><span className="w" style={{ animation: `rise 0.7s var(--ease) ${0.08 + (words.length + i) * 0.06}s both` }}>{w}</span>{i === 0 ? " " : ""}</span>
               ))}
             </span>
           </h1>

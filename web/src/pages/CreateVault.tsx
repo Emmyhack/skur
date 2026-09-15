@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useAccount, useConnect, usePublicClient } from "wagmi";
+import { useAccount, useConnect, useDisconnect, usePublicClient } from "wagmi";
 import { isAddress, keccak256, stringToHex } from "viem";
 import { SkurFactoryAbi } from "../abi/SkurFactory";
 import { Button, Field, KV, TxStatus } from "../components/ui";
@@ -19,6 +19,7 @@ type MemberRow = { address: string; roles: number };
 export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${string}`) => void; onCancel: () => void }) {
   const { address, isConnected } = useAccount();
   const { connectors, connect, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
   const client = usePublicClient();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState("");
@@ -78,7 +79,7 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
         <button className="logo" onClick={onCancel} style={{ background: "none", border: 0, color: "inherit", cursor: "pointer" }}><span className="mark">S</span></button>
         <div className="tools-pill">
           {isConnected && address ? (
-            <Button kind="secondary" className="on" icon={<Identicon address={address} size={18} />}>{address.slice(0, 6)}…{address.slice(-4)}</Button>
+            <Button kind="secondary" className="on" onClick={() => disconnect()} title={`${address} · click to disconnect`} icon={<Identicon address={address} size={18} />}>{address.slice(0, 6)}…{address.slice(-4)}</Button>
           ) : (
             connectors.slice(0, 1).map((c) => <Button key={c.uid} kind="secondary" onClick={() => connect({ connector: c })} disabled={isPending} icon={<IconWallet width={16} height={16} />}>Connect Wallet</Button>)
           )}

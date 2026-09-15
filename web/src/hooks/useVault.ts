@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
-import { erc20Abi, parseAbiItem, type PublicClient } from "viem";
+import { erc20Abi, parseAbiItem, type PublicClient, type AbiEvent, type ReadContractReturnType } from "viem";
 import { SkurVaultAbi } from "../abi/SkurVault";
 import { DEPLOYMENTS, NATIVE_ASSET } from "../config/chain";
 import { policyFromContract } from "../lib/policy";
@@ -38,7 +38,7 @@ export type VelocityView = {
 
 export type RecipientView = Recipient & { address: `0x${string}` };
 
-/** Fast path: everything needed to render balances, policy, members and limits. One batched round trip. */
+/** Fast path: everything needed to render balances, policy, members and limits, read concurrently. */
 export type VaultCore = {
   address: `0x${string}`;
   mode: Mode;
@@ -49,6 +49,8 @@ export type VaultCore = {
   assets: AssetMeta[];
   velocity: Record<string, VelocityView>;
   proposalCount: number;
+  /** Head block at the time of the core read; the activity scan uses it so it needs no extra round trip. */
+  blockNumber: bigint;
   pendingCount: number;
   executedCount: number;
 };
@@ -57,13 +59,20 @@ export type VaultCore = {
 export type VaultActivity = {
   proposals: ProposalView[];
   recipients: RecipientView[];
+  /** True when the event scan failed; proposals still come from contract state but memos and histories are missing. */
+  logsFailed: boolean;
   policyHistory: Array<{ version: number; activatedAt: bigint; txHash: `0x${string}` }>;
   modeHistory: Array<{ previous: Mode; mode: Mode; by: `0x${string}`; reason: string; txHash: `0x${string}`; block: bigint }>;
 };
 
 export type VaultData = VaultCore & VaultActivity & { activityLoading: boolean; fetchedAt: number };
 
-const MAX_PROPOSALS = 200;
+const MAX_PROPOSALS = 60;
+
+/** Proposals in a terminal status never change again, so their reads are kept for the session. */
+type ContractProposal = ReadContractReturnType<typeof SkurVaultAbi, "getProposal">;
+type ProposalRaw = { id: bigint; p: ContractProposal; live: readonly [number, number] | readonly [bigint, bigint]; vetoable: boolean; approvers: readonly `0x${string}`[]; guardianConfirmers: readonly `0x${string}`[] };
+const terminalCache = new Map<string, ProposalRaw>();
 
 const proposalCreatedEvent = parseAbiItem(
   "event ProposalCreated(uint256 indexed id, uint8 indexed kind, address indexed proposer, address asset, address target, uint256 amount, uint8 tier, uint16 riskReasons, uint8 requiredApprovals, uint8 requiredGuardians, uint64 executableAfter, uint64 expiresAt, bool securityReducing, string memo)",
@@ -88,7 +97,7 @@ function bytes32ToString(hex: `0x${string}`): string {
 
 async function fetchCore(client: PublicClient, address: `0x${string}`): Promise<VaultCore> {
   const vault = { address, abi: SkurVaultAbi } as const;
-  const [modeRaw, policyVersion, policyRaw, membersRaw, assetsRaw, proposalCountRaw, pendingCountRaw, executedCountRaw, nativeBalance] =
+  const [modeRaw, policyVersion, policyRaw, membersRaw, assetsRaw, proposalCountRaw, pendingCountRaw, executedCountRaw, nativeBalance, blockNumber] =
     await Promise.all([
       client.readContract({ ...vault, functionName: "mode" }),
       client.readContract({ ...vault, functionName: "policyVersion" }),
@@ -99,6 +108,7 @@ async function fetchCore(client: PublicClient, address: `0x${string}`): Promise<
       client.readContract({ ...vault, functionName: "pendingCount" }),
       client.readContract({ ...vault, functionName: "executedCount" }),
       client.getBalance({ address }),
+      client.getBlockNumber(),
     ]);
 
   const members: Member[] = membersRaw[0].map((a, i) => ({ address: a, roles: Number(membersRaw[1][i]) }));
@@ -112,7 +122,7 @@ async function fetchCore(client: PublicClient, address: `0x${string}`): Promise<
     { owners: 0, approvers: 0, executors: 0, guardians: 0 },
   );
 
-  // Second batched round trip: per-asset limits, velocity and ERC-20 metadata all at once.
+  // Second wave of concurrent reads: per-asset limits, velocity and ERC-20 metadata.
   const perAsset = await Promise.all(
     assetsRaw.map(async (asset) => {
       const [limitsRaw, v, symbol, decimals, balance] = await Promise.all([
@@ -141,12 +151,31 @@ async function fetchCore(client: PublicClient, address: `0x${string}`): Promise<
     assets: perAsset.map((x) => x.meta),
     velocity,
     proposalCount: Number(proposalCountRaw),
+    blockNumber,
     pendingCount: Number(pendingCountRaw),
     executedCount: Number(executedCountRaw),
   };
 }
 
-async function fetchActivity(client: PublicClient, address: `0x${string}`, proposalCount: number): Promise<VaultActivity> {
+/** The devnet RPC caps eth_getLogs at 10,000 blocks per call, so the scan runs in parallel windows. */
+const LOG_WINDOW = 9_000n;
+type RawLog = { eventName?: string; args?: unknown; transactionHash: `0x${string}`; blockNumber: bigint };
+async function getLogsChunked(client: PublicClient, address: `0x${string}`, events: readonly AbiEvent[], fromBlock: bigint, head: bigint): Promise<{ logs: RawLog[]; failed: boolean }> {
+  try {
+    // `head` comes from the core read and may be a few blocks stale, so the last window runs to "latest"
+    // rather than to `head`; that keeps an event mined between the two reads from being missed.
+    const windows: Array<[bigint, bigint | "latest"]> = [];
+    for (let a = fromBlock; a <= head; a += LOG_WINDOW + 1n) windows.push([a, a + LOG_WINDOW > head ? head : a + LOG_WINDOW]);
+    if (windows.length === 0) windows.push([fromBlock, "latest"]);
+    else windows[windows.length - 1][1] = "latest";
+    const chunks = await Promise.all(windows.map(([from, to]) => client.getLogs({ address, events, fromBlock: from, toBlock: to }) as unknown as Promise<RawLog[]>));
+    return { logs: chunks.flat(), failed: false };
+  } catch {
+    return { logs: [], failed: true };
+  }
+}
+
+async function fetchActivity(client: PublicClient, address: `0x${string}`, proposalCount: number, head: bigint): Promise<VaultActivity> {
   const vault = { address, abi: SkurVaultAbi } as const;
   const fromBlock = BigInt(DEPLOYMENTS.deployedAtBlock || 0);
 
@@ -156,25 +185,23 @@ async function fetchActivity(client: PublicClient, address: `0x${string}`, propo
 
   // One log query for every event we index; the devnet serves each getLogs call slowly, so five
   // separate queries were the long pole of the page load.
-  const [allLogs, proposalsRaw] = await Promise.all([
-    client
-      .getLogs({
-        address,
-        events: [proposalCreatedEvent, recipientRegisteredEvent, recipientTrustEvent, policyActivatedEvent, modeChangedEvent],
-        fromBlock,
-        toBlock: "latest",
-      })
-      .catch(() => []),
+  const [{ logs: allLogs, failed: logsFailed }, proposalsRaw] = await Promise.all([
+    getLogsChunked(client, address, [proposalCreatedEvent, recipientRegisteredEvent, recipientTrustEvent, policyActivatedEvent, modeChangedEvent], fromBlock, head),
     Promise.all(
-      ids.map(async (id) => {
-        const [p, live, vetoable, approvers, guardianConfirmers] = await Promise.all([
-          client.readContract({ ...vault, functionName: "getProposal", args: [id] }),
-          client.readContract({ ...vault, functionName: "liveApprovals", args: [id] }),
-          client.readContract({ ...vault, functionName: "isVetoable", args: [id] }),
+      ids.map(async (id): Promise<ProposalRaw> => {
+        const cached = terminalCache.get(`${address}:${id}`);
+        if (cached) return cached;
+        const p = await client.readContract({ ...vault, functionName: "getProposal", args: [id] });
+        const pending = Number(p.status) === Status.PENDING;
+        const [live, vetoable, approvers, guardianConfirmers] = await Promise.all([
+          pending ? client.readContract({ ...vault, functionName: "liveApprovals", args: [id] }) : ([0, 0] as const),
+          pending ? client.readContract({ ...vault, functionName: "isVetoable", args: [id] }) : false,
           client.readContract({ ...vault, functionName: "getApprovers", args: [id] }),
           client.readContract({ ...vault, functionName: "getGuardianConfirmers", args: [id] }),
         ]);
-        return { id, p, live, vetoable, approvers, guardianConfirmers };
+        const raw: ProposalRaw = { id, p, live, vetoable, approvers, guardianConfirmers };
+        if (!pending) terminalCache.set(`${address}:${id}`, raw);
+        return raw;
       }),
     ),
   ]);
@@ -231,6 +258,7 @@ async function fetchActivity(client: PublicClient, address: `0x${string}`, propo
   return {
     proposals,
     recipients,
+    logsFailed,
     policyHistory: policyLogs.map((l) => ({ version: Number(l.args.version), activatedAt: l.args.activatedAt ?? 0n, txHash: l.transactionHash })),
     modeHistory: modeLogs.map((l) => ({
       previous: Number(l.args.previous) as Mode,
@@ -247,7 +275,7 @@ export function vaultQueryKey(address: `0x${string}` | null) {
   return ["vault", address] as const;
 }
 
-const EMPTY_ACTIVITY: VaultActivity = { proposals: [], recipients: [], policyHistory: [], modeHistory: [] };
+const EMPTY_ACTIVITY: VaultActivity = { proposals: [], recipients: [], logsFailed: false, policyHistory: [], modeHistory: [] };
 
 /**
  * Two queries so the interface paints as soon as balances and policy arrive, then fills in the
@@ -264,7 +292,7 @@ export function useVault(address: `0x${string}` | null): { data: VaultData | und
   });
   const activity = useQuery({
     queryKey: [...vaultQueryKey(address), "activity", core.data?.proposalCount ?? -1],
-    queryFn: () => fetchActivity(client as PublicClient, address as `0x${string}`, core.data?.proposalCount ?? 0),
+    queryFn: () => fetchActivity(client as PublicClient, address as `0x${string}`, core.data?.proposalCount ?? 0, core.data?.blockNumber ?? 0n),
     enabled: Boolean(address && client && core.data),
     refetchInterval: 30_000,
     staleTime: 15_000,
@@ -276,7 +304,16 @@ export function useVault(address: `0x${string}` | null): { data: VaultData | und
   return { data, error: core.error ?? activity.error, isLoading: core.isLoading };
 }
 
+/**
+ * Refresh after a write. The devnet RPC sits behind replicas that can lag a mined receipt by several
+ * seconds, so one refetch straight after the receipt often reads the old state; a few bounded
+ * follow-ups catch up without waiting for the regular interval.
+ */
 export function useInvalidateVault(address: `0x${string}` | null) {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: vaultQueryKey(address) });
+  return () => {
+    const key = vaultQueryKey(address);
+    void qc.invalidateQueries({ queryKey: key });
+    for (const ms of [6_000, 15_000, 30_000]) setTimeout(() => void qc.invalidateQueries({ queryKey: key }), ms);
+  };
 }

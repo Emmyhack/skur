@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { SkurVaultAbi } from "../abi/SkurVault";
 import { Badge, Button, Section, TxLink, TxStatus } from "../components/ui";
@@ -99,6 +99,14 @@ export function Policies({ vault, onChanged }: { vault: VaultData; onChanged: ()
   const me = vault.members.find((m) => m.address.toLowerCase() === address?.toLowerCase());
   const isOwner = Boolean((me?.roles ?? 0) & ROLE_OWNER);
   const [draft, setDraft] = useState<Policy>(vault.policy);
+  // When a new version activates while the editor is untouched, follow the live policy instead of showing the stale one.
+  const lastPolicyRef = useRef<Policy>(vault.policy);
+  const [seenVersion, setSeenVersion] = useState(vault.policyVersion);
+  if (vault.policyVersion !== seenVersion) {
+    setSeenVersion(vault.policyVersion);
+    if (JSON.stringify(draft) === JSON.stringify(lastPolicyRef.current)) setDraft(vault.policy);
+    lastPolicyRef.current = vault.policy;
+  }
   const [template, setTemplate] = useState<TemplateId | null>(null);
   const tx = useTx(() => { onChanged(); });
   const errors = useMemo(() => [...validatePolicy(draft), ...validateCounts(draft, vault.counts.owners, vault.counts.approvers, vault.counts.executors, vault.counts.guardians)], [draft, vault.counts]);
