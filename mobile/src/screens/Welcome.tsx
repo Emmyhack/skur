@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dimensions, Pressable, ScrollView, StatusBar, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Identicon } from "../components/Identicon";
@@ -25,6 +25,8 @@ export function Welcome({ onDone }: { onDone: () => void }) {
   const [page, setPage] = useState(0);
   const ref = useRef<ScrollView>(null);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => setPage(Math.round(e.nativeEvent.contentOffset.x / W));
+  // The carousel always opens on the first page, whatever the view was showing before.
+  useEffect(() => { ref.current?.scrollTo({ x: 0, animated: false }); setPage(0); }, []);
   return (
     <View style={{ flex: 1, backgroundColor: L.bg, paddingTop: insets.top + 16, paddingBottom: Math.max(insets.bottom, 18) }}>
       <StatusBar barStyle="dark-content" />
@@ -34,7 +36,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
         <Text style={{ fontFamily: F.displayMedium, fontSize: 25, color: L.ink2, letterSpacing: -0.4 }}>{"[MOBILE]"}</Text>
       </View>
 
-      <ScrollView ref={ref} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} style={{ flexGrow: 0 }}>
+      <ScrollView ref={ref} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} contentOffset={{ x: 0, y: 0 }} style={{ flexGrow: 0 }}>
         {PAGES.map((p, i) => (
           <View key={i} style={{ width: W, paddingHorizontal: 26 }}>
             <View style={{ height: ART, alignItems: "center", justifyContent: "center", marginTop: 14 }}>{p.art}</View>
