@@ -11,8 +11,21 @@ import type { VaultData } from "@web/lib/vaultReads";
 import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
-import { BackButton, Badge, Button, Card, Field, IconButton, Input, Notice, Screen, SectionLabel, SignBar, Tabs, TopBar, TxStatus, s } from "../components/ui";
+import { BackButton, Badge, Button, Card, Expandable, Field, Input, Notice, Screen, SignBar, Tabs, TopBar, TxStatus, type IconName, s } from "../components/ui";
 import { C, F } from "../theme";
+
+const GROUP_ICON: Record<string, IconName> = { Approvals: "users", Delays: "clock", Exposure: "pie-chart", "Circuit breaker": "zap" };
+
+/** One line per group, opened on tap: the whole policy stays readable on a phone. */
+function groupSummary(fields: PolicyField[], p: Policy): string {
+  return fields.slice(0, 3).map((f) => {
+    const v = p[f.key];
+    if (f.unit === "bool") return `${f.label.split(" ")[0]} ${v ? "yes" : "no"}`;
+    if (f.unit === "hours") return fmtDuration(Number(v));
+    if (f.unit === "bps") return `${Number(v) / 100}%`;
+    return String(v);
+  }).join(" · ");
+}
 
 /** The policy editor: templates, every control in groups, security-reducing detection, and per-asset limits. */
 export function Policy({ vault }: { vault: VaultData }) {
@@ -23,6 +36,8 @@ export function Policy({ vault }: { vault: VaultData }) {
   const invalidate = useInvalidateVault(vault.address);
   const tx = useTx(invalidate);
   const [tab, setTab] = useState<"policy" | "limits">("policy");
+  const [open, setOpen] = useState<string | null>(null);
+  const toggle = (k: string) => setOpen((o) => (o === k ? null : k));
   const [draft, setDraft] = useState<Policy>(vault.policy);
   const [template, setTemplate] = useState<TemplateId | null>(null);
   const seen = useRef(vault.policyVersion);
@@ -64,29 +79,32 @@ export function Policy({ vault }: { vault: VaultData }) {
       </View>
       {tab === "policy" && (
         <View style={{ padding: 16 }}>
-          <SectionLabel>Templates</SectionLabel>
-          <Text style={[s.hint, { marginBottom: 10 }]}>Start from a profile instead of designing a policy from scratch. Choosing one only fills the editor; nothing is proposed until you sign.</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-            {TEMPLATES.map((t) => (
-              <Pressable key={t.id} onPress={() => { setTemplate(t.id); setDraft(t.policy); }} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: template === t.id ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: template === t.id ? C.onAccent : C.text }}>{t.name}</Text></Pressable>
-            ))}
-            {changed && <Pressable onPress={() => { setDraft(vault.policy); setTemplate(null); }} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.border, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: C.text2 }}>Reset</Text></Pressable>}
-          </View>
-          {POLICY_GROUPS.map((g) => (
-            <View key={g.title}>
-              <SectionLabel>{g.title}</SectionLabel>
-              <Text style={[s.hint, { marginBottom: 8 }]}>{g.sub}</Text>
-              <Card flush>
-                {g.fields.map((f, i) => <Control key={f.key} f={f} value={draft[f.key] as number | boolean} live={vault.policy[f.key] as number | boolean} onChange={(v) => set(f.key, v)} last={i === g.fields.length - 1} />)}
-              </Card>
+          <Expandable title="Templates" summary={template ? `${TEMPLATES.find((t) => t.id === template)?.name} loaded into the editor` : "start from a profile instead of designing from scratch"} icon="layers" open={open === "templates"} onToggle={() => toggle("templates")}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {TEMPLATES.map((t) => (
+                <Pressable key={t.id} onPress={() => { setTemplate(t.id); setDraft(t.policy); }} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: template === t.id ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: template === t.id ? C.onAccent : C.text }}>{t.name}</Text></Pressable>
+              ))}
             </View>
-          ))}
+            <Text style={[s.hint, { marginTop: 10 }]}>Choosing one only fills the editor. Nothing is proposed until you sign.</Text>
+            {changed && <Button kind="secondary" size="sm" style={{ marginTop: 10 }} onPress={() => { setDraft(vault.policy); setTemplate(null); }}>Reset to the live policy</Button>}
+          </Expandable>
+
+          {POLICY_GROUPS.map((g) => {
+            const edited = g.fields.filter((f) => draft[f.key] !== vault.policy[f.key]).length;
+            return (
+              <Expandable key={g.title} title={g.title} summary={edited ? `${edited} change${edited === 1 ? "" : "s"} · ${groupSummary(g.fields, draft)}` : groupSummary(g.fields, draft)} icon={GROUP_ICON[g.title] ?? "sliders"} tone={edited ? "accent" : "dark"} open={open === g.title} onToggle={() => toggle(g.title)}>
+                <Text style={[s.hint, { marginBottom: 10 }]}>{g.sub}</Text>
+                {g.fields.map((f, i) => <Control key={f.key} f={f} value={draft[f.key] as number | boolean} live={vault.policy[f.key] as number | boolean} onChange={(v) => set(f.key, v)} last={i === g.fields.length - 1} />)}
+              </Expandable>
+            );
+          })}
+
           {errors.length > 0 && <Notice tone="bad">{errors.join(" ")}</Notice>}
           {changed && errors.length === 0 && <Notice tone={reductions.length ? "warn" : "ok"}>{reductions.length ? `Security-reducing: ${reductions.join("; ")}. Delayed ${fmtDuration(vault.policy.policyChangeDelay)} and any guardian can veto.` : "Tightens or keeps every control. Applies as soon as owners approve."}</Notice>}
-          <SectionLabel>History</SectionLabel>
-          <Card>
-            {vault.policyHistory.length === 0 ? <Text style={s.hint}>No policy versions recorded yet.</Text> : [...vault.policyHistory].reverse().map((h, i, arr) => <Text key={h.txHash} style={[s.rowSub, i < arr.length - 1 && { marginBottom: 6 }]}>v{h.version} · activated {new Date(Number(h.activatedAt) * 1000).toLocaleString()}</Text>)}
-          </Card>
+
+          <Expandable title="History" summary={vault.policyHistory.length ? `${vault.policyHistory.length} version${vault.policyHistory.length === 1 ? "" : "s"} activated` : "no versions recorded yet"} icon="clock" open={open === "history"} onToggle={() => toggle("history")}>
+            {vault.policyHistory.length === 0 ? <Text style={s.hint}>No policy versions recorded yet.</Text> : [...vault.policyHistory].reverse().map((h) => <Text key={h.txHash} style={[s.rowSub, { marginBottom: 6 }]}>v{h.version} · activated {new Date(Number(h.activatedAt) * 1000).toLocaleString()}</Text>)}
+          </Expandable>
         </View>
       )}
       {tab === "limits" && asset && text && (

@@ -2,7 +2,7 @@ import { DMMono_400Regular, DMMono_500Medium } from "@expo-google-fonts/dm-mono"
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createNavigationContainerRef, DarkTheme, NavigationContainer, type NavigatorScreenParams } from "@react-navigation/native";
+import { createNavigationContainerRef, DarkTheme, NavigationContainer, StackActions, type NavigatorScreenParams } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -114,7 +114,8 @@ function useDeepLinks(ready: boolean) {
     if (!navigationRef.isReady()) return false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nav = navigationRef.navigate as unknown as (name: string, params?: object) => void;
-    if (Array.isArray(target)) nav(target[0], { screen: target[1], ...(params ?? {}) });
+    // Going to a tab means leaving whatever was pushed on top of it.
+    if (Array.isArray(target)) { if ((navigationRef.getRootState()?.routes.length ?? 0) > 1) navigationRef.dispatch(StackActions.popToTop()); nav(target[0], { screen: target[1], ...(params ?? {}) }); }
     else nav(target, params);
     return true;
   }, []);

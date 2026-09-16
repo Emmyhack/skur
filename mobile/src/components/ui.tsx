@@ -56,6 +56,23 @@ export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?:
   );
 }
 
+/** A card that opens on tap: the header carries the summary, so a long screen reads as a short list. */
+export function Expandable({ title, summary, icon, tone = "dark", children, open, onToggle }: { title: string; summary?: string; icon?: IconName; tone?: "dark" | "accent" | "success" | "error" | "warn"; children: ReactNode; open: boolean; onToggle: () => void }) {
+  return (
+    <View style={[s.card, { padding: 0, overflow: "hidden" }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={summary ? `${title}, ${summary}` : title} onPress={onToggle} style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16 }, pressed && { opacity: 0.7 }]}>
+        {icon ? <CircleIcon name={icon} size={40} tone={tone} /> : null}
+        <View style={{ flex: 1 }}>
+          <Text style={s.rowTitle}>{title}</Text>
+          {summary ? <Text style={s.rowSub} numberOfLines={open ? undefined : 1}>{summary}</Text> : null}
+        </View>
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={18} color={C.text3} />
+      </Pressable>
+      {open ? <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>{children}</View> : null}
+    </View>
+  );
+}
+
 export function Card({ children, style, flush = false }: { children: ReactNode; style?: StyleProp<ViewStyle>; flush?: boolean }) {
   return <View style={[s.card, flush && { padding: 0, overflow: "hidden" }, style]}>{children}</View>;
 }

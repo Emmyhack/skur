@@ -27,7 +27,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
       <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 }}>
         <View style={{ width: 30, height: 30, borderRadius: 7, backgroundColor: C.accent, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.display, fontSize: 18, color: C.onAccent }}>S</Text></View>
         <Text style={{ fontFamily: F.display, fontSize: 28, color: L.text, letterSpacing: -0.5 }}>Skur</Text>
-        <Text style={{ fontFamily: F.monoMedium, fontSize: 12, color: L.text, backgroundColor: C.accent, paddingHorizontal: 6, paddingVertical: 2, letterSpacing: 1, marginTop: 4 }}>MOBILE</Text>
+        <Text style={{ fontFamily: F.displayMedium, fontSize: 26, color: L.text, letterSpacing: -0.5 }}>{"[MOBILE]"}</Text>
       </View>
       <ScrollView ref={ref} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} style={{ flex: 1 }}>
         {PAGES.map((p, i) => (
