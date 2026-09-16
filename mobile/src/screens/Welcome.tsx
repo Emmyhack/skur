@@ -3,13 +3,14 @@ import { Dimensions, Pressable, ScrollView, StatusBar, Text, View, type NativeSc
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Identicon } from "../components/Identicon";
 import { Icon } from "../components/ui";
-import { C, F } from "../theme";
+import { F, type Palette } from "../theme";
+import { useTheme } from "../state/theme";
 
 const W = Dimensions.get("window").width;
 const ART = 310;
-/** Light palette for the first-launch screens, matching the web's marketing pages. */
-const L = { bg: "#ffffff", ink: "#212529", ink2: "#6c757d", line: "#e9ecef", wash: "#f1f3f5" };
-const shadow = { shadowColor: "#0b1220", shadowOpacity: 0.1, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 6 } as const;
+/** The onboarding stands on the same ground as the app, so the two never disagree. */
+const ink = (C: Palette) => ({ bg: C.canvas, ink: C.text, ink2: C.text2, line: C.border, wash: C.card });
+const shade = (C: Palette) => ({ shadowColor: "#000", shadowOpacity: C.shadowOpacity * 1.2, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 6 } as const);
 
 const PAGES = [
   { title: "Track your treasury.\nAnywhere.", sub: "Balances and activity, read live from the chain.", art: <ArtVault /> },
@@ -19,6 +20,7 @@ const PAGES = [
 
 /** First launch: one idea per page, a real product surface as its illustration, and a single button. */
 export function Welcome({ onDone }: { onDone: () => void }) {
+  const C = useTheme(); const L = ink(C); const shadow = shade(C);
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0);
   const ref = useRef<ScrollView>(null);
@@ -59,6 +61,7 @@ const VAULT = "0xCC31c7474267ca5600c2D530ebD7657A09c042Dc";
 const NEW_ADDR = "0x7c4f9A2b61e3d0c8F5a4B2e1D6c9A3f8E0b71e42";
 
 function Coin({ label, size, bg, fg = "#fff", style }: { label: string; size: number; bg: string; fg?: string; style?: object }) {
+  const C = useTheme(); const L = ink(C); const shadow = shade(C);
   return (
     <View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: "center", justifyContent: "center" }, shadow, style]}>
       <Text style={{ fontFamily: F.display, fontSize: size * 0.42, color: fg }}>{label}</Text>
@@ -68,6 +71,7 @@ function Coin({ label, size, bg, fg = "#fff", style }: { label: string; size: nu
 
 /** Page 1: the vault as the app actually shows it, with its assets orbiting. */
 function ArtVault() {
+  const C = useTheme(); const L = ink(C); const shadow = shade(C);
   return (
     <View style={{ width: W - 52, height: ART, alignItems: "center", justifyContent: "center" }}>
       <Coin label="K" size={62} bg="#4c6ef5" style={{ position: "absolute", right: 4, top: 14, transform: [{ rotate: "8deg" }] }} />
@@ -97,6 +101,7 @@ function ArtVault() {
 
 /** Page 2: the same payment at three sizes, and what the vault asks of each. */
 function ArtTiers() {
+  const C = useTheme(); const L = ink(C); const shadow = shade(C);
   const rows: Array<{ amt: string; req: string; tier: string; bg: string; fg: string; dx: number }> = [
     { amt: "1,000 sUSD", req: "1 approval · now", tier: "Low", bg: "#e6f6ec", fg: "#1b7f4a", dx: -14 },
     { amt: "12,000 sUSD", req: "2 approvals · 1 day", tier: "High", bg: "#fff3d6", fg: "#a86a00", dx: 10 },
@@ -122,6 +127,7 @@ function ArtTiers() {
 
 /** Page 3: the alert that reaches you, over the confirmation it opens. */
 function ArtSign() {
+  const C = useTheme(); const L = ink(C); const shadow = shade(C);
   return (
     <View style={{ width: W - 52, height: ART, alignItems: "center" }}>
       <View style={{ position: "absolute", top: 54, width: 216, height: 256, borderTopLeftRadius: 32, borderTopRightRadius: 32, borderWidth: 5, borderBottomWidth: 0, borderColor: L.ink, backgroundColor: L.bg, overflow: "hidden" }}>

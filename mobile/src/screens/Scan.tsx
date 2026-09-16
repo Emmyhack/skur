@@ -1,14 +1,16 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { isAddress } from "viem";
 import { scanBus } from "../lib/scanBus";
-import { BackButton, Button, Notice, Screen, Tape, TopBar, s } from "../components/ui";
-import { C, F } from "../theme";
+import { BackButton, Button, Notice, Screen, Tape, TopBar, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 /** QR scanner for vault and recipient addresses, as Safe's scan button. Accepts a bare address or an EIP-681 "ethereum:0x…" URI. */
 export function Scan() {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [err, setErr] = useState<string | null>(null);

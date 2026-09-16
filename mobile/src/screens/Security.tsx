@@ -1,4 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useState } from "react";
 import { RefreshControl, Text, View } from "react-native";
 import { isAddress, stringToHex } from "viem";
@@ -12,13 +13,14 @@ import type { VaultData } from "@web/lib/vaultReads";
 import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { Identicon } from "../components/Identicon";
-import { BackButton, Badge, Button, Card, Expandable, Field, Input, KV, ModeBadge, Notice, Row, Screen, Tape, TopBar, TxStatus, s } from "../components/ui";
-import { C, F } from "../theme";
+import { BackButton, Badge, Button, Card, Expandable, Field, Input, KV, ModeBadge, Notice, Row, Screen, Tape, TopBar, TxStatus, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 type Panel = "posture" | "mode" | "guardians" | "recovery" | "loss" | "history" | null;
 
 /** One card per concern, each opening on tap, so the screen reads as a short list rather than a wall. */
 export function Security({ vault, refetch, refreshing }: { vault: VaultData; refetch: () => void; refreshing: boolean }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void; canGoBack: () => boolean }>();
   const roles = useMyRoles(vault);
   const invalidate = useInvalidateVault(vault.address);
@@ -59,7 +61,7 @@ export function Security({ vault, refetch, refreshing }: { vault: VaultData; ref
             {vault.mode < Mode.LOCKDOWN && <Button kind="danger" icon="lock" disabled={!canRaise} onPress={() => call("raiseMode", [Mode.LOCKDOWN, r32])}>Freeze vault</Button>}
             {vault.mode > Mode.NORMAL && <Button icon="unlock" disabled={!(roles & ROLE_OWNER)} loading={tx.busy} onPress={() => call("proposeModeRelax", [vault.mode === Mode.LOCKDOWN ? Mode.ELEVATED : Mode.NORMAL])}>Propose lowering to {MODE_LABEL[vault.mode === Mode.LOCKDOWN ? Mode.ELEVATED : Mode.NORMAL]}</Button>}
           </View>
-          <Text style={[s.hint, { marginTop: 8 }]}>{canRaise ? "Lowering the mode needs owners and guardians together." : "Only an owner or guardian signer can change the mode."}</Text>
+          <Text style={[s.hint, { marginTop: 8 }]}>{canRaise ? "Lowering needs owners and guardians." : "Owners and guardians only."}</Text>
         </Expandable>
 
         <Expandable title="Guardians" summary={guardians.length ? `${guardians.length} · freeze, veto, confirm, recover` : "none configured"} icon="users" tone={guardians.length ? "dark" : "error"} open={open === "guardians"} onToggle={() => toggle("guardians")}>
@@ -71,11 +73,10 @@ export function Security({ vault, refetch, refreshing }: { vault: VaultData; ref
         </Expandable>
 
         <Expandable title="Recovery" summary={`replace a lost signer after ${fmtDuration(vault.policy.recoveryDelay)}`} icon="life-buoy" open={open === "recovery"} onToggle={() => toggle("recovery")}>
-          <Text style={[s.rowSub, { marginBottom: 12, lineHeight: 20 }]}>The new address takes the same roles. Any owner can cancel during the delay, and the vault moves to Elevated when it completes.</Text>
           <Field label="Signer to replace"><Input value={oldSigner} onChangeText={(t) => setOldSigner(t.trim())} placeholder="0x…" mono /></Field>
           <Field label="New signer"><Input value={newSigner} onChangeText={(t) => setNewSigner(t.trim())} placeholder="0x…" mono /></Field>
           <Button icon="life-buoy" disabled={!isGuardian || !isAddress(oldSigner) || !isAddress(newSigner) || tx.busy} loading={tx.busy} onPress={() => call("proposeRecovery", [oldSigner as `0x${string}`, newSigner as `0x${string}`])}>Propose recovery</Button>
-          {!isGuardian && <Text style={[s.hint, { marginTop: 8 }]}>Only a guardian signer can start a recovery.</Text>}
+          {!isGuardian && <Text style={[s.hint, { marginTop: 8 }]}>Guardians only.</Text>}
         </Expandable>
 
         {loss && stable && (
@@ -83,7 +84,6 @@ export function Security({ vault, refetch, refreshing }: { vault: VaultData; ref
             <KV k="With no delay" v={`${fmtAmount(loss.immediate, stable.decimals, stable.symbol)} · ${loss.immediateBinding}`} />
             <KV k="Within 24h" v={`${fmtAmount(loss.day, stable.decimals, stable.symbol)} · ${loss.dayBinding}`} />
             <KV k="Largest transfers wait" v={fmtDuration(loss.criticalDelay)} last />
-            <Text style={[s.hint, { marginTop: 8 }]}>A conservative upper bound for {stable.symbol} under the stated assumptions. A bound, never a guarantee.</Text>
           </Expandable>
         )}
 

@@ -11,11 +11,13 @@ import { scanBus } from "../lib/scanBus";
 import { useStore } from "../state/store";
 import { Identicon } from "../components/Identicon";
 import { VaultSheet } from "../components/VaultSheet";
-import { Address, CircleIcon, Icon, IconButton, Row, Screen, Tape, TopBar, s } from "../components/ui";
-import { C, F } from "../theme";
+import { Address, CircleIcon, Icon, IconButton, Row, Screen, Tape, TopBar, useStyles } from "../components/ui";
+import { F, type Palette } from "../theme";
+import { useTheme } from "../state/theme";
 
 /** Home is the vault at a glance: what it holds, what is waiting, and the two things you do most. */
 export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch: () => void; refreshing: boolean }) {
+  const C = useTheme(); const s = useStyles(); const h = styles(C);
   const nav = useNavigation<{ navigate: (n: string, p?: object) => void }>();
   const { labels, signer, setVaultAddress } = useStore();
   const roles = useMyRoles(vault);
@@ -91,6 +93,7 @@ export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch
 }
 
 function Action({ icon, label, onPress, tone = "dark", disabled }: { icon: "arrow-up-right" | "arrow-down-left"; label: string; onPress: () => void; tone?: "dark" | "accent"; disabled?: boolean }) {
+  const C = useTheme(); const h = styles(C);
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} disabled={disabled} style={({ pressed }) => [h.action, tone === "accent" && { backgroundColor: C.accent }, { opacity: disabled ? 0.4 : pressed ? 0.8 : 1 }]}>
       <Icon name={icon} size={16} color={tone === "accent" ? C.onAccent : C.text} />
@@ -99,9 +102,9 @@ function Action({ icon, label, onPress, tone = "dark", disabled }: { icon: "arro
   );
 }
 
-const h = {
+const styles = (C: Palette) => ({
   banner: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, backgroundColor: C.accentBg, borderRadius: 14, paddingHorizontal: 14, height: 48, marginBottom: 14 },
   count: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: C.accent, alignItems: "center" as const, justifyContent: "center" as const, paddingHorizontal: 6 },
   balance: { fontFamily: F.display, fontSize: 44, color: C.text, letterSpacing: -1.4 },
   action: { flex: 1, height: 48, borderRadius: 14, backgroundColor: C.card, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8 },
-};
+});

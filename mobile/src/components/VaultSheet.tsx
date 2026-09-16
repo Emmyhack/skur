@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "../state/theme";
 import { Text, View } from "react-native";
 import { isAddress } from "viem";
 import { SkurFactoryAbi } from "@web/abi/SkurFactory";
@@ -7,11 +8,12 @@ import { short } from "@web/lib/format";
 import { publicClient } from "../lib/client";
 import { useStore } from "../state/store";
 import { Identicon } from "./Identicon";
-import { Button, CircleIcon, Icon, Input, Logo, Row, Sheet, s } from "./ui";
-import { C, F } from "../theme";
+import { Button, CircleIcon, Icon, Input, Logo, Row, Sheet, useStyles } from "./ui";
+import { F } from "../theme";
 
 /** Safe's "My accounts" switcher: the open vault, vaults the device signer belongs to, and a way to add one by address. */
 export function VaultSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const C = useTheme(); const s = useStyles();
   const { vaultAddress, setVaultAddress, labels, signer } = useStore();
   const [mine, setMine] = useState<`0x${string}`[]>([]);
   const [adding, setAdding] = useState(false);

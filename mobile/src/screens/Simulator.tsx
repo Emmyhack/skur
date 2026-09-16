@@ -1,4 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { NATIVE_ASSET } from "@web/config/chain";
@@ -7,14 +8,15 @@ import { runScenarios, type Verdict } from "@web/lib/simulator";
 import { TEMPLATES, type TemplateId } from "@web/lib/templates";
 import type { Policy } from "@web/lib/types";
 import type { VaultData } from "@web/lib/vaultReads";
-import { BackButton, Badge, Card, CircleIcon, Field, Input, Row, Screen, SectionLabel, TopBar, s } from "../components/ui";
-import { C, F } from "../theme";
+import { BackButton, Badge, Card, CircleIcon, Field, Input, Row, Screen, SectionLabel, TopBar, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 const TONE: Record<Verdict, "ok" | "warn" | "bad" | "info"> = { blocked: "ok", impossible: "ok", delayed: "info", escalated: "warn", allowed: "bad" };
 const TEXT: Record<Verdict, string> = { blocked: "Blocked", impossible: "Not possible", delayed: "Delayed", escalated: "Escalated", allowed: "Would succeed" };
 
 /** Runs the policy against the attacks that actually happen, with the contract's own rules. */
 export function Simulator({ vault }: { vault: VaultData | undefined }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void }>();
   const [source, setSource] = useState<"vault" | TemplateId>(vault ? "vault" : "startup");
   const [balanceText, setBalanceText] = useState("1,000,000");
@@ -60,11 +62,11 @@ export function Simulator({ vault }: { vault: VaultData | undefined }) {
             </View>
           ))}
         </Card>
-        <Text style={s.hint}>Blocked and Not possible mean the contract refuses. Delayed means guardians get a veto window. Escalated means more approvals are needed but nothing waits. Would succeed is a gap to close before the policy goes live.</Text>
       </View>
     </Screen>
   );
 }
 function Chip({ on, onPress, children }: { on: boolean; onPress: () => void; children: React.ReactNode }) {
+  const C = useTheme();
   return <Pressable onPress={onPress} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: on ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: on ? C.onAccent : C.text }}>{children}</Text></Pressable>;
 }

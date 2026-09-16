@@ -1,4 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useMemo, useRef, useState } from "react";
 import { Pressable, Text, View, type TextInput } from "react-native";
 import { isAddress, keccak256, stringToHex } from "viem";
@@ -13,14 +14,15 @@ import { scanBus } from "../lib/scanBus";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
 import { Identicon } from "../components/Identicon";
-import { BackButton, Button, Card, CircleIcon, Field, IconButton, Input, KV, Notice, Screen, SectionLabel, SignBar, TopBar, TxStatus, s } from "../components/ui";
-import { C, F } from "../theme";
+import { BackButton, Button, Card, CircleIcon, Field, IconButton, Input, KV, Notice, Screen, SectionLabel, SignBar, TopBar, TxStatus, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 type Row = { address: string; roles: number };
 const ROLE_CHIPS: Array<[number, string]> = [[ROLE_OWNER, "Owner"], [ROLE_APPROVER, "Approver"], [ROLE_EXECUTOR, "Executor"], [ROLE_GUARDIAN, "Guardian"]];
 
 /** Create a vault from the phone: name, template, members, review, one signature. */
 export function CreateVault() {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string) => void }>();
   const { signer, setVaultAddress, setLabel } = useStore();
   const [name, setName] = useState("");
@@ -55,14 +57,13 @@ export function CreateVault() {
       <View style={{ padding: 16 }}>
         <SectionLabel>1 · Name and template</SectionLabel>
         <Card>
-          <Field label="Name" hint="Kept on this phone only. The chain knows the vault by its address."><Input value={name} onChangeText={setName} placeholder="Main treasury" maxLength={40} /></Field>
+          <Field label="Name" hint="Kept on this phone only."><Input value={name} onChangeText={setName} placeholder="Main treasury" maxLength={40} /></Field>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {TEMPLATES.map((t) => <Pressable key={t.id} onPress={() => setTemplateId(t.id)} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: templateId === t.id ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: templateId === t.id ? C.onAccent : C.text }}>{t.name}</Text></Pressable>)}
           </View>
           <Text style={[s.hint, { marginTop: 10 }]}>{template.tagline} Needs {template.minSigners}+ signers and {template.minGuardians}+ guardian{template.minGuardians === 1 ? "" : "s"}.</Text>
         </Card>
         <SectionLabel>2 · Signers and guardians</SectionLabel>
-        <Text style={[s.hint, { marginBottom: 8 }]}>Owners govern, approvers confirm payments, executors execute. Guardians can only freeze, veto and recover; the contract will not let them hold a treasury role.</Text>
         {members.map((m, i) => (
           <Card key={i}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -88,7 +89,6 @@ export function CreateVault() {
           <KV k="Creator" v={signer ? short(signer.address) : "no signer"} last />
         </Card>
         {errors.length > 0 && <Notice tone="warn">{errors.join(" ")}</Notice>}
-        <Text style={[s.hint, { marginTop: 8 }]}>The vault is a minimal proxy over the verified implementation. The factory that creates it keeps no authority over it; only the members listed above can act.</Text>
       </View>
     </Screen>
   );

@@ -1,8 +1,9 @@
 import { DMMono_400Regular, DMMono_500Medium } from "@expo-google-fonts/dm-mono";
+import { useTheme } from "./src/state/theme";
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
 import { SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createNavigationContainerRef, DarkTheme, NavigationContainer, StackActions, type NavigatorScreenParams } from "@react-navigation/native";
+import { createNavigationContainerRef, DarkTheme, DefaultTheme, NavigationContainer, StackActions, type NavigatorScreenParams } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -15,6 +16,7 @@ import { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { describeError } from "@web/lib/errors";
 import { Status } from "@web/lib/types";
 import { Button, Notice, Screen, TopBar } from "./src/components/ui";
 import { useVault } from "./src/hooks/useVault";
@@ -38,16 +40,18 @@ import { Settings } from "./src/screens/Settings";
 import { Transactions } from "./src/screens/Transactions";
 import { TxDetail } from "./src/screens/TxDetail";
 import { StoreProvider, useStore } from "./src/state/store";
-import { C, F } from "./src/theme";
+import { ThemeProvider, useScheme } from "./src/state/theme";
+import { F } from "./src/theme";
 
 const queryClient = new QueryClient();
 const Tabs = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.canvas, card: C.card, border: C.border, primary: C.accent, text: C.text } };
+
 
 
 
 function VaultApp() {
+  const C = useTheme();
   const { vaultAddress, setVaultAddress } = useStore();
   const { data: vault, error, isLoading, refetch, refreshing } = useVault(vaultAddress);
   useAlerts(vault);
@@ -62,7 +66,7 @@ function VaultApp() {
   );
   if (error && !vault) return (
     <Screen top={<TopBar left={<Logo size={28} />} />}>
-      <Notice tone="bad">Could not read the vault. {(error as Error).message}</Notice>
+      <Notice tone="bad">{describeError(error).split("\n")[0]}</Notice>
       <View style={{ height: 12 }} />
       <Button icon="refresh-cw" onPress={refetch}>Try again</Button>
       <Button kind="ghost" onPress={() => void setVaultAddress(null)}>Open another vault</Button>
@@ -109,9 +113,13 @@ const ROUTES: Record<string, keyof RootParams | [keyof RootParams, string]> = {
  */
 function useDeepLinks(ready: boolean) {
   const { setVaultAddress, importSigner, setOnboarded } = useStore();
+  const { setScheme } = useScheme();
   const queued = useRef<string | null>(null);
   const go = useCallback((target: keyof RootParams | [keyof RootParams, string], params?: object) => {
     if (!navigationRef.isReady()) return false;
+    const names = navigationRef.getRootState()?.routeNames ?? [];
+    const wanted = Array.isArray(target) ? target[0] : target;
+    if (!names.includes(wanted as string)) return false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nav = navigationRef.navigate as unknown as (name: string, params?: object) => void;
     // Going to a tab means leaving whatever was pushed on top of it.
@@ -128,10 +136,11 @@ function useDeepLinks(ready: boolean) {
     if (head === "vault" && rest[0] && isAddress(rest[0])) { void setVaultAddress(rest[0] as `0x${string}`); go(["Main", "Home"]); return; }
     if (__DEV__ && head === "dev" && rest[0] === "signer" && rest[1]) { void importSigner(rest[1]).catch(() => undefined); return; }
     if (__DEV__ && head === "dev" && rest[0] === "onboarding") { void setOnboarded(false); void setVaultAddress(null); return; }
+    if (__DEV__ && head === "dev" && rest[0] === "theme" && rest[1]) { setScheme(rest[1] as "light" | "dark" | "system"); return; }
     if (head === "tx" && rest[0]) { if (!go("TxDetail", { id: rest[0] })) queued.current = url; return; }
     const route = ROUTES[head ?? ""];
     if (route && !go(route)) queued.current = url;
-  }, [setVaultAddress, importSigner, setOnboarded, go]);
+  }, [setVaultAddress, importSigner, setOnboarded, setScheme, go]);
   useEffect(() => {
     void Linking.getInitialURL().then(handle);
     const sub = Linking.addEventListener("url", (e) => handle(e.url));
@@ -158,6 +167,18 @@ function Gate() {
 type TabParams = { Home: undefined; Transactions: undefined; Settings: undefined };
 type RootParams = { Main: NavigatorScreenParams<TabParams>; TxDetail: { id: string }; Send: undefined; Receive: undefined; Security: undefined; AddressBook: undefined; Members: undefined; Policy: undefined; Simulator: undefined; CreateVault: undefined; Signers: undefined; Notifications: undefined; Scan: undefined };
 
+function Root() {
+  const { C, dark } = useScheme();
+  const base = dark ? DarkTheme : DefaultTheme;
+  const navTheme = { ...base, colors: { ...base.colors, background: C.canvas, card: C.card, border: C.border, primary: C.accent, text: C.text } };
+  return (
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
+      <StatusBar style={dark ? "light" : "dark"} />
+      <Gate />
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({ SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold, DMSans_400Regular, DMSans_500Medium, DMSans_700Bold, DMMono_400Regular, DMMono_500Medium });
   if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: "#ffffff" }} />;
@@ -165,10 +186,9 @@ export default function App() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <StoreProvider>
-          <NavigationContainer ref={navigationRef} theme={navTheme}>
-            <StatusBar style="light" />
-            <Gate />
-          </NavigationContainer>
+          <ThemeProvider>
+            <Root />
+          </ThemeProvider>
         </StoreProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

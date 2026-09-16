@@ -1,4 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useState } from "react";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import { isAddress } from "viem";
@@ -10,13 +11,14 @@ import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
 import { scanBus } from "../lib/scanBus";
-import { Address, BackButton, Badge, Button, Card, Field, IconButton, Input, Notice, Row, Screen, SectionLabel, Sheet, TopBar, TxStatus, s } from "../components/ui";
+import { Address, BackButton, Badge, Button, Card, Field, IconButton, Input, Notice, Row, Screen, SectionLabel, Sheet, TopBar, TxStatus, useStyles } from "../components/ui";
 import { Identicon } from "../components/Identicon";
-import { C, F } from "../theme";
+import { F } from "../theme";
 
 const ROLE_BITS: Array<[number, string, string]> = [[ROLE_OWNER, "Owner", "governs"], [ROLE_APPROVER, "Approver", "confirms payments"], [ROLE_EXECUTOR, "Executor", "executes"], [ROLE_GUARDIAN, "Guardian", "freeze · veto · recover"]];
 
 export function Members({ vault, refetch, refreshing }: { vault: VaultData; refetch: () => void; refreshing: boolean }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string) => void }>();
   const { signer } = useStore();
   const roles = useMyRoles(vault);
@@ -46,15 +48,12 @@ export function Members({ vault, refetch, refreshing }: { vault: VaultData; refe
       top={<TopBar left={<BackButton onPress={() => nav.goBack()} />} center={<Text style={s.topTitle}>Members</Text>} right={isOwner ? <IconButton name="plus" tone="accent" onPress={() => { setTarget(""); setBits(ROLE_APPROVER); setOpen(true); }} /> : undefined} />}>
       <View style={{ padding: 16 }}>
         <SectionLabel>Treasury signers · {signers.length}</SectionLabel>
-        <Text style={[s.hint, { marginBottom: 8 }]}>Owners govern, approvers confirm payments, executors execute once every condition holds. A member may hold several of these roles.</Text>
         <List items={signers} />
         <SectionLabel>Guardians · {guardians.length}</SectionLabel>
-        <Text style={[s.hint, { marginBottom: 8 }]}>Guardians can freeze the vault, veto risky or security-reducing proposals, confirm critical transfers and start a recovery. The contract will not let them hold a treasury role.</Text>
         {guardians.length ? <List items={guardians} /> : <Notice tone="bad">No guardian configured. Nobody independent can veto a proposal or freeze the vault.</Notice>}
         <SectionLabel>Thresholds</SectionLabel>
         <Card>
           <Text style={s.rowSub}>Routine {vault.policy.approvalsLow} · High {vault.policy.approvalsHigh} · Critical {vault.policy.approvalsCritical}{vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} guardian` : ""} · Governance {vault.policy.governanceThreshold} owner{vault.policy.governanceThreshold === 1 ? "" : "s"}</Text>
-          <Text style={[s.hint, { marginTop: 6 }]}>Thresholds are part of the policy. Lowering any of them waits {fmtDuration(vault.policy.policyChangeDelay)}, and any guardian can veto the change.</Text>
         </Card>
         <TxStatus state={tx.state} />
       </View>
@@ -70,7 +69,6 @@ export function Members({ vault, refetch, refreshing }: { vault: VaultData; refe
             ))}
           </View>
         </Field>
-        <Text style={[s.hint, { marginBottom: 12 }]}>{bits === 0 ? "Removing a member takes effect as soon as owners approve." : reducing ? `Adding authority or weakening the guardian layer loosens security: it waits ${fmtDuration(vault.policy.policyChangeDelay)} and any guardian can veto it.` : "Reducing a member's authority takes effect as soon as owners approve."}</Text>
         <Button disabled={!isAddress(target) || tx.busy || (existing?.roles === bits)} loading={tx.busy} onPress={() => { void tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeMember", args: [target as `0x${string}`, bits] }); setOpen(false); }}>{existing ? (bits === 0 ? "Propose removal" : "Propose new roles") : "Propose member"}</Button>
         {existing && bits !== 0 && <Button kind="ghost" style={{ marginTop: 6 }} onPress={() => setBits(0)}>Remove this member instead</Button>}
       </Sheet>

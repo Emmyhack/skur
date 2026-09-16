@@ -1,4 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useRef, useState } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { SkurVaultAbi } from "@web/abi/SkurVault";
@@ -11,8 +12,8 @@ import type { VaultData } from "@web/lib/vaultReads";
 import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
-import { BackButton, Badge, Button, Card, Expandable, Field, Input, Notice, Screen, SignBar, Tabs, TopBar, TxStatus, type IconName, s } from "../components/ui";
-import { C, F } from "../theme";
+import { BackButton, Badge, Button, Card, Expandable, Field, Input, Notice, Screen, SignBar, Tabs, TopBar, TxStatus, type IconName, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 const GROUP_ICON: Record<string, IconName> = { Approvals: "users", Delays: "clock", Exposure: "pie-chart", "Circuit breaker": "zap" };
 
@@ -29,6 +30,7 @@ function groupSummary(fields: PolicyField[], p: Policy): string {
 
 /** The policy editor: templates, every control in groups, security-reducing detection, and per-asset limits. */
 export function Policy({ vault }: { vault: VaultData }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void }>();
   const { signer } = useStore();
   const roles = useMyRoles(vault);
@@ -79,13 +81,12 @@ export function Policy({ vault }: { vault: VaultData }) {
       </View>
       {tab === "policy" && (
         <View style={{ padding: 16 }}>
-          <Expandable title="Templates" summary={template ? `${TEMPLATES.find((t) => t.id === template)?.name} loaded into the editor` : "start from a profile instead of designing from scratch"} icon="layers" open={open === "templates"} onToggle={() => toggle("templates")}>
+          <Expandable title="Templates" summary={template ? `${TEMPLATES.find((t) => t.id === template)?.name} loaded` : `${TEMPLATES.length} profiles to start from`} icon="layers" open={open === "templates"} onToggle={() => toggle("templates")}>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {TEMPLATES.map((t) => (
                 <Pressable key={t.id} onPress={() => { setTemplate(t.id); setDraft(t.policy); }} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: template === t.id ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: template === t.id ? C.onAccent : C.text }}>{t.name}</Text></Pressable>
               ))}
             </View>
-            <Text style={[s.hint, { marginTop: 10 }]}>Choosing one only fills the editor. Nothing is proposed until you sign.</Text>
             {changed && <Button kind="secondary" size="sm" style={{ marginTop: 10 }} onPress={() => { setDraft(vault.policy); setTemplate(null); }}>Reset to the live policy</Button>}
           </Expandable>
 
@@ -93,7 +94,6 @@ export function Policy({ vault }: { vault: VaultData }) {
             const edited = g.fields.filter((f) => draft[f.key] !== vault.policy[f.key]).length;
             return (
               <Expandable key={g.title} title={g.title} summary={edited ? `${edited} change${edited === 1 ? "" : "s"} · ${groupSummary(g.fields, draft)}` : groupSummary(g.fields, draft)} icon={GROUP_ICON[g.title] ?? "sliders"} tone={edited ? "accent" : "dark"} open={open === g.title} onToggle={() => toggle(g.title)}>
-                <Text style={[s.hint, { marginBottom: 10 }]}>{g.sub}</Text>
                 {g.fields.map((f, i) => <Control key={f.key} f={f} value={draft[f.key] as number | boolean} live={vault.policy[f.key] as number | boolean} onChange={(v) => set(f.key, v)} last={i === g.fields.length - 1} />)}
               </Expandable>
             );
@@ -109,7 +109,6 @@ export function Policy({ vault }: { vault: VaultData }) {
       )}
       {tab === "limits" && asset && text && (
         <View style={{ padding: 16 }}>
-          <Text style={[s.hint, { marginBottom: 10 }]}>Tiers and caps for each asset, in that asset's own units. Approving a new asset loosens security and goes through the delayed path.</Text>
           <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
             {vault.assets.map((a) => <Pressable key={a.address} onPress={() => setAssetAddr(a.address)} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: a.address === assetAddr ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: a.address === assetAddr ? C.onAccent : C.text }}>{a.symbol}</Text></Pressable>)}
           </View>
@@ -128,6 +127,7 @@ export function Policy({ vault }: { vault: VaultData }) {
 }
 
 function Control({ f, value, live, onChange, last }: { f: PolicyField; value: number | boolean; live: number | boolean; onChange: (v: number | boolean) => void; last: boolean }) {
+  const C = useTheme(); const s = useStyles();
   const changed = value !== live;
   const label = <View style={{ flex: 1 }}><Text style={[s.rowTitle, changed && { color: C.accent }]}>{f.label}</Text>{f.hint ? <Text style={s.rowSub}>{f.hint}</Text> : null}</View>;
   const wrap = (control: React.ReactNode) => <View style={[s.row, last && { borderBottomWidth: 0 }]}>{label}{control}</View>;
@@ -138,9 +138,11 @@ function Control({ f, value, live, onChange, last }: { f: PolicyField; value: nu
   return wrap(<Unit value={String(n / 100)} unit="%" onChange={(t) => onChange(Math.min((f.max ?? 100) * 100, Math.round(Number(t || 0) * 100)))} />);
 }
 function Stepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const C = useTheme();
   const B = ({ t, onPress }: { t: string; onPress: () => void }) => <Pressable accessibilityRole="button" accessibilityLabel={t === "−" ? "decrease" : "increase"} onPress={onPress} style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, color: C.text, fontSize: 18 }}>{t}</Text></Pressable>;
   return <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: C.card2, borderRadius: 10 }}><B t="−" onPress={() => onChange(value - 1)} /><Text style={{ fontFamily: F.display, color: C.text, minWidth: 28, textAlign: "center" }}>{value}</Text><B t="+" onPress={() => onChange(value + 1)} /></View>;
 }
 function Unit({ value, unit, onChange }: { value: string; unit: string; onChange: (t: string) => void }) {
+  const C = useTheme();
   return <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Input value={value} onChangeText={onChange} keyboardType="decimal-pad" style={{ width: 80, height: 38, textAlign: "right" }} /><Text style={{ fontFamily: F.mono, color: C.text2, width: 18 }}>{unit}</Text></View>;
 }

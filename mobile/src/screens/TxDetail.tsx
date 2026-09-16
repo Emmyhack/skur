@@ -1,4 +1,5 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import { stringToHex } from "viem";
@@ -12,12 +13,13 @@ import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
 import { Identicon } from "../components/Identicon";
-import { Address, BackButton, Badge, Button, Card, CircleIcon, Icon, IconButton, KV, Notice, Row, Screen, SignBar, StatusBadge, TierBadge, TopBar, TxStatus, s } from "../components/ui";
+import { Address, BackButton, Badge, Button, Card, CircleIcon, Icon, IconButton, KV, Notice, Row, Screen, SignBar, StatusBadge, TierBadge, TopBar, TxStatus, useStyles } from "../components/ui";
 import { KIND_ICON } from "./Transactions";
-import { C, F } from "../theme";
+import { F } from "../theme";
 
 /** Safe's "Confirm transaction": hero amount, To card with advanced details, checks and confirmations rows, sticky sign bar. */
 export function TxDetail({ vault }: { vault: VaultData }) {
+  const C = useTheme(); const s = useStyles();
   const route = useRoute<{ key: string; name: string; params: { id: string } }>();
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string, p?: object) => void }>();
   const { signer } = useStore();

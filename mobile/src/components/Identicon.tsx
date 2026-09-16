@@ -1,10 +1,12 @@
 import { useMemo } from "react";
+import { useTheme } from "../state/theme";
 import { Text, View } from "react-native";
 import { keccak256, stringToHex } from "viem";
-import { C, F } from "../theme";
+import { F } from "../theme";
 
 /** Same deterministic blocky avatar as the web interface (web/src/components/Identicon.tsx), drawn with views. */
 export function Identicon({ address, size = 40, badge }: { address: string; size?: number; badge?: string }) {
+  const C = useTheme();
   const { cells, fg, bg } = useMemo(() => {
     const hash = keccak256(stringToHex(address.toLowerCase())).slice(2);
     const hue = parseInt(hash.slice(0, 4), 16) % 360;

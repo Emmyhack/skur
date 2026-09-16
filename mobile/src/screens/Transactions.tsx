@@ -1,16 +1,18 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useState } from "react";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import { fmtDate } from "@web/lib/format";
 import { Kind, Status } from "@web/lib/types";
 import type { ProposalView, VaultData } from "@web/lib/vaultReads";
 import { describeProposal, statusText } from "../lib/describe";
-import { Badge, Card, CircleIcon, Empty, IconButton, Notice, Row, Screen, StatusBadge, Tabs, TopBar, type IconName, s } from "../components/ui";
-import { C, F } from "../theme";
+import { Badge, Card, CircleIcon, Empty, IconButton, Notice, Row, Screen, StatusBadge, Tabs, TopBar, type IconName, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 export const KIND_ICON: Record<number, IconName> = { [Kind.TRANSFER]: "arrow-up-right", [Kind.POLICY_UPDATE]: "sliders", [Kind.ASSET_LIMITS]: "sliders", [Kind.MEMBER_SET]: "users", [Kind.RECIPIENT_TRUST]: "book", [Kind.MODE_RELAX]: "shield", [Kind.RECOVERY]: "life-buoy" };
 
 export function Transactions({ vault, refetch, refreshing }: { vault: VaultData; refetch: () => void; refreshing: boolean }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ navigate: (n: string, p?: object) => void }>();
   const [tab, setTab] = useState<"queue" | "history">("queue");
   const [filter, setFilter] = useState<"all" | "transfers" | "governance">("all");
@@ -44,7 +46,6 @@ export function Transactions({ vault, refetch, refreshing }: { vault: VaultData;
           </Card>
         </View>
       ))}
-      <Text style={[s.hint, { paddingHorizontal: 16, marginTop: 12 }]}>Governance proposals need owner confirmations. Security-reducing ones also wait out their timelock, and any guardian can veto them.</Text>
     </Screen>
   );
 }

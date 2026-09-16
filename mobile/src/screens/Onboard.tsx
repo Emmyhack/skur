@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTheme } from "../state/theme";
 import { Text, View } from "react-native";
 import { isAddress } from "viem";
 import { SkurFactoryAbi } from "@web/abi/SkurFactory";
@@ -7,11 +8,12 @@ import { short } from "@web/lib/format";
 import { publicClient } from "../lib/client";
 import { useStore } from "../state/store";
 import { Identicon } from "../components/Identicon";
-import { Button, Card, CircleIcon, Field, Input, Logo, Notice, Row, Screen, Tape, TopBar, s } from "../components/ui";
-import { C, F } from "../theme";
+import { Button, Card, CircleIcon, Field, Input, Logo, Notice, Row, Screen, Tape, TopBar, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 /** First screen: the web logo, then open a vault by address, the demo vault, or one the device signer belongs to. */
 export function Onboard() {
+  const C = useTheme(); const s = useStyles();
   const { setVaultAddress, signer, createSigner } = useStore();
   const [addr, setAddr] = useState("");
   const [mine, setMine] = useState<`0x${string}`[] | null>(null);
@@ -27,7 +29,7 @@ export function Onboard() {
     <Screen top={<TopBar left={<Logo size={30} />} />}>
       <View style={{ marginTop: 28, marginBottom: 22 }}>
         <Text style={{ fontFamily: F.display, fontSize: 40, lineHeight: 44, color: C.text, letterSpacing: -1 }}>Treasury security{"\n"}that assumes{"\n"}<Text style={{ backgroundColor: C.accent, color: C.onAccent }}>compromise</Text></Text>
-        <Text style={[s.rowSub, { fontSize: 15, lineHeight: 22, marginTop: 14 }]}>Open a vault to read its balances, queue and policy, and sign from this phone. Every rule is enforced by the vault contract, not by a server.</Text>
+        <Text style={[s.rowSub, { fontSize: 15, lineHeight: 22, marginTop: 14 }]}>Read its balances, queue and policy. Sign from this phone.</Text>
       </View>
       <Tape />
       <Card style={{ marginTop: 16 }}>
@@ -45,7 +47,7 @@ export function Onboard() {
         )}
       </Card>
       {err ? <Notice tone="bad">{err}</Notice> : null}
-      <Text style={[s.hint, { textAlign: "center", marginTop: 8 }]}>Verified contracts on the Ark Constellation devnet. Skur never holds keys or funds.</Text>
+      <Text style={[s.hint, { textAlign: "center", marginTop: 8 }]}>Verified contracts. Skur holds no keys and no funds.</Text>
     </Screen>
   );
 }

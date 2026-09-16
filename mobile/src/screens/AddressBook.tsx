@@ -1,4 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useState } from "react";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import { isAddress } from "viem";
@@ -10,11 +11,12 @@ import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { scanBus } from "../lib/scanBus";
 import { Identicon } from "../components/Identicon";
-import { Address, BackButton, Badge, Button, Card, Empty, Field, IconButton, Input, Notice, Row, Screen, Sheet, TopBar, TrustBadge, TxStatus, s } from "../components/ui";
-import { C, F } from "../theme";
+import { Address, BackButton, Badge, Button, Card, Empty, Field, IconButton, Input, Notice, Row, Screen, Sheet, TopBar, TrustBadge, TxStatus, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 /** Recipients are security objects: register early, verify, restrict or block. */
 export function AddressBook({ vault, refetch, refreshing }: { vault: VaultData; refetch: () => void; refreshing: boolean }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string) => void }>();
   const roles = useMyRoles(vault);
   const invalidate = useInvalidateVault(vault.address);
@@ -31,7 +33,6 @@ export function AddressBook({ vault, refetch, refreshing }: { vault: VaultData; 
     <Screen padded={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={C.accent} />}
       top={<TopBar left={<BackButton onPress={() => nav.goBack()} />} center={<Text style={s.topTitle}>Address book</Text>} right={<IconButton name="plus" tone="accent" onPress={() => { setTarget(""); setDialog("register"); }} />} />}>
       <View style={{ padding: 16 }}>
-        <Text style={[s.hint, { marginBottom: 12 }]}>A new recipient waits {fmtDuration(vault.policy.recipientActivationDelay)} before normal policy applies to it. Registering a supplier early means its first payment later does not wait.</Text>
         {vault.activityLoading ? <Empty icon="loader">Reading recipients from the chain…</Empty> : vault.recipients.length === 0 ? <Empty icon="book">No recipients yet. Register one to start its activation clock.</Empty> : (
           <Card flush>
             {vault.recipients.map((r, i) => {
@@ -47,7 +48,7 @@ export function AddressBook({ vault, refetch, refreshing }: { vault: VaultData; 
       </View>
 
       <Sheet open={dialog === "register"} onClose={() => setDialog(null)} title="New entry">
-        <Field label="Address" hint="Registering starts the activation delay today, so the first payment later does not have to wait.">
+        <Field label="Address" hint="Starts the activation delay now.">
           <View style={{ flexDirection: "row", gap: 8 }}><Input value={target} onChangeText={(t) => setTarget(t.trim())} placeholder="0x…" mono style={{ flex: 1 }} /><IconButton name="maximize" onPress={scan} /></View>
         </Field>
         {!canRegister && <Notice tone="neutral">Only an owner or approver signer can register a recipient.</Notice>}
@@ -56,7 +57,7 @@ export function AddressBook({ vault, refetch, refreshing }: { vault: VaultData; 
 
       <Sheet open={dialog === "trust"} onClose={() => setDialog(null)} title="Propose a trust change">
         <Field label="Address"><Input value={target} onChangeText={(t) => setTarget(t.trim())} placeholder="0x…" mono /></Field>
-        <Field label="Trust state" hint="Raising trust loosens security: it waits for the policy-change delay and any guardian can veto it. Restricting or blocking applies as soon as owners approve.">
+        <Field label="Trust state" hint="Raising trust waits out the delay and can be vetoed.">
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {[Trust.VERIFIED, Trust.TRUSTED, Trust.RESTRICTED, Trust.BLOCKED].map((t) => (
               <Pressable key={t} onPress={() => setTrust(t)} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: trust === t ? C.accent : C.card2, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: trust === t ? C.onAccent : C.text }}>{TRUST_LABEL[t]}</Text></Pressable>

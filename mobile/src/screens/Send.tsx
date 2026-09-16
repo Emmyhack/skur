@@ -1,4 +1,5 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTheme } from "../state/theme";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { scanBus } from "../lib/scanBus";
@@ -13,13 +14,14 @@ import { publicClient } from "../lib/client";
 import { useInvalidateVault } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
-import { BackButton, Badge, Button, Card, CircleIcon, Field, IconButton, Input, KV, Notice, Row, Screen, Sheet, SignBar, TierBadge, TopBar, TrustBadge, TxStatus, s } from "../components/ui";
-import { C, F } from "../theme";
+import { BackButton, Badge, Button, Card, CircleIcon, Field, IconButton, Input, KV, Notice, Row, Screen, Sheet, SignBar, TierBadge, TopBar, TrustBadge, TxStatus, useStyles } from "../components/ui";
+import { F } from "../theme";
 
 type Preview = { tier: Tier; reasons: number; exposureBps: number; requiredApprovals: number; requiredGuardians: number; delay: number; trust: Trust };
 
 /** Send: big amount, asset chips, recipient and purpose; the vault's own review card; sticky sign bar to propose. */
 export function Send({ vault }: { vault: VaultData }) {
+  const C = useTheme(); const s = useStyles();
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string, p?: object) => void }>();
   const route = useRoute<{ key: string; name: string; params?: { asset?: `0x${string}`; to?: `0x${string}` } }>();
   const { signer } = useStore();
@@ -85,7 +87,7 @@ export function Send({ vault }: { vault: VaultData }) {
         <Text style={s.rowSub}>{asset ? `Vault holds ${fmtAmount(asset.balance, asset.decimals, asset.symbol)}` : ""}</Text>
       </Card>
       <Card>
-        <Field label="Recipient address" hint="An address this vault has never paid is registered as New and waits out its activation delay first.">
+        <Field label="Recipient address" hint="A new address waits out its activation delay.">
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {isAddress(to) ? <Identicon address={to} size={32} /> : <CircleIcon name="user" size={32} />}
             <Input value={to} onChangeText={(t) => setTo(t.trim())} placeholder="0x…" mono style={{ flex: 1 }} />
@@ -93,7 +95,7 @@ export function Send({ vault }: { vault: VaultData }) {
             <IconButton name="maximize" onPress={() => { scanBus.request((a) => setTo(a)); nav.navigate("Scan"); }} />
           </View>
         </Field>
-        <Field label="Purpose" hint="Recorded onchain with the proposal, so approvers know what they are signing.">
+        <Field label="Purpose" hint="Recorded onchain with the proposal.">
           <Input value={memo} onChangeText={setMemo} placeholder="Invoice 1042, design retainer" maxLength={140} />
         </Field>
       </Card>
