@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { isAddress, stringToHex } from "viem";
+import { isAddress } from "viem";
 import { SkurVaultAbi } from "@web/abi/SkurVault";
 import { fmtAmount, fmtBps, fmtDuration, parseAmount, short } from "@web/lib/format";
 import { describeError } from "@web/lib/errors";
@@ -17,7 +17,7 @@ type Preview = { tier: Tier; reasons: number; exposureBps: number; requiredAppro
 
 /** Send flow: the vault itself classifies the payment before anything is signed. */
 export function Send({ vault }: { vault: VaultData }) {
-  const nav = useNavigation<{ goBack: () => void; navigate: (n: string) => void }>();
+  const nav = useNavigation<{ goBack: () => void; navigate: (n: string, p?: object) => void }>();
   const invalidate = useInvalidateVault(vault.address);
   const tx = useTx(() => { invalidate(); });
   const [to, setTo] = useState("");
@@ -50,7 +50,7 @@ export function Send({ vault }: { vault: VaultData }) {
     return () => { live = false; };
   }, [ok, to, assetAddr, amountText, vault.address, asset, amount]);
 
-  const submit = () => { if (!asset || amount === null) return; void tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeTransfer", args: [asset.address, to as `0x${string}`, amount, memo ? stringToHex(memo) : "0x"] }); };
+  const submit = () => { if (!asset || amount === null) return; void tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeTransfer", args: [asset.address, to as `0x${string}`, amount, memo] }); };
   const remaining = asset && amount !== null ? asset.balance - amount : 0n;
 
   return (
@@ -92,7 +92,7 @@ export function Send({ vault }: { vault: VaultData }) {
       )}
       <Button disabled={!preview || tx.busy || tx.state.phase === "done"} loading={tx.busy} onPress={submit}>Propose payment</Button>
       <TxStatus state={tx.state} />
-      {tx.state.phase === "done" && <Button kind="secondary" style={{ marginTop: 10 }} onPress={() => nav.navigate("Transactions")}>Open the queue</Button>}
+      {tx.state.phase === "done" && <Button kind="secondary" style={{ marginTop: 10 }} onPress={() => nav.navigate("Main", { screen: "Transactions" })}>Open the queue</Button>}
       <Button kind="ghost" onPress={() => nav.goBack()}>Back</Button>
     </Screen>
   );

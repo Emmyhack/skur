@@ -1,4 +1,3 @@
-import { hexToString } from "viem";
 import { fmtAmount, short } from "@web/lib/format";
 import { Kind, MODE_LABEL, roleNames, Status, TRUST_LABEL, type Mode, type Trust } from "@web/lib/types";
 import type { ProposalView, VaultData } from "@web/lib/vaultReads";
@@ -34,9 +33,5 @@ export function statusText(p: ProposalView): string {
 }
 
 export function memoText(p: ProposalView): string {
-  if (p.memo) return p.memo;
-  if (p.kind === Kind.TRANSFER && p.data && p.data !== "0x") {
-    try { return hexToString(p.data); } catch { return ""; }
-  }
-  return "";
+  return p.memo;
 }
