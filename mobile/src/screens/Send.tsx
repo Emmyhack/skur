@@ -1,6 +1,8 @@
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { scanBus } from "../lib/scanBus";
+import { Identicon } from "../components/Identicon";
 import { isAddress } from "viem";
 import { SkurVaultAbi } from "@web/abi/SkurVault";
 import { fmtAmount, fmtBps, fmtDuration, parseAmount, short } from "@web/lib/format";
@@ -11,8 +13,7 @@ import { publicClient } from "../lib/client";
 import { useInvalidateVault } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { useStore } from "../state/store";
-import { Identicon } from "../components/Identicon";
-import { BackButton, Badge, Button, Card, CircleIcon, Field, Input, KV, Notice, Row, Screen, SignBar, TierBadge, TopBar, TxStatus, s } from "../components/ui";
+import { BackButton, Badge, Button, Card, CircleIcon, Field, IconButton, Input, KV, Notice, Row, Screen, Sheet, SignBar, TierBadge, TopBar, TrustBadge, TxStatus, s } from "../components/ui";
 import { C, F } from "../theme";
 
 type Preview = { tier: Tier; reasons: number; exposureBps: number; requiredApprovals: number; requiredGuardians: number; delay: number; trust: Trust };
@@ -20,11 +21,13 @@ type Preview = { tier: Tier; reasons: number; exposureBps: number; requiredAppro
 /** Send: big amount, asset chips, recipient and purpose; the vault's own review card; sticky sign bar to propose. */
 export function Send({ vault }: { vault: VaultData }) {
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string, p?: object) => void }>();
+  const route = useRoute<{ key: string; name: string; params?: { asset?: `0x${string}`; to?: `0x${string}` } }>();
   const { signer } = useStore();
   const invalidate = useInvalidateVault(vault.address);
   const tx = useTx(() => { invalidate(); });
-  const [to, setTo] = useState("");
-  const [assetAddr, setAssetAddr] = useState(vault.assets[0]?.address);
+  const [to, setTo] = useState(route.params?.to ?? "");
+  const [assetAddr, setAssetAddr] = useState(route.params?.asset ?? vault.assets[0]?.address);
+  const [pickRecipient, setPickRecipient] = useState(false);
   const [amountText, setAmountText] = useState("");
   const [memo, setMemo] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -83,9 +86,11 @@ export function Send({ vault }: { vault: VaultData }) {
       </Card>
       <Card>
         <Field label="Recipient address" hint="An address this vault has never paid is registered as New and waits out its activation delay first.">
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {isAddress(to) ? <Identicon address={to} size={32} /> : <CircleIcon name="user" size={32} />}
             <Input value={to} onChangeText={(t) => setTo(t.trim())} placeholder="0x…" mono style={{ flex: 1 }} />
+            {vault.recipients.length > 0 && <IconButton name="book" onPress={() => setPickRecipient(true)} />}
+            <IconButton name="maximize" onPress={() => { scanBus.request((a) => setTo(a)); nav.navigate("Scan"); }} />
           </View>
         </Field>
         <Field label="Purpose" hint="Recorded onchain with the proposal, so approvers know what they are signing.">
@@ -109,6 +114,11 @@ export function Send({ vault }: { vault: VaultData }) {
           </Card>
         </>
       )}
+      <Sheet open={pickRecipient} onClose={() => setPickRecipient(false)} title="Known recipients">
+        {vault.recipients.map((r, i) => (
+          <Row key={r.address} leading={<Identicon address={r.address} size={36} />} title={short(r.address, 6)} subtitle={`${r.paymentCount.toString()} payment${r.paymentCount === 1n ? "" : "s"}`} trailing={<TrustBadge trust={r.trust} />} onPress={() => { setTo(r.address); setPickRecipient(false); }} last={i === vault.recipients.length - 1} />
+        ))}
+      </Sheet>
     </Screen>
   );
 }

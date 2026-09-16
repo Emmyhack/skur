@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { useState, type ComponentProps, type ReactNode } from "react";
+import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { short } from "@web/lib/format";
@@ -144,9 +144,9 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
     </View>
   );
 }
-export function Input(props: TextInputProps & { mono?: boolean; big?: boolean }) {
-  return <TextInput placeholderTextColor={C.text3} autoCapitalize="none" autoCorrect={false} {...props} style={[s.input, props.mono && { fontFamily: F.mono, fontSize: 13 }, props.big && { fontFamily: F.display, fontSize: 34, height: 64, textAlign: "center", borderWidth: 0, backgroundColor: "transparent" }, props.style]} />;
-}
+export const Input = forwardRef<TextInput, TextInputProps & { mono?: boolean; big?: boolean }>(function Input(props, ref) {
+  return <TextInput ref={ref} placeholderTextColor={C.text3} autoCapitalize="none" autoCorrect={false} {...props} style={[s.input, props.mono && { fontFamily: F.mono, fontSize: 13 }, props.big && { fontFamily: F.display, fontSize: 34, height: 64, textAlign: "center", borderWidth: 0, backgroundColor: "transparent" }, props.style]} />;
+});
 
 /** Underlined text tabs, as on Safe's Tokens / NFTs switch. */
 export function Tabs<T extends string>({ value, options, onChange }: { value: T; options: Array<[T, string]>; onChange: (v: T) => void }) {

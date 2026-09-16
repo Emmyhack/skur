@@ -3,8 +3,24 @@
   "compilerOptions": {
     "strict": true,
     "resolveJsonModule": true,
-    "paths": { "@web/*": ["../web/src/*"] }
+    "paths": {
+      "@web/*": [
+        "../web/src/*"
+      ]
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx", "../web/src/lib/**/*.ts", "../web/src/abi/*.ts", "../web/src/config/*.ts"],
-  "exclude": ["node_modules", "../web/src/lib/*.test.ts", "../web/src/lib/motion.ts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../web/src/lib/**/*.ts",
+    "../web/src/abi/*.ts",
+    "../web/src/config/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "ios",
+    "android",
+    "../web/src/lib/*.test.ts",
+    "../web/src/lib/motion.ts"
+  ]
 }

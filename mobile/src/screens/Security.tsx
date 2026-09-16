@@ -12,6 +12,7 @@ import type { VaultData } from "@web/lib/vaultReads";
 import { useInvalidateVault, useMyRoles } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
 import { Identicon } from "../components/Identicon";
+import { isAddress } from "viem";
 import { BackButton, Badge, Button, Card, CircleIcon, Field, Input, KV, ModeBadge, Notice, Row, Screen, SectionLabel, Tape, TopBar, TxStatus, s } from "../components/ui";
 import { C, F } from "../theme";
 
@@ -21,6 +22,9 @@ export function Security({ vault, refetch, refreshing }: { vault: VaultData; ref
   const invalidate = useInvalidateVault(vault.address);
   const tx = useTx(invalidate);
   const [reason, setReason] = useState("");
+  const [oldSigner, setOldSigner] = useState("");
+  const [newSigner, setNewSigner] = useState("");
+  const isGuardian = Boolean(roles & ROLE_GUARDIAN);
   const r32 = stringToHex(reason.slice(0, 31), { size: 32 });
   const call = (fn: string, args: readonly unknown[]) => tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: fn, args });
   const guardians = vault.members.filter((m) => m.roles & ROLE_GUARDIAN);
@@ -66,6 +70,15 @@ export function Security({ vault, refetch, refreshing }: { vault: VaultData; ref
             <KV k="Critical confirmation" v={vault.policy.guardianRequiredCritical ? `${vault.policy.guardianThreshold} of ${guardians.length}` : "not required"} />
             <KV k="Recovery" v={`after ${fmtDuration(vault.policy.recoveryDelay)}, owners can cancel`} last />
           </View>
+        </Card>
+
+        <SectionLabel>Recovery</SectionLabel>
+        <Card>
+          <Text style={[s.rowSub, { marginBottom: 12, lineHeight: 20 }]}>Replace a lost or compromised signer with a new address holding the same roles. It executes after {fmtDuration(vault.policy.recoveryDelay)}, any owner can cancel it, and the vault moves to Elevated when it completes.</Text>
+          <Field label="Signer to replace"><Input value={oldSigner} onChangeText={(t) => setOldSigner(t.trim())} placeholder="0x…" mono /></Field>
+          <Field label="New signer"><Input value={newSigner} onChangeText={(t) => setNewSigner(t.trim())} placeholder="0x…" mono /></Field>
+          <Button icon="life-buoy" disabled={!isGuardian || !isAddress(oldSigner) || !isAddress(newSigner) || tx.busy} loading={tx.busy} onPress={() => call("proposeRecovery", [oldSigner as `0x${string}`, newSigner as `0x${string}`])}>Propose recovery</Button>
+          {!isGuardian && <Text style={[s.hint, { marginTop: 8 }]}>Only a guardian signer can start a recovery.</Text>}
         </Card>
 
         {loss && stable && (

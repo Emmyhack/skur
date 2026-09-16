@@ -8,6 +8,8 @@ import type { VaultData } from "@web/lib/vaultReads";
 import { useMyRoles } from "../hooks/useVault";
 import { useStore } from "../state/store";
 import { Identicon } from "../components/Identicon";
+import { needsMe } from "../hooks/useAlerts";
+import { scanBus } from "../lib/scanBus";
 import { VaultSheet } from "../components/VaultSheet";
 import { Address, Badge, Card, CircleIcon, Icon, IconButton, KV, Row, Screen, Tabs, Tape, TopBar, s } from "../components/ui";
 import { C, F } from "../theme";
@@ -22,6 +24,9 @@ export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch
   const stable = vault.assets.find((a) => a.address !== NATIVE_ASSET) ?? vault.assets[0];
   const pending = vault.proposals.filter((p) => p.status === Status.PENDING).length;
   const canPropose = Boolean(roles & (ROLE_OWNER | ROLE_APPROVER)) && vault.mode !== Mode.LOCKDOWN;
+  const due = needsMe(vault, roles, signer?.address.toLowerCase() ?? null).length;
+  const { setVaultAddress } = useStore();
+  const scanVault = () => { scanBus.request((a) => void setVaultAddress(a as `0x${string}`)); nav.navigate("Scan"); };
   const [whole, frac] = stable ? fmtAmount(stable.balance, stable.decimals, undefined, 2).split(".") : ["—", undefined];
 
   return (
@@ -36,7 +41,7 @@ export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch
                 <Icon name="chevron-down" size={16} color={C.text2} />
               </Pressable>
             }
-            right={<><IconButton name="maximize" onPress={() => nav.navigate("Receive")} /><IconButton name="shield" dot={vault.mode !== Mode.NORMAL} onPress={() => nav.navigate("Security")} /></>}
+            right={<><IconButton name="maximize" onPress={scanVault} /><IconButton name="bell" dot={due > 0 || vault.mode !== Mode.NORMAL} onPress={() => nav.navigate("Notifications")} /></>}
           />
           {vault.mode !== Mode.NORMAL && <Tape />}
         </>
@@ -77,11 +82,12 @@ export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch
         <Tabs value={tab} options={[["tokens", "Tokens"], ["policy", "Policy"], ["members", "Members"]]} onChange={setTab} />
       </View>
       {tab === "tokens" && vault.assets.map((a, i) => (
-        <Row key={a.address} leading={<CircleIcon size={40} tone={a.address === NATIVE_ASSET ? "accent" : "dark"} text={a.symbol.slice(0, 1)} />} title={a.symbol === "sUSD" ? "Skur Test USD" : a.symbol} subtitle={`${fmtAmount(a.balance, a.decimals)} ${a.symbol}`} last={i === vault.assets.length - 1}
+        <Row key={a.address} leading={<CircleIcon size={40} tone={a.address === NATIVE_ASSET ? "accent" : "dark"} text={a.symbol.slice(0, 1)} />} title={a.symbol === "sUSD" ? "Skur Test USD" : a.symbol} subtitle={`${fmtAmount(a.balance, a.decimals)} ${a.symbol}`} onPress={canPropose ? () => nav.navigate("Send", { asset: a.address }) : undefined} last={i === vault.assets.length - 1}
           trailing={<View style={{ alignItems: "flex-end" }}><Text style={s.rowTitle}>{fmtAmount(a.balance, a.decimals)}</Text><Text style={s.rowSub}>{fmtAmount(vault.velocity[a.address]?.daySpent ?? 0n, a.decimals)} of {a.limits.dailyMax ? fmtAmount(a.limits.dailyMax, a.decimals) : "∞"} today</Text></View>} />
       ))}
       {tab === "policy" && (
         <View style={{ paddingHorizontal: 16 }}>
+          <Pressable onPress={() => nav.navigate("Policy")} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10 }}><Icon name="sliders" size={16} color={C.accent} /><Text style={{ fontFamily: F.bodyBold, color: C.accent }}>Edit policy · v{vault.policyVersion}</Text></Pressable>
           <KV k="Approvals" v={`Low ${vault.policy.approvalsLow} · High ${vault.policy.approvalsHigh} · Critical ${vault.policy.approvalsCritical}${vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} guardian` : ""}`} />
           <KV k="Delays" v={`High ${fmtDuration(vault.policy.delayHigh)} · Critical ${fmtDuration(vault.policy.delayCritical)}`} />
           <KV k="New recipients wait" v={fmtDuration(vault.policy.recipientActivationDelay)} />
@@ -91,7 +97,7 @@ export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch
         </View>
       )}
       {tab === "members" && vault.members.map((m, i) => (
-        <Row key={m.address} leading={<Identicon address={m.address} size={36} />} title={short(m.address, 6)} subtitle={m.address.toLowerCase() === signer?.address.toLowerCase() ? "this phone" : undefined} last={i === vault.members.length - 1}
+        <Row key={m.address} leading={<Identicon address={m.address} size={36} />} title={short(m.address, 6)} subtitle={m.address.toLowerCase() === signer?.address.toLowerCase() ? "this phone" : undefined} onPress={() => nav.navigate("Members")} chevron last={i === vault.members.length - 1}
           trailing={<View style={{ flexDirection: "row", gap: 4 }}>{roleNames(m.roles).map((r) => <Badge key={r} tone={r === "Guardian" ? "accent" : "neutral"}>{r}</Badge>)}</View>} />
       ))}
       <VaultSheet open={sheet} onClose={() => setSheet(false)} />
