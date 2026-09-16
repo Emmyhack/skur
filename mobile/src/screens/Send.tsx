@@ -10,14 +10,17 @@ import type { VaultData } from "@web/lib/vaultReads";
 import { publicClient } from "../lib/client";
 import { useInvalidateVault } from "../hooks/useVault";
 import { useTx } from "../hooks/useTx";
-import { Button, Card, Field, Input, KV, Notice, Screen, TierBadge, TxStatus, s } from "../components/ui";
+import { useStore } from "../state/store";
+import { Identicon } from "../components/Identicon";
+import { BackButton, Badge, Button, Card, CircleIcon, Field, Input, KV, Notice, Row, Screen, SignBar, TierBadge, TopBar, TxStatus, s } from "../components/ui";
 import { C, F } from "../theme";
 
-type Preview = { tier: Tier; reasons: number; exposureBps: number; requiredApprovals: number; requiredGuardians: number; delay: number; trust: Trust; activatesAt: bigint };
+type Preview = { tier: Tier; reasons: number; exposureBps: number; requiredApprovals: number; requiredGuardians: number; delay: number; trust: Trust };
 
-/** Send flow: the vault itself classifies the payment before anything is signed. */
+/** Send: big amount, asset chips, recipient and purpose; the vault's own review card; sticky sign bar to propose. */
 export function Send({ vault }: { vault: VaultData }) {
   const nav = useNavigation<{ goBack: () => void; navigate: (n: string, p?: object) => void }>();
+  const { signer } = useStore();
   const invalidate = useInvalidateVault(vault.address);
   const tx = useTx(() => { invalidate(); });
   const [to, setTo] = useState("");
@@ -27,14 +30,14 @@ export function Send({ vault }: { vault: VaultData }) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showWhy, setShowWhy] = useState(true);
   const asset = vault.assets.find((a) => a.address === assetAddr) ?? vault.assets[0];
   const amount = asset ? parseAmount(amountText, asset.decimals) : null;
   const ok = isAddress(to) && amount !== null && amount > 0n && Boolean(asset);
 
   useEffect(() => {
     if (!ok || !asset || amount === null) { setPreview(null); setPreviewError(null); return; }
-    let live = true;
-    setLoading(true);
+    let live = true; setLoading(true);
     (async () => {
       try {
         const [r, rec] = await Promise.all([
@@ -42,7 +45,7 @@ export function Send({ vault }: { vault: VaultData }) {
           publicClient.readContract({ address: vault.address, abi: SkurVaultAbi, functionName: "getRecipient", args: [to as `0x${string}`] }),
         ]);
         if (!live) return;
-        setPreview({ tier: Number(r.tier) as Tier, reasons: Number(r.reasons), exposureBps: Number(r.exposureBps), requiredApprovals: Number(r.requiredApprovals), requiredGuardians: Number(r.requiredGuardians), delay: Number(r.delay), trust: Number(rec.trust) as Trust, activatesAt: rec.activatesAt });
+        setPreview({ tier: Number(r.tier) as Tier, reasons: Number(r.reasons), exposureBps: Number(r.exposureBps), requiredApprovals: Number(r.requiredApprovals), requiredGuardians: Number(r.requiredGuardians), delay: Number(r.delay), trust: Number(rec.trust) as Trust });
         setPreviewError(null);
       } catch (e) { if (live) { setPreview(null); setPreviewError(describeError(e)); } }
       finally { if (live) setLoading(false); }
@@ -52,22 +55,38 @@ export function Send({ vault }: { vault: VaultData }) {
 
   const submit = () => { if (!asset || amount === null) return; void tx.send({ address: vault.address, abi: SkurVaultAbi, functionName: "proposeTransfer", args: [asset.address, to as `0x${string}`, amount, memo] }); };
   const remaining = asset && amount !== null ? asset.balance - amount : 0n;
+  const reasons = preview ? explainReasons(preview.reasons) : [];
+  const done = tx.state.phase === "done";
 
   return (
-    <Screen title="Send tokens" sub="Scored by the vault before you sign">
+    <Screen
+      top={<TopBar left={<BackButton onPress={() => nav.goBack()} />} center={<Text style={s.topTitle}>Send</Text>} />}
+      footer={
+        <View>
+          <TxStatus state={tx.state} />
+          <View style={{ height: 10 }} />
+          {done ? <Button icon="list" onPress={() => nav.navigate("Main", { screen: "Transactions" })}>Open the queue</Button>
+            : <SignBar label="Propose payment" signerAddress={signer?.address} onPress={submit} disabled={!preview || tx.busy} loading={tx.busy} hint={!signer ? "Add a signer key under Settings to propose" : !preview && !loading ? "Fill in the recipient and amount" : undefined} />}
+        </View>
+      }>
+      <Card style={{ alignItems: "center", paddingVertical: 20 }}>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 6 }}>
+          {vault.assets.map((a) => (
+            <Pressable key={a.address} onPress={() => setAssetAddr(a.address)} style={[{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: C.card2 }, a.address === assetAddr && { backgroundColor: C.accent }]}>
+              <CircleIcon size={20} tone={a.address === assetAddr ? "dark" : "accent"} text={a.symbol.slice(0, 1)} />
+              <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: a.address === assetAddr ? C.onAccent : C.text }}>{a.symbol}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Input big value={amountText} onChangeText={setAmountText} placeholder="0.00" keyboardType="decimal-pad" />
+        <Text style={s.rowSub}>{asset ? `Vault holds ${fmtAmount(asset.balance, asset.decimals, asset.symbol)}` : ""}</Text>
+      </Card>
       <Card>
         <Field label="Recipient address" hint="An address this vault has never paid is registered as New and waits out its activation delay first.">
-          <Input value={to} onChangeText={(t) => setTo(t.trim())} placeholder="0x…" mono />
-        </Field>
-        <Field label="Asset">
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {vault.assets.map((a) => (
-              <Pressable key={a.address} onPress={() => setAssetAddr(a.address)} style={[s.segItem, { flex: 0, paddingHorizontal: 14, backgroundColor: a.address === assetAddr ? C.accent : C.panel2 }]}><Text style={[s.segText, a.address === assetAddr && { color: C.onAccent }]}>{a.symbol}</Text></Pressable>
-            ))}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            {isAddress(to) ? <Identicon address={to} size={32} /> : <CircleIcon name="user" size={32} />}
+            <Input value={to} onChangeText={(t) => setTo(t.trim())} placeholder="0x…" mono style={{ flex: 1 }} />
           </View>
-        </Field>
-        <Field label="Amount" hint={asset ? `Vault holds ${fmtAmount(asset.balance, asset.decimals, asset.symbol)}` : undefined}>
-          <Input value={amountText} onChangeText={setAmountText} placeholder="0.00" keyboardType="decimal-pad" />
         </Field>
         <Field label="Purpose" hint="Recorded onchain with the proposal, so approvers know what they are signing.">
           <Input value={memo} onChangeText={setMemo} placeholder="Invoice 1042, design retainer" maxLength={140} />
@@ -76,24 +95,20 @@ export function Send({ vault }: { vault: VaultData }) {
       {loading && <Notice tone="info">Asking the vault how it scores this payment…</Notice>}
       {previewError && <Notice tone="bad">{previewError}</Notice>}
       {preview && asset && amount !== null && (
-        <Card title="Review">
-          <KV k="Action" v={`Send ${fmtAmount(amount, asset.decimals, asset.symbol)} to ${short(to)}`} />
-          <KV k="Treasury impact" v={`${fmtBps(preview.exposureBps)} of holdings · ${fmtAmount(remaining < 0n ? 0n : remaining, asset.decimals, asset.symbol)} remains`} />
-          <KV k="Recipient" v={`${TRUST_LABEL[preview.trust]}${preview.trust === Trust.UNKNOWN ? " · will be registered as New" : ""}`} />
-          <KV k="Risk tier" v={<TierBadge tier={preview.tier} />} />
-          <KV k="Requirement" v={`${TIER_LABEL[preview.tier]} · ${preview.requiredApprovals} approval${preview.requiredApprovals === 1 ? "" : "s"}${preview.requiredGuardians ? ` + ${preview.requiredGuardians} guardian` : ""}${preview.delay ? ` · after ${fmtDuration(preview.delay)}` : " · no delay"}`} last={explainReasons(preview.reasons).length === 0} />
-          {explainReasons(preview.reasons).length > 0 && (
-            <View style={{ paddingTop: 10 }}>
-              <Text style={s.kvK}>Why this tier</Text>
-              {explainReasons(preview.reasons).map((t) => <Text key={t} style={{ fontFamily: F.body, color: C.text, fontSize: 14, lineHeight: 22 }}>▪ {t}</Text>)}
-            </View>
-          )}
-        </Card>
+        <>
+          <Card flush>
+            <Row leading={<CircleIcon name="shield" size={36} tone={preview.tier === Tier.LOW ? "success" : preview.tier === Tier.HIGH ? "warn" : "error"} />} title="Transaction checks" subtitle={`${TIER_LABEL[preview.tier]} · ${preview.requiredApprovals} approval${preview.requiredApprovals === 1 ? "" : "s"}${preview.requiredGuardians ? ` + ${preview.requiredGuardians} guardian` : ""}${preview.delay ? ` · after ${fmtDuration(preview.delay)}` : " · no delay"}`} trailing={<TierBadge tier={preview.tier} />} chevron onPress={() => setShowWhy((v) => !v)} last={!showWhy} />
+            {showWhy && (
+              <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
+                <KV k="Sends" v={`${fmtAmount(amount, asset.decimals, asset.symbol)} to ${short(to)}`} />
+                <KV k="Treasury impact" v={`${fmtBps(preview.exposureBps)} · ${fmtAmount(remaining < 0n ? 0n : remaining, asset.decimals, asset.symbol)} remains`} />
+                <KV k="Recipient" v={<Badge tone={preview.trust === Trust.UNKNOWN || preview.trust === Trust.NEW ? "info" : "ok"}>{TRUST_LABEL[preview.trust]}{preview.trust === Trust.UNKNOWN ? " · registered as New" : ""}</Badge>} last={reasons.length === 0} />
+                {reasons.length > 0 && <View style={{ paddingTop: 10 }}><Text style={s.kvK}>Why this tier</Text>{reasons.map((t) => <Text key={t} style={{ fontFamily: F.body, color: C.text, fontSize: 14, lineHeight: 22 }}>▪ {t}</Text>)}</View>}
+              </View>
+            )}
+          </Card>
+        </>
       )}
-      <Button disabled={!preview || tx.busy || tx.state.phase === "done"} loading={tx.busy} onPress={submit}>Propose payment</Button>
-      <TxStatus state={tx.state} />
-      {tx.state.phase === "done" && <Button kind="secondary" style={{ marginTop: 10 }} onPress={() => nav.navigate("Main", { screen: "Transactions" })}>Open the queue</Button>}
-      <Button kind="ghost" onPress={() => nav.goBack()}>Back</Button>
     </Screen>
   );
 }

@@ -1,73 +1,116 @@
 import { useNavigation } from "@react-navigation/native";
+import { useState } from "react";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import { NATIVE_ASSET } from "@web/config/chain";
 import { fmtAmount, fmtDuration, short } from "@web/lib/format";
-import { Mode, ROLE_APPROVER, ROLE_OWNER, Status } from "@web/lib/types";
+import { Mode, ROLE_APPROVER, ROLE_OWNER, roleNames, Status } from "@web/lib/types";
 import type { VaultData } from "@web/lib/vaultReads";
-import { describeProposal, statusText } from "../lib/describe";
 import { useMyRoles } from "../hooks/useVault";
 import { useStore } from "../state/store";
-import { Address, Badge, Button, Card, Empty, KV, ModeBadge, Screen, Tape, s } from "../components/ui";
+import { Identicon } from "../components/Identicon";
+import { VaultSheet } from "../components/VaultSheet";
+import { Address, Badge, Card, CircleIcon, Icon, IconButton, KV, Row, Screen, Tabs, Tape, TopBar, s } from "../components/ui";
 import { C, F } from "../theme";
 
 export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch: () => void; refreshing: boolean }) {
   const nav = useNavigation<{ navigate: (n: string, p?: object) => void }>();
   const { labels, signer } = useStore();
   const roles = useMyRoles(vault);
+  const [sheet, setSheet] = useState(false);
+  const [tab, setTab] = useState<"tokens" | "policy" | "members">("tokens");
   const label = labels[vault.address.toLowerCase()] ?? "Treasury vault";
   const stable = vault.assets.find((a) => a.address !== NATIVE_ASSET) ?? vault.assets[0];
-  const native = vault.assets.find((a) => a.address === NATIVE_ASSET);
-  const pending = vault.proposals.filter((p) => p.status === Status.PENDING);
+  const pending = vault.proposals.filter((p) => p.status === Status.PENDING).length;
   const canPropose = Boolean(roles & (ROLE_OWNER | ROLE_APPROVER)) && vault.mode !== Mode.LOCKDOWN;
+  const [whole, frac] = stable ? fmtAmount(stable.balance, stable.decimals, undefined, 2).split(".") : ["—", undefined];
 
   return (
-    <Screen title={label} sub={short(vault.address, 6)} right={<ModeBadge mode={vault.mode} />} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={C.accent} />}>
-      {vault.mode !== Mode.NORMAL && <Tape running={vault.mode === Mode.LOCKDOWN} />}
-      <Card style={vault.mode !== Mode.NORMAL ? { borderTopLeftRadius: 0, borderTopRightRadius: 0 } : undefined}>
-        <Text style={s.kvK}>Total balance</Text>
-        <Text style={{ fontFamily: F.display, fontSize: 34, color: C.text, letterSpacing: -1, marginVertical: 4 }}>{stable ? fmtAmount(stable.balance, stable.decimals, stable.symbol) : "—"}</Text>
-        <Text style={s.hint}>{native ? `+ ${fmtAmount(native.balance, native.decimals, native.symbol)}` : ""} · policy v{vault.policyVersion} · {vault.members.length} members</Text>
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
-          <Button style={{ flex: 1 }} disabled={!canPropose} onPress={() => nav.navigate("Send")}>Send</Button>
-          <Button style={{ flex: 1 }} kind="secondary" onPress={() => nav.navigate("Receive")}>Receive</Button>
+    <Screen padded={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refetch} tintColor={C.accent} />}
+      top={
+        <>
+          <TopBar
+            left={
+              <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => setSheet(true)} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Identicon address={vault.address} size={36} badge={`${vault.policy.approvalsLow}/${vault.counts.approvers}`} />
+                <Text style={{ fontFamily: F.bodyBold, fontSize: 17, color: C.text }} numberOfLines={1}>{label}</Text>
+                <Icon name="chevron-down" size={16} color={C.text2} />
+              </Pressable>
+            }
+            right={<><IconButton name="maximize" onPress={() => nav.navigate("Receive")} /><IconButton name="shield" dot={vault.mode !== Mode.NORMAL} onPress={() => nav.navigate("Security")} /></>}
+          />
+          {vault.mode !== Mode.NORMAL && <Tape />}
+        </>
+      }>
+      <View style={{ padding: 16, paddingTop: 8 }}>
+        {pending > 0 && (
+          <Pressable onPress={() => nav.navigate("Main", { screen: "Transactions" })} style={h.pending}>
+            <View style={h.count}><Text style={{ fontFamily: F.bodyBold, fontSize: 12, color: C.onAccent }}>{pending}</Text></View>
+            <Text style={{ fontFamily: F.bodyBold, fontSize: 15, color: C.accent, flex: 1 }}>Pending transactions</Text>
+            <Icon name="chevron-right" size={18} color={C.accent} />
+          </Pressable>
+        )}
+        {vault.mode !== Mode.NORMAL && (
+          <Pressable onPress={() => nav.navigate("Security")} style={[h.pending, { backgroundColor: vault.mode === Mode.LOCKDOWN ? C.errorBg : C.warningBg }]}>
+            <Icon name="alert-triangle" size={16} color={vault.mode === Mode.LOCKDOWN ? C.error : C.warning} />
+            <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: vault.mode === Mode.LOCKDOWN ? C.error : C.warning, flex: 1 }}>{vault.mode === Mode.LOCKDOWN ? "Lockdown: outgoing payments are frozen" : "Elevated: every payment scored one tier higher"}</Text>
+            <Icon name="chevron-right" size={18} color={vault.mode === Mode.LOCKDOWN ? C.error : C.warning} />
+          </Pressable>
+        )}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: C.accent, alignItems: "center", justifyContent: "center" }}><Text style={{ fontFamily: F.display, fontSize: 11, color: C.onAccent }}>A</Text></View>
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: C.text }}>Ark devnet</Text>
+          <Address value={vault.address} />
         </View>
-        {!signer && <Text style={[s.hint, { marginTop: 10 }]}>Read-only: add a signer key under Settings to confirm or propose.</Text>}
-        {signer && roles === 0 && <Text style={[s.hint, { marginTop: 10 }]}>Read-only: {short(signer.address)} is not a member of this vault.</Text>}
-      </Card>
-
-      {vault.mode !== Mode.NORMAL && (
-        <Card>
-          <Badge tone={vault.mode === Mode.LOCKDOWN ? "bad" : "warn"}>{vault.mode === Mode.LOCKDOWN ? "LOCKDOWN" : "ELEVATED"}</Badge>
-          <Text style={[s.cardTitle, { marginTop: 8 }]}>{vault.mode === Mode.LOCKDOWN ? "Outgoing payments are frozen" : "Every payment is scored one tier higher"}</Text>
-          <Text style={[s.sub, { marginTop: 4 }]}>{vault.mode === Mode.LOCKDOWN ? "Deposits, tightening changes, recovery and guardian actions still work." : "Per-transaction and daily caps are halved until owners and guardians lower the mode."}</Text>
-        </Card>
+        <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 8 }}>
+          <Text style={h.balance}>{whole}</Text>
+          {frac ? <Text style={[h.balance, { color: C.text3 }]}>.{frac}</Text> : null}
+          <Text style={[h.balance, { fontSize: 20, color: C.text2, marginLeft: 8 }]}>{stable?.symbol}</Text>
+        </View>
+        <Text style={s.rowSub}>policy v{vault.policyVersion} · {vault.members.length} members · {roleNames(roles).join(", ") || (signer ? "not a member" : "read-only")}</Text>
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
+          <Action icon="arrow-up-right" label="Send" tone="accent" disabled={!canPropose} onPress={() => nav.navigate("Send")} />
+          <Action icon="arrow-down-left" label="Receive" onPress={() => nav.navigate("Receive")} />
+          <Action icon="shield" label="Security" onPress={() => nav.navigate("Security")} />
+        </View>
+      </View>
+      <View style={{ paddingHorizontal: 16 }}>
+        <Tabs value={tab} options={[["tokens", "Tokens"], ["policy", "Policy"], ["members", "Members"]]} onChange={setTab} />
+      </View>
+      {tab === "tokens" && vault.assets.map((a, i) => (
+        <Row key={a.address} leading={<CircleIcon size={40} tone={a.address === NATIVE_ASSET ? "accent" : "dark"} text={a.symbol.slice(0, 1)} />} title={a.symbol === "sUSD" ? "Skur Test USD" : a.symbol} subtitle={`${fmtAmount(a.balance, a.decimals)} ${a.symbol}`} last={i === vault.assets.length - 1}
+          trailing={<View style={{ alignItems: "flex-end" }}><Text style={s.rowTitle}>{fmtAmount(a.balance, a.decimals)}</Text><Text style={s.rowSub}>{fmtAmount(vault.velocity[a.address]?.daySpent ?? 0n, a.decimals)} of {a.limits.dailyMax ? fmtAmount(a.limits.dailyMax, a.decimals) : "∞"} today</Text></View>} />
+      ))}
+      {tab === "policy" && (
+        <View style={{ paddingHorizontal: 16 }}>
+          <KV k="Approvals" v={`Low ${vault.policy.approvalsLow} · High ${vault.policy.approvalsHigh} · Critical ${vault.policy.approvalsCritical}${vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} guardian` : ""}`} />
+          <KV k="Delays" v={`High ${fmtDuration(vault.policy.delayHigh)} · Critical ${fmtDuration(vault.policy.delayCritical)}`} />
+          <KV k="New recipients wait" v={fmtDuration(vault.policy.recipientActivationDelay)} />
+          <KV k="Security-reducing changes wait" v={fmtDuration(vault.policy.policyChangeDelay)} />
+          <KV k="Circuit breaker" v={vault.policy.envelopeBps ? `${vault.policy.envelopeBps / 100}% per ${fmtDuration(vault.policy.envelopeWindow)}` : "off"} />
+          {stable && <KV k={`${stable.symbol} limits`} v={`routine ≤ ${fmtAmount(stable.limits.lowMax, stable.decimals)} · per tx ≤ ${stable.limits.perTxMax ? fmtAmount(stable.limits.perTxMax, stable.decimals) : "∞"} · daily ≤ ${stable.limits.dailyMax ? fmtAmount(stable.limits.dailyMax, stable.decimals) : "∞"}`} last />}
+        </View>
       )}
-
-      <Card title="Pending transactions" action={pending.length > 0 ? <Pressable onPress={() => nav.navigate("Transactions")}><Text style={{ color: C.accent, fontFamily: F.bodyBold }}>View all ›</Text></Pressable> : undefined}>
-        {vault.activityLoading ? <Empty>Reading the queue from the chain…</Empty> : pending.length === 0 ? <Empty>Nothing waiting for a signature</Empty> : pending.slice(0, 4).map((p) => {
-          const d = describeProposal(p, vault);
-          return (
-            <Pressable key={String(p.id)} onPress={() => nav.navigate("TxDetail", { id: String(p.id) })} style={s.kv}>
-              <View style={{ flex: 1 }}><Text style={{ fontFamily: F.bodyMedium, color: C.text, fontSize: 14 }}>{d.title} · {d.detail}</Text></View>
-              <Badge tone="warn">{statusText(p)}</Badge>
-            </Pressable>
-          );
-        })}
-      </Card>
-
-      <Card title="Assets">
-        {vault.assets.map((a, i) => (
-          <KV key={a.address} k={a.symbol} v={`${fmtAmount(a.balance, a.decimals)} · ${fmtAmount(vault.velocity[a.address]?.daySpent ?? 0n, a.decimals)} of ${a.limits.dailyMax ? fmtAmount(a.limits.dailyMax, a.decimals) : "∞"} today`} last={i === vault.assets.length - 1} />
-        ))}
-      </Card>
-
-      <Card title="Policy at a glance" action={<Pressable onPress={() => nav.navigate("Security")}><Text style={{ color: C.accent, fontFamily: F.bodyBold }}>Security ›</Text></Pressable>}>
-        <KV k="Approvals" v={`Low ${vault.policy.approvalsLow} · High ${vault.policy.approvalsHigh} · Critical ${vault.policy.approvalsCritical}${vault.policy.guardianRequiredCritical ? ` + ${vault.policy.guardianThreshold} guardian` : ""}`} />
-        <KV k="Delays" v={`High ${fmtDuration(vault.policy.delayHigh)} · Critical ${fmtDuration(vault.policy.delayCritical)}`} />
-        <KV k="New recipients wait" v={fmtDuration(vault.policy.recipientActivationDelay)} />
-        <KV k="Circuit breaker" v={vault.policy.envelopeBps ? `${vault.policy.envelopeBps / 100}% per ${fmtDuration(vault.policy.envelopeWindow)}` : "off"} last />
-      </Card>
-      <Text style={[s.hint, { textAlign: "center" }]}>Vault <Address value={vault.address} full /></Text>
+      {tab === "members" && vault.members.map((m, i) => (
+        <Row key={m.address} leading={<Identicon address={m.address} size={36} />} title={short(m.address, 6)} subtitle={m.address.toLowerCase() === signer?.address.toLowerCase() ? "this phone" : undefined} last={i === vault.members.length - 1}
+          trailing={<View style={{ flexDirection: "row", gap: 4 }}>{roleNames(m.roles).map((r) => <Badge key={r} tone={r === "Guardian" ? "accent" : "neutral"}>{r}</Badge>)}</View>} />
+      ))}
+      <VaultSheet open={sheet} onClose={() => setSheet(false)} />
     </Screen>
   );
 }
+
+function Action({ icon, label, onPress, tone = "dark", disabled }: { icon: "arrow-up-right" | "arrow-down-left" | "shield"; label: string; onPress: () => void; tone?: "dark" | "accent"; disabled?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [h.action, tone === "accent" && { backgroundColor: C.accent }, { opacity: disabled ? 0.4 : pressed ? 0.8 : 1 }]}>
+      <Icon name={icon} size={16} color={tone === "accent" ? C.onAccent : C.text} />
+      <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: tone === "accent" ? C.onAccent : C.text }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const h = {
+  pending: { flexDirection: "row" as const, alignItems: "center" as const, gap: 10, backgroundColor: C.accentBg, borderRadius: 14, paddingHorizontal: 14, height: 48, marginBottom: 12 },
+  count: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: C.accent, alignItems: "center" as const, justifyContent: "center" as const, paddingHorizontal: 6 },
+  balance: { fontFamily: F.display, fontSize: 40, color: C.text, letterSpacing: -1.2 },
+  action: { flex: 1, height: 44, borderRadius: 12, backgroundColor: C.card, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 6 },
+};

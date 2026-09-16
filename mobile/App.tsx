@@ -11,12 +11,15 @@ import { useEffect } from "react";
 import { isAddress } from "viem";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Status } from "@web/lib/types";
 import { Notice, Screen } from "./src/components/ui";
 import { useVault } from "./src/hooks/useVault";
 import { Home } from "./src/screens/Home";
 import { Onboard } from "./src/screens/Onboard";
+import { Welcome } from "./src/screens/Welcome";
+import { Logo } from "./src/components/ui";
 import { Receive } from "./src/screens/Receive";
 import { Security } from "./src/screens/Security";
 import { Send } from "./src/screens/Send";
@@ -29,25 +32,22 @@ import { C, F } from "./src/theme";
 const queryClient = new QueryClient();
 const Tabs = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.canvas, card: C.panel, border: C.border, primary: C.accent, text: C.text } };
+const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.canvas, card: C.card, border: C.border, primary: C.accent, text: C.text } };
 
-function TabIcon({ glyph, color }: { glyph: string; color: string }) {
-  return <Text style={{ color, fontSize: 18, fontFamily: F.bodyBold }}>{glyph}</Text>;
-}
+
 
 function VaultApp() {
   const { vaultAddress } = useStore();
   const { data: vault, error, isLoading, refetch, refreshing } = useVault(vaultAddress);
   if (!vaultAddress) return <Onboard />;
-  if (error && !vault) return <Screen title="Skur"><Notice tone="bad">Could not read the vault: {(error as Error).message}</Notice></Screen>;
+  if (error && !vault) return <Screen><Notice tone="bad">Could not read the vault: {(error as Error).message}</Notice></Screen>;
   if (isLoading || !vault) return <View style={{ flex: 1, backgroundColor: C.canvas, alignItems: "center", justifyContent: "center" }}><ActivityIndicator color={C.accent} /><Text style={{ color: C.text2, marginTop: 12, fontFamily: F.body }}>Reading the vault from the chain…</Text></View>;
   const pending = vault.proposals.filter((p) => p.status === Status.PENDING).length;
   const TabsScreen = () => (
-    <Tabs.Navigator screenOptions={{ headerShown: false, tabBarStyle: { backgroundColor: C.panel, borderTopColor: C.border }, tabBarActiveTintColor: C.accent, tabBarInactiveTintColor: C.text2, tabBarLabelStyle: { fontFamily: F.bodyMedium, fontSize: 11 } }}>
-      <Tabs.Screen name="Home" options={{ tabBarIcon: ({ color }) => <TabIcon glyph="▣" color={color} /> }}>{() => <Home vault={vault} refetch={refetch} refreshing={refreshing} />}</Tabs.Screen>
-      <Tabs.Screen name="Transactions" options={{ tabBarIcon: ({ color }) => <TabIcon glyph="⇄" color={color} />, tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: C.accent, color: C.onAccent, fontFamily: F.bodyBold } }}>{() => <Transactions vault={vault} refetch={refetch} refreshing={refreshing} />}</Tabs.Screen>
-      <Tabs.Screen name="Security" options={{ tabBarIcon: ({ color }) => <TabIcon glyph="⛨" color={color} /> }}>{() => <Security vault={vault} refetch={refetch} refreshing={refreshing} />}</Tabs.Screen>
-      <Tabs.Screen name="Settings" options={{ tabBarIcon: ({ color }) => <TabIcon glyph="⚙" color={color} /> }}>{() => <Settings vault={vault} />}</Tabs.Screen>
+    <Tabs.Navigator screenOptions={{ headerShown: false, tabBarShowLabel: false, tabBarStyle: { backgroundColor: C.card, borderTopColor: C.border, height: 84 }, tabBarActiveTintColor: C.accent, tabBarInactiveTintColor: C.text2 }}>
+      <Tabs.Screen name="Home" options={{ tabBarIcon: ({ color }) => <Feather name="home" size={24} color={color} /> }}>{() => <Home vault={vault} refetch={refetch} refreshing={refreshing} />}</Tabs.Screen>
+      <Tabs.Screen name="Transactions" options={{ tabBarIcon: ({ color }) => <Feather name="repeat" size={24} color={color} />, tabBarBadge: pending || undefined, tabBarBadgeStyle: { backgroundColor: C.accent, color: C.onAccent, fontFamily: F.bodyBold, fontSize: 11 } }}>{() => <Transactions vault={vault} refetch={refetch} refreshing={refreshing} />}</Tabs.Screen>
+      <Tabs.Screen name="Settings" options={{ tabBarIcon: ({ color }) => <Feather name="settings" size={24} color={color} /> }}>{() => <Settings vault={vault} />}</Tabs.Screen>
     </Tabs.Navigator>
   );
   return (
@@ -56,6 +56,7 @@ function VaultApp() {
       <Stack.Screen name="TxDetail">{() => <TxDetail vault={vault} />}</Stack.Screen>
       <Stack.Screen name="Send" options={{ presentation: "modal" }}>{() => <Send vault={vault} />}</Stack.Screen>
       <Stack.Screen name="Receive" options={{ presentation: "modal" }}>{() => <Receive vault={vault} />}</Stack.Screen>
+      <Stack.Screen name="Security">{() => <Security vault={vault} refetch={refetch} refreshing={refreshing} />}</Stack.Screen>
     </Stack.Navigator>
   );
 }
@@ -78,17 +79,18 @@ function useDeepLinks() {
 }
 
 function Gate() {
-  const { ready } = useStore();
+  const { ready, onboarded, setOnboarded, vaultAddress } = useStore();
   useDeepLinks();
-  if (!ready) return <View style={{ flex: 1, backgroundColor: C.canvas }} />;
+  if (!ready) return <View style={{ flex: 1, backgroundColor: C.canvas, alignItems: "center", justifyContent: "center" }}><Logo size={64} wordmark={false} /></View>;
+  if (!onboarded && !vaultAddress) return <Welcome onDone={() => void setOnboarded()} />;
   return <VaultApp />;
 }
 
-type TabParams = { Home: undefined; Transactions: undefined; Security: undefined; Settings: undefined };
-type RootParams = { Main: NavigatorScreenParams<TabParams>; TxDetail: { id: string }; Send: undefined; Receive: undefined };
+type TabParams = { Home: undefined; Transactions: undefined; Settings: undefined };
+type RootParams = { Main: NavigatorScreenParams<TabParams>; TxDetail: { id: string }; Send: undefined; Receive: undefined; Security: undefined };
 const linking: LinkingOptions<RootParams> = {
   prefixes: [Linking.createURL("/"), "skur://"],
-  config: { screens: { Main: { screens: { Home: "home", Transactions: "transactions", Security: "security", Settings: "settings" } }, TxDetail: "tx/:id", Send: "send", Receive: "receive" } },
+  config: { screens: { Main: { screens: { Home: "home", Transactions: "transactions", Settings: "settings" } }, TxDetail: "tx/:id", Send: "send", Receive: "receive", Security: "security" } },
 };
 
 export default function App() {

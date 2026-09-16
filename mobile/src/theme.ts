@@ -1,8 +1,8 @@
-/** Skur mobile: charcoal ground, #FFD000 used the way hazard tape is used. Mirrors web/src/styles.css dark tokens. */
+/** Skur mobile: Safe{Mobile}'s skeleton in Skur's clothes. Charcoal ground instead of black, #FFD000 as hazard tape and highlighter. */
 export const C = {
   canvas: "#212529",
-  panel: "#2b3035",
-  panel2: "#343a40",
+  card: "#2b3035",
+  card2: "#343a40",
   border: "#495057",
   text: "#f8f9fa",
   text2: "#adb5bd",
@@ -30,4 +30,4 @@ export const F = {
   monoMedium: "DMMono_500Medium",
 } as const;
 
-export const R = { sm: 6, md: 10, lg: 14 } as const;
+export const R = { sm: 8, md: 12, lg: 16, pill: 999 } as const;

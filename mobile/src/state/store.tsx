@@ -16,10 +16,12 @@ type Store = {
   removeSigner: () => Promise<void>;
   biometrics: boolean;
   setBiometrics: (on: boolean) => Promise<void>;
+  onboarded: boolean;
+  setOnboarded: () => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
-const K = { vault: "skur.vault", labels: "skur.labels", bio: "skur.biometrics", signer: "skur.signer" };
+const K = { vault: "skur.vault", labels: "skur.labels", bio: "skur.biometrics", signer: "skur.signer", onboarded: "skur.onboarded" };
 
 /** App state. The signer's private key lives only in the device keychain (expo-secure-store); nothing leaves the phone but signed transactions. */
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -28,11 +30,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [signer, setSigner] = useState<Signer | null>(null);
   const [biometrics, setBio] = useState(true);
+  const [onboarded, setOnb] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const [v, l, b, key] = await Promise.all([AsyncStorage.getItem(K.vault), AsyncStorage.getItem(K.labels), AsyncStorage.getItem(K.bio), SecureStore.getItemAsync(K.signer)]);
+        const [v, l, b, key, o] = await Promise.all([AsyncStorage.getItem(K.vault), AsyncStorage.getItem(K.labels), AsyncStorage.getItem(K.bio), SecureStore.getItemAsync(K.signer), AsyncStorage.getItem(K.onboarded)]);
+        if (o === "1") setOnb(true);
         if (v) setVault(v as `0x${string}`);
         if (l) setLabels(JSON.parse(l));
         if (b !== null) setBio(b === "1");
@@ -50,8 +54,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const importSigner = useCallback((raw: string) => { const k = (raw.trim().startsWith("0x") ? raw.trim() : `0x${raw.trim()}`) as `0x${string}`; if (!/^0x[0-9a-fA-F]{64}$/.test(k)) throw new Error("A private key is 64 hex characters."); return persistSigner(k); }, [persistSigner]);
   const removeSigner = useCallback(async () => { await SecureStore.deleteItemAsync(K.signer); setSigner(null); }, []);
   const setBiometrics = useCallback(async (on: boolean) => { setBio(on); await AsyncStorage.setItem(K.bio, on ? "1" : "0"); }, []);
+  const setOnboarded = useCallback(async () => { setOnb(true); await AsyncStorage.setItem(K.onboarded, "1"); }, []);
 
-  const value = useMemo<Store>(() => ({ ready, vaultAddress, setVaultAddress, labels, setLabel, signer, createSigner, importSigner, removeSigner, biometrics, setBiometrics }), [ready, vaultAddress, setVaultAddress, labels, setLabel, signer, createSigner, importSigner, removeSigner, biometrics, setBiometrics]);
+  const value = useMemo<Store>(() => ({ ready, vaultAddress, setVaultAddress, labels, setLabel, signer, createSigner, importSigner, removeSigner, biometrics, setBiometrics, onboarded, setOnboarded }), [ready, vaultAddress, setVaultAddress, labels, setLabel, signer, createSigner, importSigner, removeSigner, biometrics, setBiometrics, onboarded, setOnboarded]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

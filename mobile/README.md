@@ -1,6 +1,6 @@
 # Skur mobile
 
-The phone companion to the Skur web interface: open a vault, read its balances, queue, policy and security posture, and confirm, execute, veto or propose from the phone. Built with Expo and React Native for iOS and Android.
+The phone companion to the Skur web interface, built after Safe{Mobile}'s structure in Skur's own pattern: a splash with the logo, a three-page onboarding carousel, a Home with the vault switcher, chain row, big balance and Tokens, Policy and Members tabs, Transactions grouped by date, a Confirm-transaction screen with a sticky sign bar, Send with the vault's own review, Security, and Settings as grouped rows. Charcoal ground, #FFD000 as hazard tape and highlighter, Space Grotesk for display, the same identicons as the web. Built with Expo and React Native for iOS and Android.
 
 ## What it shares with the web app
 
