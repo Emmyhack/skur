@@ -12,6 +12,7 @@ Skur is a self-custodial vault whose security requirements change with transacti
 |---|---|
 | [contracts/](contracts/) | Foundry project: `SkurVault`, `SkurFactory`, `SkurPolicyLib`, `SkurRisk`, the devnet stablecoin, tests, invariants and deploy script |
 | [web/](web/) | Client-side interface (Vite, React, wagmi/viem). Reads contract state and events directly; submits user-signed transactions |
+| [mobile/](mobile/) | iOS and Android app (Expo, React Native). Same vault reads, risk engine and error texts as the web app, shared from `web/src/lib`; signs with a key kept in the device keychain behind Face ID or Touch ID. |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Every open question from the blueprint, resolved |
 | [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md) | Roles, lifecycle, the twelve invariants and the tests that prove each |
 | [docs/scriipture-capability-report.md](docs/scriipture-capability-report.md) | Why the contracts are plain Solidity instead of Scriipture TypeScript |

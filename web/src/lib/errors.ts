@@ -1,0 +1,54 @@
+import { BaseError, ContractFunctionRevertedError } from "viem";
+
+/** Maps the vault's custom errors to plain language. Shared by web and mobile. */
+const ERROR_TEXT: Record<string, (a: readonly unknown[]) => string> = {
+  NotAuthorized: (a) => `Your wallet does not hold the required role (${roleText(Number(a[0]))}).`,
+  VaultLocked: () => "The vault is in Lockdown. Outgoing payments and security-reducing changes are blocked until it is lowered.",
+  Timelocked: (a) => `This cannot execute before ${new Date(Number(a[0]) * 1000).toLocaleString()}.`,
+  InsufficientApprovals: (a) => `${a[0]} of the required ${a[1]} approvals are in place.`,
+  InsufficientGuardians: (a) => `${a[0]} of the required ${a[1]} guardian confirmations are in place.`,
+  PerTxLimitExceeded: () => "This amount is above the per-transaction cap for the asset.",
+  VelocityExceeded: () => "This would push today's outflow past the 24-hour cap for the asset.",
+  ExposureHardBlocked: (a) => `This would move ${Number(a[0]) / 100}% of holdings; the policy refuses anything above ${Number(a[1]) / 100}%.`,
+  RecipientBlocked: () => "This recipient is blocked by policy.",
+  AssetNotApproved: () => "This asset is not on the vault's approved list.",
+  AlreadyApproved: () => "You have already confirmed this proposal.",
+  NotPending: () => "This proposal is no longer open.",
+  ProposalExpired: () => "This proposal has expired.",
+  NotVetoable: () => "Guardians cannot veto this proposal: it is neither critical, probationary nor security-reducing.",
+  ModeNotStricter: () => "The mode can only be raised directly. Lowering it goes through governance.",
+  ModeNotRelaxation: () => "That mode is not lower than the current one.",
+  InvalidPolicy: (a) => `Invalid policy: ${String(a[0])}.`,
+  ThresholdUnsatisfiable: (a) => `Thresholds would be unsatisfiable: ${String(a[0])}.`,
+  InvalidProposal: (a) => `Invalid proposal: ${String(a[0])}.`,
+  InvalidRoles: () => "Guardians cannot hold treasury roles, and roles must be valid.",
+  MemberExists: () => "That address is already a member.",
+  NotMember: () => "That address is not a member.",
+  InsufficientBalance: () => "The vault does not hold enough of this asset right now.",
+  AmountZero: () => "Amount must be greater than zero.",
+  ZeroAddress: () => "Address cannot be empty.",
+  NotCancellable: () => "Only the proposer or an owner can cancel this.",
+};
+
+function roleText(bits: number): string {
+  const n: string[] = [];
+  if (bits & 1) n.push("Owner");
+  if (bits & 2) n.push("Approver");
+  if (bits & 4) n.push("Executor");
+  if (bits & 8) n.push("Guardian");
+  return n.join(" or ") || "unknown";
+}
+
+export function describeError(e: unknown): string {
+  if (e instanceof BaseError) {
+    const revert = e.walk((err) => err instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;
+    if (revert?.data) {
+      const name = revert.data.errorName;
+      const f = ERROR_TEXT[name];
+      if (f) return f(revert.data.args ?? []);
+      return `${name}(${(revert.data.args ?? []).map(String).join(", ")})`;
+    }
+    return e.shortMessage;
+  }
+  return e instanceof Error ? e.message : String(e);
+}

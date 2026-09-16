@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Skur",
+    "slug": "skur",
+    "scheme": "skur",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#212529",
+    "splash": { "image": "./assets/splash-icon.png", "resizeMode": "contain", "backgroundColor": "#212529" },
+    "ios": { "supportsTablet": false, "bundleIdentifier": "io.skur.vault", "infoPlist": { "NSFaceIDUsageDescription": "Skur uses Face ID to approve signatures from this device." } },
+    "android": {
+      "package": "io.skur.vault",
+      "adaptiveIcon": { "backgroundColor": "#212529", "foregroundImage": "./assets/android-icon-foreground.png", "backgroundImage": "./assets/android-icon-background.png", "monochromeImage": "./assets/android-icon-monochrome.png" },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": ["expo-secure-store", "expo-local-authentication", "expo-font"]
+  }
+}
