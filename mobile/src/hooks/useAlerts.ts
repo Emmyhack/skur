@@ -45,5 +45,5 @@ export function useAlerts(vault: VaultData | undefined) {
       await AsyncStorage.setItem(key, JSON.stringify([...seen.current!]));
       await Notifications.setBadgeCountAsync(due.length).catch(() => undefined);
     })();
-  }, [vault, roles, signer, notifications]);
+  }, [vault, vault?.address, vault?.proposalCount, roles, signer?.address, notifications]);
 }
