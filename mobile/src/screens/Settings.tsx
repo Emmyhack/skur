@@ -58,14 +58,6 @@ export function Settings({ vault }: { vault: VaultData | undefined }) {
           ))}
         </Card>
 
-        <SectionLabel>Environment</SectionLabel>
-        <Card flush>
-          <Row leading={<CircleIcon size={36} tone="accent" text="A" />} title="Ark Constellation devnet" subtitle="chain 9000" />
-          <Row leading={<CircleIcon name="server" size={36} />} title="RPC" subtitle={ARK_DEVNET_RPC.replace("https://", "")} />
-          <Row leading={<CircleIcon name="box" size={36} />} title="Factory" subtitle={<Address value={DEPLOYMENTS.factory} />} />
-          <Row leading={<CircleIcon name="cpu" size={36} />} title="Vault implementation" subtitle={<Address value={DEPLOYMENTS.vaultImplementation} />} />
-          <Row leading={<CircleIcon name="info" size={36} />} title="Skur V1" subtitle={`demo vault ${short(DEPLOYMENTS.demoVault)}`} last />
-        </Card>
       </View>
     </Screen>
   );

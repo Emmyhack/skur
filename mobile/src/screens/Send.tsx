@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { scanBus } from "../lib/scanBus";
 import { Identicon } from "../components/Identicon";
+import { TokenMark } from "../components/TokenMark";
 import { isAddress } from "viem";
 import { SkurVaultAbi } from "@web/abi/SkurVault";
 import { fmtAmount, fmtBps, fmtDuration, parseAmount, short } from "@web/lib/format";
@@ -78,7 +79,7 @@ export function Send({ vault }: { vault: VaultData }) {
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 6 }}>
           {vault.assets.map((a) => (
             <Pressable key={a.address} onPress={() => setAssetAddr(a.address)} style={[{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: C.card2 }, a.address === assetAddr && { backgroundColor: C.accent }]}>
-              <CircleIcon size={20} tone={a.address === assetAddr ? "dark" : "accent"} text={a.symbol.slice(0, 1)} />
+              <TokenMark symbol={a.symbol} size={20} />
               <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: a.address === assetAddr ? C.onAccent : C.text }}>{a.symbol}</Text>
             </Pressable>
           ))}

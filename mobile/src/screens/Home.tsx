@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import { NATIVE_ASSET } from "@web/config/chain";
 import { fmtAmount } from "@web/lib/format";
+import { tokenMark } from "@web/lib/tokens";
 import { Mode, ROLE_APPROVER, ROLE_OWNER, Status } from "@web/lib/types";
 import type { VaultData } from "@web/lib/vaultReads";
 import { needsMe } from "../hooks/useAlerts";
@@ -10,6 +11,7 @@ import { useMyRoles } from "../hooks/useVault";
 import { scanBus } from "../lib/scanBus";
 import { useStore } from "../state/store";
 import { Identicon } from "../components/Identicon";
+import { TokenMark } from "../components/TokenMark";
 import { VaultSheet } from "../components/VaultSheet";
 import { Address, CircleIcon, Icon, IconButton, Row, Screen, Tape, TopBar, useStyles } from "../components/ui";
 import { F, type Palette } from "../theme";
@@ -82,8 +84,8 @@ export function Home({ vault, refetch, refreshing }: { vault: VaultData; refetch
 
       <Text style={[s.sectionLabel, { paddingHorizontal: 16 }]}>Tokens</Text>
       {vault.assets.map((a, i) => (
-        <Row key={a.address} leading={<CircleIcon size={40} tone={a.address === NATIVE_ASSET ? "accent" : "dark"} text={a.symbol.slice(0, 1)} />}
-          title={a.symbol === "sUSD" ? "Skur Test USD" : a.symbol} subtitle={`${fmtAmount(vault.velocity[a.address]?.daySpent ?? 0n, a.decimals)} of ${a.limits.dailyMax ? fmtAmount(a.limits.dailyMax, a.decimals) : "∞"} today`}
+        <Row key={a.address} leading={<TokenMark symbol={a.symbol} />}
+          title={tokenMark(a.symbol).name} subtitle={`${fmtAmount(vault.velocity[a.address]?.daySpent ?? 0n, a.decimals)} of ${a.limits.dailyMax ? fmtAmount(a.limits.dailyMax, a.decimals) : "∞"} today`}
           trailing={<Text style={s.rowTitle}>{fmtAmount(a.balance, a.decimals)}</Text>}
           onPress={canPropose ? () => nav.navigate("Send", { asset: a.address }) : undefined} last={i === vault.assets.length - 1} />
       ))}

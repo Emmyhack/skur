@@ -286,9 +286,8 @@ h1, h2, h3, .display, .balance-card .amount, .scorecard .v, .stats .v { font-fam
 .list .title { font-weight: 700; }
 .list .sub { font-size: 12px; color: var(--text-2); }
 .list .right { text-align: right; }
-.token-ico { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; background: var(--panel-2); color: var(--text); font-weight: 700; font-size: 12px; }
-.token-ico.stable { background: #2775ca; color: #fff; }
-.token-ico.native { background: var(--accent); color: var(--accent-contrast); }
+/* Colour and glyph come from lib/tokens.ts, so both interfaces draw an asset the same way. */
+.token-ico { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; font-family: "Space Grotesk", sans-serif; font-weight: 700; line-height: 1; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 14px 24px; border-top: 1px solid var(--border); vertical-align: middle; }
 thead th { border-top: 0; color: var(--text-2); font-weight: 500; font-size: 13px; }
