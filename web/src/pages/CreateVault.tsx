@@ -4,6 +4,7 @@ import { isAddress, keccak256, stringToHex } from "viem";
 import { SkurFactoryAbi } from "../abi/SkurFactory";
 import { Button, Field, KV, TxStatus } from "../components/ui";
 import { Identicon } from "../components/Identicon";
+import { NetworkGuard } from "../components/NetworkGuard";
 import { IconWallet } from "../components/icons";
 import { useTx } from "../hooks/useTx";
 import { DEPLOYMENTS, NATIVE_ASSET } from "../config/chain";
@@ -78,6 +79,7 @@ export function CreateVault({ onCreated, onCancel }: { onCreated: (a: `0x${strin
       <div className="entry-top">
         <button className="logo" onClick={onCancel} style={{ background: "none", border: 0, color: "inherit", cursor: "pointer" }}><span className="mark">S</span></button>
         <div className="tools-pill">
+          <NetworkGuard />
           {isConnected && address ? (
             <Button kind="secondary" className="on" onClick={() => disconnect()} title={`${address} · click to disconnect`} icon={<Identicon address={address} size={18} />}>{address.slice(0, 6)}…{address.slice(-4)}</Button>
           ) : (

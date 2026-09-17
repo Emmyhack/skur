@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
-import { usePublicClient, useWalletClient } from "wagmi";
+import { useAccount, usePublicClient, useSwitchChain, useWalletClient } from "wagmi";
+import { getWalletClient } from "wagmi/actions";
+import { wagmiConfig } from "../wagmi";
 import { BaseError, ContractFunctionRevertedError, type Abi } from "viem";
 import { arkDevnet } from "../config/chain";
 
@@ -16,15 +18,29 @@ export type TxState =
  * before the wallet ever asks for a signature (human-readable intent before signing).
  */
 export function useTx(onDone?: () => void) {
-  const { data: wallet } = useWalletClient();
+  const { data: walletForChain } = useWalletClient({ chainId: arkDevnet.id });
+  const { isConnected, chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
   const client = usePublicClient();
   const [state, setState] = useState<TxState>({ phase: "idle" });
 
   const send = useCallback(
     async (args: { address: `0x${string}`; abi: Abi; functionName: string; args?: readonly unknown[]; value?: bigint }) => {
-      if (!wallet || !client) {
+      if (!client || !isConnected) {
         setState({ phase: "error", message: "Connect a wallet to continue." });
         return;
+      }
+      let wallet = walletForChain;
+      // A connected wallet on another network yields no client for this chain: ask it to switch first.
+      if (!wallet || chainId !== arkDevnet.id) {
+        try {
+          setState({ phase: "signing" });
+          await switchChainAsync({ chainId: arkDevnet.id });
+          wallet = await getWalletClient(wagmiConfig, { chainId: arkDevnet.id });
+        } catch {
+          setState({ phase: "error", message: `Your wallet is on another network. Switch it to Ark Constellation devnet (chain ${arkDevnet.id}) and try again.` });
+          return;
+        }
       }
       try {
         setState({ phase: "simulating" });
@@ -43,7 +59,7 @@ export function useTx(onDone?: () => void) {
         setState({ phase: "error", message: describeError(e) });
       }
     },
-    [wallet, client, onDone],
+    [walletForChain, client, isConnected, chainId, switchChainAsync, onDone],
   );
 
   const reset = useCallback(() => setState({ phase: "idle" }), []);

@@ -4,6 +4,7 @@ import { isAddress } from "viem";
 import { SkurFactoryAbi } from "../abi/SkurFactory";
 import { DEPLOYMENTS } from "../config/chain";
 import { Button, Field } from "../components/ui";
+import { NetworkGuard } from "../components/NetworkGuard";
 import { Identicon } from "../components/Identicon";
 import { IconArrowRight, IconWallet } from "../components/icons";
 import { short } from "../lib/format";
@@ -31,6 +32,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
           <span className="mark">S</span>
         </button>
         <div className="tools-pill">
+          <NetworkGuard />
           {isConnected && address ? (
             <Button kind="secondary" className="on" onClick={() => disconnect()} icon={<Identicon address={address} size={18} />}>{short(address)}</Button>
           ) : (

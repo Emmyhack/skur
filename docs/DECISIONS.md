@@ -69,3 +69,7 @@ Every proposal expires `proposalTtl` after creation. Policy validation requires 
 ## D17. Endpoints live in two config files only
 
 `contracts/foundry.toml` (`[rpc_endpoints]`, `[etherscan]`) and `web/src/config/chain.ts`. Nothing else may inline an Ark host name, so the move from `sslip.io` to an Ark-owned domain is a two-file change.
+
+## D18. Reading the devnet: no JSON-RPC batching, windowed log scans, no indexer
+
+Measured on the Ark devnet RPC: a JSON-RPC batch is worked through almost serially (about 0.4 s per entry, 8.5 s for 20 calls), while 20 concurrent single requests return in about 3 s, and `eth_getLogs` refuses any range wider than 10,000 blocks. The interface therefore sends single requests, scans logs in 9,000-block windows with the last window ending at `latest`, caches proposals once they reach a terminal status, re-reads live approvals only for pending ones, and refetches a few more times after a write so a slow receipt still shows up. Full history without an indexer stays acceptable at devnet scale; a mainnet deployment should add one rather than widen these scans.
