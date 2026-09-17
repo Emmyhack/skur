@@ -14,6 +14,7 @@ import { Policies } from "./pages/Policies";
 import { Product } from "./pages/Product";
 import { Security } from "./pages/Security";
 import { SecurityPage } from "./pages/SecurityPage";
+import { Mobile } from "./pages/Mobile";
 import { Settings } from "./pages/Settings";
 import { Simulator } from "./pages/Simulator";
 import { Solutions } from "./pages/Solutions";
@@ -24,11 +25,11 @@ import { useVaultAddress } from "./state/vaultAddress";
 
 /**
  * Routes, patterned on safe.global -> app.safe.global:
- *   #/  #/product  #/solutions  #/security     marketing
+ *   #/  #/product  #/solutions  #/security  #/mobile   marketing
  *   #/welcome  #/new-vault                     onboarding
  *   #/app/<page>                               the vault app
  */
-type Route = { kind: "landing" } | { kind: "product" } | { kind: "solutions" } | { kind: "securitypage" } | { kind: "welcome" } | { kind: "create" } | { kind: "app"; page: AppPage };
+type Route = { kind: "landing" } | { kind: "product" } | { kind: "solutions" } | { kind: "securitypage" } | { kind: "mobile" } | { kind: "welcome" } | { kind: "create" } | { kind: "app"; page: AppPage };
 
 const APP_PAGES: AppPage[] = ["overview", "assets", "transactions", "addressbook", "members", "settings", "policies", "security", "simulator"];
 const LEGACY: Record<string, AppPage> = { home: "overview", recipients: "addressbook" };
@@ -39,6 +40,7 @@ function readRoute(): Route {
   if (raw === "product") return { kind: "product" };
   if (raw === "solutions") return { kind: "solutions" };
   if (raw === "security") return { kind: "securitypage" };
+  if (raw === "mobile") return { kind: "mobile" };
   if (raw === "welcome") return { kind: "welcome" };
   if (raw === "new-vault") return { kind: "create" };
   const seg = raw.replace(/^app\//, "");
@@ -48,7 +50,7 @@ function readRoute(): Route {
 }
 
 function go(route: Route) {
-  const hash = route.kind === "landing" ? "#/" : route.kind === "product" ? "#/product" : route.kind === "solutions" ? "#/solutions" : route.kind === "securitypage" ? "#/security" : route.kind === "welcome" ? "#/welcome" : route.kind === "create" ? "#/new-vault" : `#/app/${route.page}`;
+  const hash = route.kind === "landing" ? "#/" : route.kind === "product" ? "#/product" : route.kind === "solutions" ? "#/solutions" : route.kind === "securitypage" ? "#/security" : route.kind === "mobile" ? "#/mobile" : route.kind === "welcome" ? "#/welcome" : route.kind === "create" ? "#/new-vault" : `#/app/${route.page}`;
   if (window.location.hash !== hash) window.location.hash = hash;
   window.scrollTo({ top: 0 });
 }
@@ -82,7 +84,8 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  const marketing = route.kind === "landing" || route.kind === "product" || route.kind === "solutions" || route.kind === "securitypage";
+  useEffect(() => { window.scrollTo(0, 0); }, [route.kind, "page" in route ? route.page : ""]);
+  const marketing = route.kind === "landing" || route.kind === "product" || route.kind === "solutions" || route.kind === "securitypage" || route.kind === "mobile";
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", marketing ? "light" : themeState.theme);
   }, [marketing, themeState.theme]);
@@ -96,6 +99,7 @@ export default function App() {
   if (route.kind === "product") return <Product onLaunch={launch} />;
   if (route.kind === "solutions") return <Solutions onLaunch={launch} />;
   if (route.kind === "securitypage") return <SecurityPage onLaunch={launch} />;
+  if (route.kind === "mobile") return <Mobile onLaunch={launch} />;
 
   return (
     <ThemeContext.Provider value={themeState}>
