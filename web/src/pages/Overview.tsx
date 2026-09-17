@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tokenMark } from "../lib/tokens";
 import { NATIVE_ASSET } from "../config/chain";
 import type { VaultData } from "../hooks/useVault";
 import { fmtAmount, fmtDuration } from "../lib/format";
@@ -73,7 +74,7 @@ export function Overview({ vault, onChanged, onNavigate, onNewTransaction }: { v
                 <li key={a.address}>
                   <TokenIcon symbol={a.symbol} />
                   <div className="grow">
-                    <div className="title">{a.symbol === "KASH" ? "KASH" : a.symbol === "sUSD" ? "Skur Test USD" : a.symbol}</div>
+                    <div className="title">{tokenMark(a.symbol).name}</div>
                     <div className="sub">{fmtAmount(a.balance, a.decimals)} {a.symbol}</div>
                   </div>
                   <div className="right">

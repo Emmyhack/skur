@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Skur",
+    "slug": "skur",
+    "scheme": "skur",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#ffffff",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "imageWidth": 120
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "io.skur.vault",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Skur uses Face ID to approve signatures from this device.",
+        "NSCameraUsageDescription": "Skur uses the camera only to read a vault or recipient address from a QR code."
+      },
+      "usePrecompiledModules": false
+    },
+    "android": {
+      "package": "io.skur.vault",
+      "adaptiveIcon": {
+        "backgroundColor": "#212529",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-local-authentication",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Skur uses the camera only to read a vault or recipient address from a QR code."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#ffd000"
+        }
+      ]
+    ]
+  }
+}

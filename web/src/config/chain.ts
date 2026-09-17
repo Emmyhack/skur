@@ -27,6 +27,9 @@ export const arkDevnet = defineChain({
 export type Deployments = {
   chainId: number;
   testUsd: `0x${string}`;
+  testEur?: `0x${string}`;
+  testBtc?: `0x${string}`;
+  testEth?: `0x${string}`;
   factory: `0x${string}`;
   vaultImplementation: `0x${string}`;
   demoVault: `0x${string}`;

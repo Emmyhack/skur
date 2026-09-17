@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { MarketingShell } from "../components/MarketingShell";
 import { AppMockup } from "../components/Mockup";
+import { PhoneMockup } from "../components/PhoneMockup";
 import { ScoreTicker } from "../components/Ticker";
 import { Reveal } from "../components/Reveal";
 import { IconArrowRight, IconCheck, IconChevronRight } from "../components/icons";
@@ -259,9 +260,28 @@ export function Landing({ onLaunch }: { onLaunch: () => void }) {
         </div>
       </section>
 
+      <section className="light" id="mobile">
+        <div className="wrap">
+          <Reveal className="mstrip" as="div">
+            <div>
+              <div className="secno">07 / On the phone</div>
+              <h2 style={{ fontSize: 40 }}>Skur goes with you</h2>
+              <p>Read the treasury, review what is waiting and sign with a key kept in the phone's keychain, behind Face ID. iOS and Android, sharing this site's risk engine and policy rules.</p>
+              <ul>
+                <li><IconCheck /> Notified the moment a payment needs you</li>
+                <li><IconCheck /> Checked against the policy before you sign</li>
+                <li><IconCheck /> Guardians can freeze from anywhere</li>
+              </ul>
+              <a className="btn btn-black btn-lg" href="#/mobile" style={{ marginTop: 24 }}>See the mobile app <IconChevronRight width={16} height={16} /></a>
+            </div>
+            <div className="phones two"><PhoneMockup variant="home" /><PhoneMockup variant="confirm" /></div>
+          </Reveal>
+        </div>
+      </section>
+
       <section className="white" id="faq" style={{ paddingTop: 0 }}>
         <div className="wrap">
-          <Reveal><div className="secno">07 / Questions</div><h2>Questions, answered plainly</h2></Reveal>
+          <Reveal><div className="secno">08 / Questions</div><h2>Questions, answered plainly</h2></Reveal>
           <Reveal className="faq">
             <div style={{ marginTop: 48 }}>
               {FAQ.map(([q, a]) => (

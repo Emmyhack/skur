@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { explorerAddress, explorerTx } from "../config/chain";
 import { short } from "../lib/format";
+import { tokenMark } from "../lib/tokens";
 import { Mode, MODE_LABEL, Status, STATUS_LABEL, Tier, TIER_LABEL, Trust, TRUST_LABEL } from "../lib/types";
 import type { TxState } from "../hooks/useTx";
 import { IconCheck, IconClose, IconCopy, IconExternal } from "./icons";
@@ -178,12 +179,10 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
 }
 
 export function TokenIcon({ symbol, size = 32 }: { symbol: string; size?: number }) {
-  const s = symbol.toUpperCase();
-  const stable = s.includes("USD");
-  const native = s === "KASH";
+  const m = tokenMark(symbol);
   return (
-    <span className={`token-ico ${stable ? "stable" : native ? "native" : ""}`} style={{ width: size, height: size }}>
-      {stable ? "$" : s.slice(0, 1)}
+    <span className="token-ico" style={{ width: size, height: size, background: m.bg, color: m.fg, fontSize: size * 0.46 }}>
+      {m.glyph}
     </span>
   );
 }

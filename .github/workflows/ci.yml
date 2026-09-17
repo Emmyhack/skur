@@ -71,3 +71,16 @@ jobs:
 
       - name: Test
         run: npm test
+
+  mobile:
+    name: Mobile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: cd mobile && npm ci
+      - name: Type-check
+        run: cd mobile && npx tsc --noEmit

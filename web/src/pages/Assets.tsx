@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tokenMark } from "../lib/tokens";
 import { NATIVE_ASSET } from "../config/chain";
 import type { VaultData } from "../hooks/useVault";
 import { fmtAmount, fmtRelative } from "../lib/format";
@@ -52,7 +53,7 @@ export function Assets({ vault, onSend, onNavigate }: { vault: VaultData; onSend
                       <div className="inline" style={{ gap: 12 }}>
                         <TokenIcon symbol={a.symbol} />
                         <div>
-                          <div className="strong">{a.symbol === "KASH" ? "KASH" : a.symbol === "sUSD" ? "Skur Test USD" : a.symbol}</div>
+                          <div className="strong">{tokenMark(a.symbol).name}</div>
                           <div className="caption">{a.address === NATIVE_ASSET ? "native token" : <Address value={a.address} />}</div>
                         </div>
                       </div>
