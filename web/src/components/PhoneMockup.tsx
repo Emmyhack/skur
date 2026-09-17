@@ -2,48 +2,82 @@ import { tokenMark } from "../lib/tokens";
 
 type Variant = "home" | "queue" | "confirm";
 
-const TOKENS: Array<[string, string]> = [
-  ["sUSD", "250,000"],
-  ["KASH", "3"],
-  ["sEUR", "84,500"],
-  ["sBTC", "3.42"],
-  ["sETH", "12.4"],
+const TOKENS: Array<[string, string, string]> = [
+  ["sUSD", "250,000", "0 of 100,000 today"],
+  ["KASH", "3", "0 of 5,000 today"],
+  ["sEUR", "84,500", "0 of 100,000 today"],
+  ["sBTC", "3.42", "0 of 50 today"],
 ];
 
-/** The phone app, drawn rather than screenshotted, so it stays sharp and follows the design system. */
-export function PhoneMockup({ variant = "home", label }: { variant?: Variant; label?: string }) {
+/**
+ * The phone app, drawn at true device scale (393 x 852) and scaled as a unit, so the type sizes and
+ * spacing are the app's own rather than a squeezed approximation.
+ */
+export function PhoneMockup({ variant = "home", width = 268, label }: { variant?: Variant; width?: number; label?: string }) {
   return (
-    <div className="phone" aria-label={label ?? `Skur mobile, ${variant}`}>
-      <div className="phone-frame">
-        <span className="notch" />
-        <div className="phone-screen">{variant === "home" ? <Home /> : variant === "queue" ? <Queue /> : <Confirm />}</div>
+    <div className="phone" style={{ ["--pwn" as string]: width }} aria-label={label ?? `Skur on a phone, ${variant}`}>
+      <div className="phone-device">
+        <div className="phone-screen">
+          <StatusBar />
+          <div className="ph-body">{variant === "home" ? <Home /> : variant === "queue" ? <Queue /> : <Confirm />}</div>
+          {variant === "confirm" ? null : <TabBar active={variant === "home" ? 0 : 1} />}
+          <span className="ph-home-ind" />
+        </div>
+        <span className="ph-island" />
       </div>
     </div>
   );
 }
 
-function Mark({ symbol, size = 26 }: { symbol: string; size?: number }) {
+function StatusBar() {
+  return (
+    <div className="ph-status">
+      <b>9:41</b>
+      <span className="ph-status-icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" aria-hidden><rect x="0" y="7" width="3" height="4" rx="1" /><rect x="4.5" y="5" width="3" height="6" rx="1" /><rect x="9" y="2.5" width="3" height="8.5" rx="1" /><rect x="13.5" y="0" width="3" height="11" rx="1" /></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden><path d="M8 11.2 1 4.6a10 10 0 0 1 14 0L8 11.2Z" opacity=".95" /></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" aria-hidden><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4" /><rect x="2" y="2" width="18" height="8" rx="2" /><path d="M23 4v4a2.5 2.5 0 0 0 0-4Z" opacity=".4" /></svg>
+      </span>
+    </div>
+  );
+}
+
+function TabBar({ active }: { active: number }) {
+  return (
+    <div className="ph-tabs">
+      {["⌂", "⇄", "⚙"].map((g, i) => (
+        <span key={g} className={i === active ? "on" : ""}>
+          {g}
+          {i === 1 ? <i className="ph-tab-badge">1</i> : null}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function Mark({ symbol, size = 40 }: { symbol: string; size?: number }) {
   const m = tokenMark(symbol);
-  return <span className="p-mark" style={{ width: size, height: size, background: m.bg, color: m.fg, fontSize: size * 0.46 }}>{m.glyph}</span>;
+  return <span className="ph-mark" style={{ width: size, height: size, background: m.bg, color: m.fg, fontSize: size * 0.46 }}>{m.glyph}</span>;
 }
 
 function Home() {
   return (
     <>
-      <div className="p-top">
-        <span className="p-ident" /><b>Treasury vault</b><span className="p-chev">⌄</span>
-        <span className="p-icons"><i /><i className="dot" /></span>
+      <div className="ph-top">
+        <span className="ph-ident"><i>1/2</i></span>
+        <b>Treasury vault</b><span className="ph-caret">⌄</span>
+        <span className="ph-top-btns"><i /><i className="bell" /></span>
       </div>
-      <div className="p-banner"><span className="n">1</span>Pending transactions<span className="p-chev">›</span></div>
-      <div className="p-chain"><span className="p-a">A</span>Ark devnet<small>0xD3f0…ED52</small></div>
-      <div className="p-balance">250,000<small>sUSD</small></div>
-      <div className="p-actions"><span className="go">↗ Send</span><span>↙ Receive</span></div>
-      <div className="p-label">Tokens</div>
-      {TOKENS.slice(0, 4).map(([sym, amt]) => (
-        <div className="p-row" key={sym}>
+      <div className="ph-pending"><span className="n">1</span>Pending transactions<span className="ph-caret r">›</span></div>
+      <div className="ph-chain"><span className="ph-ark">A</span><b>Ark devnet</b><small>0xD3f0…ED52</small></div>
+      <div className="ph-balance">250,000<small>sUSD</small></div>
+      <div className="ph-actions"><span className="go">↗ Send</span><span>↙ Receive</span></div>
+      <div className="ph-label">Tokens</div>
+      {TOKENS.map(([sym, amt, sub]) => (
+        <div className="ph-row" key={sym}>
           <Mark symbol={sym} />
-          <span className="p-name">{tokenMark(sym).name}<small>0 of cap today</small></span>
-          <b>{amt}</b>
+          <span className="ph-name"><b>{tokenMark(sym).name}</b><small>{sub}</small></span>
+          <b className="ph-amt">{amt}</b>
         </div>
       ))}
     </>
@@ -53,17 +87,20 @@ function Home() {
 function Queue() {
   return (
     <>
-      <div className="p-title">Transactions<span className="p-plus">+</span></div>
-      <div className="p-tabs"><b>Queue · 2</b><span>History</span></div>
-      <div className="p-chips"><b>All types</b><span>Transfers</span><span>Governance</span></div>
-      <div className="p-label">Sep 17, 2026</div>
-      {[["↗", "Send", "12,000 sUSD to 0x7c4f…41e2", "1 of 2", "warn"], ["≡", "Policy update", "tightens every control", "0 of 1", "warn"]].map(([g, t, d, s, tone]) => (
-        <div className="p-row" key={t}>
-          <span className="p-circle">{g}</span>
-          <span className="p-name">{t}<small>{d}</small></span>
-          <span className={`p-badge ${tone}`}>{s}</span>
-        </div>
-      ))}
+      <div className="ph-title">Transactions<span className="ph-plus">+</span></div>
+      <div className="ph-tabsline"><b>Queue · 2</b><span>History</span></div>
+      <div className="ph-chips"><b>All types</b><span>Transfers</span><span>Governance</span></div>
+      <div className="ph-label">Sep 17, 2026</div>
+      <div className="ph-card">
+        {[["↗", "Send", "12,000 sUSD to 0x7c4f…41e2", "1 of 2"], ["≡", "Policy update", "tightens every control", "0 of 1"]].map(([g, t, d, s], i) => (
+          <div className={`ph-row ${i === 1 ? "last" : ""}`} key={t}>
+            <span className="ph-circle">{g}</span>
+            <span className="ph-name"><b>{t}</b><small>{d}</small></span>
+            <span className="ph-badge warn">{s}</span>
+            <span className="ph-caret r">›</span>
+          </div>
+        ))}
+      </div>
     </>
   );
 }
@@ -71,20 +108,23 @@ function Queue() {
 function Confirm() {
   return (
     <>
-      <div className="p-title back"><span className="p-circle sm">←</span>Confirm</div>
-      <div className="p-hero">
-        <Mark symbol="sUSD" size={46} />
+      <div className="ph-title back"><span className="ph-circle sm">←</span>Confirm transaction</div>
+      <div className="ph-hero">
+        <span className="ph-hero-mark"><Mark symbol="sUSD" size={64} /><i>↗</i></span>
         <b>−12,000 sUSD</b>
-        <small>to 0x7c4f…41e2 · just now</small>
-        <span className="p-badge warn">1 of 2</span>
+        <small>Send · to 0x7c4f…41e2</small>
+        <span className="ph-badge warn">1 of 2 confirmations</span>
       </div>
-      <div className="p-card">
-        <div className="p-kv"><span>To</span><b>0x7c4f…41e2</b></div>
-        <div className="p-kv"><span>Network</span><b>Ark devnet</b></div>
+      <div className="ph-card pad">
+        <div className="ph-kv"><span>To</span><b>0x7c4f…41e2</b></div>
+        <div className="ph-kv"><span>Purpose</span><b>Invoice 1042</b></div>
+        <div className="ph-kv last"><span>Network</span><b>Ark devnet · 9000</b></div>
       </div>
-      <div className="p-row tight"><span className="p-circle">⛨</span><span className="p-name">Risk review<small>new recipient · above routine</small></span><span className="p-badge warn">High</span></div>
-      <div className="p-row tight"><span className="p-circle">◎</span><span className="p-name">Confirmations<small>waiting for one more</small></span><span className="p-badge">1/2</span></div>
-      <div className="p-sign">✎ Confirm<span className="who">0x4FEA…EEc0</span>›</div>
+      <div className="ph-card">
+        <div className="ph-row"><span className="ph-circle">⛨</span><span className="ph-name"><b>Risk review</b><small>never paid · above routine</small></span><span className="ph-badge warn">High</span><span className="ph-caret r">›</span></div>
+        <div className="ph-row last"><span className="ph-circle">◎</span><span className="ph-name"><b>Confirmations</b><small>one more signer needed</small></span><span className="ph-badge">1/2</span><span className="ph-caret r">›</span></div>
+      </div>
+      <div className="ph-sign">✎<b>Confirm</b><span className="who">0x4FEA…EEc0</span>›</div>
     </>
   );
 }
