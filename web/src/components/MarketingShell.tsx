@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useScrolled } from "../lib/motion";
 import { IconChevronRight } from "./icons";
 
-export type MarketingPage = "landing" | "product" | "solutions" | "security" | "mobile";
+export type MarketingPage = "landing" | "product" | "solutions" | "security" | "mobile" | "docs";
 
 /** Nav, closing CTA and footer shared by every marketing page. */
 export function MarketingShell({ page, onLaunch, children, hideCta = false }: { page: MarketingPage; onLaunch: () => void; children: ReactNode; hideCta?: boolean }) {
@@ -17,7 +17,7 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
             <a href="#/solutions" className={page === "solutions" ? "on" : ""}>Solutions</a>
             <a href="#/security" className={page === "security" ? "on" : ""}>Security</a>
             <a href="#/mobile" className={page === "mobile" ? "on" : ""}>Mobile</a>
-            <a href="#/#faq">FAQ</a>
+            <a href="#/docs" className={page === "docs" ? "on" : ""}>Docs</a>
             <a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub ↗</a>
           </nav>
           <div className="nav-right">
@@ -34,7 +34,7 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
             <h2>Put a firewall in front of<br /><span>your treasury</span></h2>
             <p className="sub">Self-custodial, enforced onchain, and readable by the people who sign.</p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <a className="btn btn-white" href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Read the docs</a>
+              <a className="btn btn-white" href="#/docs">Read the docs</a>
               <button className="btn btn-accent" onClick={onLaunch}>Launch app <IconChevronRight width={16} height={16} /></button>
             </div>
           </div>
@@ -47,8 +47,8 @@ export function MarketingShell({ page, onLaunch, children, hideCta = false }: { 
             <div><a className="logo" href="#/" style={{ fontWeight: 800, fontSize: 20 }}>Skur</a><p style={{ color: "#adb5bd", marginTop: 12, maxWidth: 240 }}>Programmable treasury security for onchain businesses.</p></div>
             <div><h5>Product</h5><ul><li><a href="#/product">Risk-tiered vault</a></li><li><a href="#/security">Guardians</a></li><li><a href="#/product#simulator">Policy simulator</a></li><li><a href="#/mobile">Mobile app</a></li><li><a href="https://github.com/Emmyhack/skur/tree/main/contracts" target="_blank" rel="noreferrer">Contracts</a></li></ul></div>
             <div><h5>Solutions</h5><ul><li><a href="#/solutions">Finance teams</a></li><li><a href="#/solutions#guardians">Guardians</a></li><li><a href="#/solutions#dao">DAOs & funds</a></li></ul></div>
-            <div><h5>Company</h5><ul><li><a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub</a></li><li><a href="https://github.com/Emmyhack/skur/blob/main/docs/DECISIONS.md" target="_blank" rel="noreferrer">Decisions</a></li></ul></div>
-            <div><h5>Resources</h5><ul><li><a href="#/#faq">FAQs</a></li><li><a href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Security model</a></li><li><a href="https://explorer.34.60.137.196.sslip.io" target="_blank" rel="noreferrer">Explorer</a></li><li><a href="https://faucet.34.60.137.196.sslip.io/" target="_blank" rel="noreferrer">Faucet</a></li></ul></div>
+            <div><h5>Company</h5><ul><li><a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub</a></li><li><a href="#/docs/limitations">Limitations</a></li></ul></div>
+            <div><h5>Resources</h5><ul><li><a href="#/docs">Documentation</a></li><li><a href="#/#faq">FAQs</a></li><li><a href="#/docs/risk-tiers">Security model</a></li><li><a href="https://explorer.34.60.137.196.sslip.io" target="_blank" rel="noreferrer">Explorer</a></li><li><a href="https://faucet.34.60.137.196.sslip.io/" target="_blank" rel="noreferrer">Faucet</a></li></ul></div>
             <div><h5>Social</h5><ul><li><a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub</a></li></ul></div>
           </div>
           <div className="legal"><span>Skur V1 · Ark Constellation devnet</span><span>MIT licensed. Skur limits and delays damage; it is not a guarantee against loss.</span></div>

@@ -15,6 +15,7 @@ import { Product } from "./pages/Product";
 import { Security } from "./pages/Security";
 import { SecurityPage } from "./pages/SecurityPage";
 import { Mobile } from "./pages/Mobile";
+import { Docs, DOC_SLUGS, type DocSlug } from "./pages/Docs";
 import { Settings } from "./pages/Settings";
 import { Simulator } from "./pages/Simulator";
 import { Solutions } from "./pages/Solutions";
@@ -29,7 +30,7 @@ import { useVaultAddress } from "./state/vaultAddress";
  *   #/welcome  #/new-vault                     onboarding
  *   #/app/<page>                               the vault app
  */
-type Route = { kind: "landing" } | { kind: "product" } | { kind: "solutions" } | { kind: "securitypage" } | { kind: "mobile" } | { kind: "welcome" } | { kind: "create" } | { kind: "app"; page: AppPage };
+type Route = { kind: "landing" } | { kind: "product" } | { kind: "solutions" } | { kind: "securitypage" } | { kind: "mobile" } | { kind: "docs"; slug: DocSlug } | { kind: "welcome" } | { kind: "create" } | { kind: "app"; page: AppPage };
 
 const APP_PAGES: AppPage[] = ["overview", "assets", "transactions", "addressbook", "members", "settings", "policies", "security", "simulator"];
 const LEGACY: Record<string, AppPage> = { home: "overview", recipients: "addressbook" };
@@ -41,6 +42,10 @@ function readRoute(): Route {
   if (raw === "solutions") return { kind: "solutions" };
   if (raw === "security") return { kind: "securitypage" };
   if (raw === "mobile") return { kind: "mobile" };
+  if (raw === "docs" || raw.startsWith("docs/")) {
+    const slug = raw.slice(5) as DocSlug;
+    return { kind: "docs", slug: DOC_SLUGS.includes(slug) ? slug : "introduction" };
+  }
   if (raw === "welcome") return { kind: "welcome" };
   if (raw === "new-vault") return { kind: "create" };
   const seg = raw.replace(/^app\//, "");
@@ -50,7 +55,7 @@ function readRoute(): Route {
 }
 
 function go(route: Route) {
-  const hash = route.kind === "landing" ? "#/" : route.kind === "product" ? "#/product" : route.kind === "solutions" ? "#/solutions" : route.kind === "securitypage" ? "#/security" : route.kind === "mobile" ? "#/mobile" : route.kind === "welcome" ? "#/welcome" : route.kind === "create" ? "#/new-vault" : `#/app/${route.page}`;
+  const hash = route.kind === "landing" ? "#/" : route.kind === "product" ? "#/product" : route.kind === "solutions" ? "#/solutions" : route.kind === "securitypage" ? "#/security" : route.kind === "mobile" ? "#/mobile" : route.kind === "docs" ? `#/docs/${route.slug}` : route.kind === "welcome" ? "#/welcome" : route.kind === "create" ? "#/new-vault" : `#/app/${route.page}`;
   if (window.location.hash !== hash) window.location.hash = hash;
   window.scrollTo({ top: 0 });
 }
@@ -84,8 +89,8 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  useEffect(() => { window.scrollTo(0, 0); }, [route.kind, "page" in route ? route.page : ""]);
-  const marketing = route.kind === "landing" || route.kind === "product" || route.kind === "solutions" || route.kind === "securitypage" || route.kind === "mobile";
+  useEffect(() => { window.scrollTo(0, 0); }, [route.kind, "page" in route ? route.page : "", "slug" in route ? route.slug : ""]);
+  const marketing = route.kind === "landing" || route.kind === "product" || route.kind === "solutions" || route.kind === "securitypage" || route.kind === "mobile" || route.kind === "docs";
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", marketing ? "light" : themeState.theme);
   }, [marketing, themeState.theme]);
@@ -100,6 +105,7 @@ export default function App() {
   if (route.kind === "solutions") return <Solutions onLaunch={launch} />;
   if (route.kind === "securitypage") return <SecurityPage onLaunch={launch} />;
   if (route.kind === "mobile") return <Mobile onLaunch={launch} />;
+  if (route.kind === "docs") return <Docs slug={route.slug} onLaunch={launch} onNavigate={(s) => { window.location.hash = `#/docs/${s}`; }} />;
 
   return (
     <ThemeContext.Provider value={themeState}>

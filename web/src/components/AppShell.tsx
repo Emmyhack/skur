@@ -85,7 +85,7 @@ export function AppShell({ page, onNavigate, onHome, vault, vaultAddress, onNewT
             </div>
           )}
           <nav className="nav">
-            <button onClick={() => window.open("https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md", "_blank", "noopener")}><span className="ico"><IconDocs /></span><span className="lbl">Docs</span><span className="tag-new" style={{ marginLeft: "auto" }}>V1</span></button>
+            <button onClick={() => window.open("#/docs", "_blank", "noopener")}><span className="ico"><IconDocs /></span><span className="lbl">Docs</span><span className="tag-new" style={{ marginLeft: "auto" }}>V1</span></button>
             <button onClick={() => onNavigate("simulator")}><span className="ico"><IconHelp /></span><span className="lbl">Help</span></button>
           </nav>
         </div>

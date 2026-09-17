@@ -7,7 +7,7 @@ export function Product({ onLaunch }: { onLaunch: () => void }) {
   return (
     <MarketingShell page="product" onLaunch={onLaunch}>
       <SubHero eyebrow="PRODUCT" title={<>Multisig approvals,<br />plus a firewall</>} sub="Keep the N-of-M you already trust. Add the controls that decide whether a valid approval should move money right now." onLaunch={onLaunch}>
-        <a className="btn btn-white btn-lg" href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Read the security model</a>
+        <a className="btn btn-white btn-lg" href="#/docs/risk-tiers">Read the security model</a>
       </SubHero>
 
       <section className="white">

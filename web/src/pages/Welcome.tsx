@@ -112,7 +112,7 @@ export function Welcome({ onOpen, onCreate, onLanding }: { onOpen: (a: `0x${stri
       <div className="entry-foot">
         <span>Skur V1 · Ark devnet</span>
         <a href="https://github.com/Emmyhack/skur" target="_blank" rel="noreferrer">GitHub</a>
-        <a href="https://github.com/Emmyhack/skur/blob/main/docs/SECURITY_MODEL.md" target="_blank" rel="noreferrer">Security model</a>
+        <a href="#/docs">Documentation</a>
         <a href="https://explorer.34.60.137.196.sslip.io" target="_blank" rel="noreferrer">Explorer</a>
         <a href="https://faucet.34.60.137.196.sslip.io/" target="_blank" rel="noreferrer">Faucet</a>
       </div>
