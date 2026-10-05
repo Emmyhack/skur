@@ -48,5 +48,10 @@ fi
 step "Interface · typecheck" bash -c "cd '$ROOT/app' && npm run --silent typecheck"
 step "Interface · build" bash -c "cd '$ROOT/app' && NEXT_TELEMETRY_DISABLED=1 npm run --silent build >/dev/null"
 
+step "Mobile · typecheck" bash -c "cd '$ROOT/mobile' && npm run --silent typecheck"
+# Bundling is the check that matters for mobile: it proves the Sui SDK and its ESM exports resolve
+# under Metro and Hermes, which no typecheck can tell you.
+step "Mobile · bundles for iOS" bash -c "cd '$ROOT/mobile' && npx expo export --platform ios --output-dir \"\$(mktemp -d)\" >/dev/null 2>&1"
+
 printf '\n\033[1m%s passed, %s failed\033[0m\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

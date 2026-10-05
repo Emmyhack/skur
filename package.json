@@ -14,9 +14,12 @@
     "app:dev": "cd app && npm run dev",
     "app:build": "cd app && npm run build",
     "test": "npm run move:test && npm run sdk:test",
-    "typecheck": "cd sdk && npm run typecheck && cd ../server && npm run typecheck && cd ../app && npm run typecheck",
+    "typecheck": "cd sdk && npm run typecheck && cd ../server && npm run typecheck && cd ../app && npm run typecheck && cd ../mobile && npm run typecheck",
     "sui:seed": "cd sdk && npm run seed",
     "sui:e2e": "cd sdk && npm run e2e",
-    "verify": "scripts/verify.sh"
+    "verify": "scripts/verify.sh",
+    "mobile:start": "cd mobile && npm start",
+    "mobile:ios": "cd mobile && npm run ios",
+    "mobile:android": "cd mobile && npm run android"
   }
 }

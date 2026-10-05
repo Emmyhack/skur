@@ -32,4 +32,3 @@ crytic-export/
 # `git add -A` happily commits an Expo prebuild. Never track these paths again.
 /contracts/
 /web/
-/mobile/

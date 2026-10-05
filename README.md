@@ -36,7 +36,8 @@ Details, with the test that proves each invariant, in
 |---|---|
 | [sui/](sui/) | The Move package: `types`, `policy`, `risk`, `vault`, and the test suites named after the attacks they defend against |
 | [sdk/](sdk/) | TypeScript SDK on `@mysten/sui` v2 — reads, PTB builders, event decoding, and the chain-agnostic engines (risk, policy rules, templates, maximum loss, posture, attack simulator) |
-| [app/](app/) | The interface: Next.js, React, `@mysten/dapp-kit-react` |
+| [app/](app/) | The web interface: Next.js, React, `@mysten/dapp-kit-react` |
+| [mobile/](mobile/) | iOS and Android: Expo, React Native, with the signing key in the device's secure element |
 | [server/](server/) | Node and PostgreSQL: the event indexer, the notification service and the advisory API |
 | [docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md) | Roles, lifecycle, the sixteen invariants, the threat map and the known limitations |
 | [docs/SUI_LANDSCAPE.md](docs/SUI_LANDSCAPE.md) | What exists on Sui today and what it does not do |
@@ -85,10 +86,15 @@ cp .env.example .env               # set DATABASE_URL and SKUR_PACKAGE_ID
 createdb skur && npm install && npm run migrate
 npm run dev                        # the indexer and the read API together
 
-# the interface
+# the web interface
 cd ../app
 npm install
 npm run dev                        # http://localhost:3000
+
+# the phone
+cd ../mobile
+npm install
+npm run ios                        # or: npm run android, npm start
 ```
 
 The Sui CLI is the one prerequisite that is not an npm install: get it from

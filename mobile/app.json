@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Skur",
+    "slug": "skur",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "skur",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "io.skur.app",
+      "usePrecompiledModules": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Skur unlocks your signing key with Face ID so a payment cannot be approved without you.",
+        "NSCameraUsageDescription": "Skur uses the camera to scan a vault or recipient address."
+      }
+    },
+    "android": {
+      "package": "io.skur.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Skur unlocks your signing key with Face ID so a payment cannot be approved without you."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Skur uses the camera to scan a vault or recipient address."
+        }
+      ]
+    ],
+    "extra": {
+      "SKUR_NETWORK": "testnet",
+      "SKUR_PACKAGE_ID": "0x0"
+    }
+  }
+}
