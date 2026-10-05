@@ -60,6 +60,11 @@ This is the function to read: `execute_transfer` in [`vault.move`](../sui/source
 Requirements are **pinned, then tighten-only**: the stricter of the pinned and the live requirement
 applies. Tightening the policy affects payments already in flight; loosening it cannot rescue one.
 
+The order of those checks is itself part of the design. The recipient's activation is checked before
+the tier's timelock, so a payment to an address that is still in probation is refused *for that
+reason* rather than with a generic "too early" — which is the difference between a signer
+understanding what to do and a signer retrying.
+
 ## Invariants, and the test that proves each
 
 | # | Invariant | Enforced by | Proven by |

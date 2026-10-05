@@ -38,11 +38,18 @@ outcomes — the status, the unchanged balance, and the Lockdown.
 ## Tests
 
 ```bash
-sui move test                     # everything
+sui move build                    # clean, with no warnings
+sui move test                     # 75 tests: 35 engine vectors, 40 end to end
 sui move test engine_             # the pure vectors
 sui move test vault_              # the end-to-end suite
 sui move test crossing_the_loss   # one test by name
 ```
+
+Verified against `sui 1.80.1-671ba71e69c7`.
+
+Note for the test suite: `#[expected_failure]` needs `location = skur::vault` on any test that
+asserts a code the vault raises. Without it the attribute expects the abort to originate in the
+test module, and the test fails with the right code and the wrong module.
 
 [`tests/engine_tests.move`](tests/engine_tests.move) pins the classifier and the policy rules. The
 same vectors are pinned in TypeScript in [`../sdk/test/engine.test.ts`](../sdk/test/engine.test.ts);

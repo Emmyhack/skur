@@ -128,7 +128,7 @@ public struct Proposal has store {
     target_mode: u8,
 }
 
-public struct Vault has key, store {
+public struct Vault has key {
     id: UID,
     name: String,
     policy: Policy,
@@ -389,15 +389,16 @@ public fun setup_asset<T>(
     per_tx_max: u64,
     daily_max: u64,
 ) {
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     assert!(!s.vault.limits.contains(key), E_ASSET_ALREADY_SET_UP);
     let limits = policy::new_limits(approved, low_max, high_max, per_tx_max, daily_max);
     limits.assert_limits_valid();
+    let created_at = s.vault.created_at;
     s.vault.limits.add(key, limits);
     s.vault.velocity.add(key, Velocity {
-        day_anchor: s.vault.created_at,
+        day_anchor: created_at,
         day_spent: 0,
-        envelope_anchor: s.vault.created_at,
+        envelope_anchor: created_at,
         envelope_spent: 0,
         envelope_basis: 0,
     });
@@ -407,10 +408,11 @@ public fun setup_asset<T>(
 /// vault cannot be created with a pre-trusted drain address that is immediately cheap to pay.
 public fun setup_recipient(s: &mut VaultSetup, who: address, label: String) {
     assert!(!s.vault.recipients.contains(who), E_ALREADY_REGISTERED);
-    let activates_at = s.vault.created_at + s.vault.policy.recipient_activation_delay();
+    let registered_at = s.vault.created_at;
+    let activates_at = registered_at + s.vault.policy.recipient_activation_delay();
     s.vault.recipients.add(who, Recipient {
         trust: types::trust_new(),
-        registered_at: s.vault.created_at,
+        registered_at,
         activates_at,
         paid_count: 0,
         last_paid: 0,
@@ -481,13 +483,13 @@ public fun proposal_count(v: &Vault): u64 { v.next_proposal - 1 }
 public fun member_roles(v: &Vault, who: address): u8 { roles_of(v, who) }
 
 public fun balance_of<T>(v: &Vault): u64 {
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     if (!bag::contains(&v.funds, key)) return 0;
     balance::value(bag::borrow<TypeName, Balance<T>>(&v.funds, key))
 }
 
 public fun limits_of<T>(v: &Vault): AssetLimits {
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     if (!v.limits.contains(key)) {
         policy::new_limits(false, 0, 0, 0, 0)
     } else {
@@ -507,7 +509,7 @@ public fun recipient_activates_at(v: &Vault, who: address): u64 {
 
 /// Day spent and envelope spent for an asset, after rolling any window that has already closed.
 public fun outflow_of<T>(v: &Vault, clock: &Clock): (u64, u64) {
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     if (!v.velocity.contains(key)) return (0, 0);
     let vel = *v.velocity.borrow(key);
     let now = clock::timestamp_ms(clock);
@@ -524,17 +526,17 @@ public fun proposal_status(v: &Vault, id: u64): u8 {
 
 public fun proposal_approvals(v: &Vault, id: u64): u64 {
     assert!(v.proposals.contains(id), E_UNKNOWN_PROPOSAL);
-    v.proposals.borrow(id).approvals.size()
+    v.proposals.borrow(id).approvals.length()
 }
 
 public fun proposal_confirmations(v: &Vault, id: u64): u64 {
     assert!(v.proposals.contains(id), E_UNKNOWN_PROPOSAL);
-    v.proposals.borrow(id).confirmations.size()
+    v.proposals.borrow(id).confirmations.length()
 }
 
 public fun proposal_rejections(v: &Vault, id: u64): u64 {
     assert!(v.proposals.contains(id), E_UNKNOWN_PROPOSAL);
-    v.proposals.borrow(id).rejections.size()
+    v.proposals.borrow(id).rejections.length()
 }
 
 /// Approvals that would still count right now: a removed signer's approval is not one.
@@ -563,7 +565,7 @@ fun count_live(v: &Vault, set: &VecSet<address>, role: u8): u64 {
 /// Anyone may fund an approved asset. Deposits are never gated: the controls exist to govern money
 /// leaving, and refusing incoming funds would only strand them.
 public fun deposit<T>(v: &mut Vault, c: Coin<T>, clock: &Clock, ctx: &TxContext) {
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     assert!(v.limits.contains(key) && v.limits.borrow(key).limits_approved(), E_ASSET_NOT_APPROVED);
     let amount = c.value();
     assert!(amount > 0, E_ZERO_AMOUNT);
@@ -786,7 +788,7 @@ public fun propose_transfer<T>(
     assert!(types::can_propose(roles_of(v, sender)), E_CANNOT_PROPOSE);
     assert!(amount > 0, E_ZERO_AMOUNT);
 
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     assert!(v.limits.contains(key) && v.limits.borrow(key).limits_approved(), E_ASSET_NOT_APPROVED);
 
     let now = clock::timestamp_ms(clock);
@@ -930,7 +932,7 @@ public fun approve(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
         let p = v.proposals.borrow_mut(id);
         assert!(!p.approvals.contains(&sender), E_ALREADY_VOTED);
         p.approvals.insert(sender);
-        (p.approvals.size(), p.req_approvals)
+        (p.approvals.length(), p.req_approvals)
     };
     event::emit(Approved {
         vault: object::id(v),
@@ -998,7 +1000,7 @@ public fun confirm(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
         let p = v.proposals.borrow_mut(id);
         assert!(!p.confirmations.contains(&sender), E_ALREADY_VOTED);
         p.confirmations.insert(sender);
-        (p.confirmations.size(), p.req_guardians)
+        (p.confirmations.length(), p.req_guardians)
     };
     event::emit(Confirmed {
         vault: object::id(v),
@@ -1074,7 +1076,7 @@ public fun execute_transfer<T>(v: &mut Vault, id: u64, clock: &Clock, ctx: &mut 
     assert_not_lockdown(v);
     assert!(v.proposals.contains(id), E_UNKNOWN_PROPOSAL);
     let now = clock::timestamp_ms(clock);
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
 
     let (
         kind,
@@ -1378,7 +1380,7 @@ public fun propose_asset_limits<T>(
 ): u64 {
     let next = policy::new_limits(approved, low_max, high_max, per_tx_max, daily_max);
     next.assert_limits_valid();
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     let current = limits_of<T>(v);
     let mask = policy::limit_reductions(&current, &next);
     let now = clock::timestamp_ms(clock);
@@ -1395,7 +1397,7 @@ public fun propose_asset_limits<T>(
 
 public fun execute_asset_limits<T>(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
     let now = clock::timestamp_ms(clock);
-    let key = type_name::get<T>();
+    let key = type_name::with_defining_ids<T>();
     let mask = authorize_governance(v, id, types::kind_asset_limits(), now);
     let next = {
         let p = v.proposals.borrow(id);
@@ -1458,7 +1460,7 @@ public fun propose_member(
 
 public fun execute_member(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
     let now = clock::timestamp_ms(clock);
-    authorize_governance(v, id, types::kind_member_set(), now);
+    let _ = authorize_governance(v, id, types::kind_member_set(), now);
     let (who, roles) = {
         let p = v.proposals.borrow(id);
         (p.member, p.member_roles)
@@ -1522,7 +1524,7 @@ public fun propose_recipient_trust(
 
 public fun execute_recipient_trust(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
     let now = clock::timestamp_ms(clock);
-    authorize_governance(v, id, types::kind_recipient_trust(), now);
+    let _ = authorize_governance(v, id, types::kind_recipient_trust(), now);
     let (who, to) = {
         let p = v.proposals.borrow(id);
         (p.recipient, p.trust_level)

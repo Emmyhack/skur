@@ -5,22 +5,7 @@ import type { ReactNode } from 'react';
 import { POLICY_GROUPS, TEMPLATES, fmtDuration } from '@skur/sdk';
 import { CONFIGURED, NETWORK, PACKAGE_ID } from '@/config';
 import { MarketingShell } from './Shell';
-
-export type DocSlug =
-  | 'introduction'
-  | 'quick-start'
-  | 'roles'
-  | 'risk-tiers'
-  | 'policy'
-  | 'recipients'
-  | 'limits'
-  | 'modes'
-  | 'changes'
-  | 'recovery'
-  | 'agents'
-  | 'move-package'
-  | 'invariants'
-  | 'limitations';
+import { DOC_GROUPS, type DocSlug } from './docSlugs';
 
 type Doc = { slug: DocSlug; title: string; group: string; body: () => ReactNode };
 
@@ -730,9 +715,7 @@ const DOCS: Doc[] = [
   },
 ];
 
-const GROUPS = ['Start', 'Model', 'Reference', 'Assurance'];
-
-export const DOC_SLUGS = DOCS.map((d) => d.slug);
+const GROUPS = DOC_GROUPS;
 
 export function DocsView({ slug }: { slug: DocSlug }) {
   const doc = DOCS.find((d) => d.slug === slug) ?? DOCS[0];
