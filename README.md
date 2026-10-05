@@ -41,8 +41,7 @@ Details, with the test that proves each invariant, in
 | [docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md) | Roles, lifecycle, the sixteen invariants, the threat map and the known limitations |
 | [docs/SUI_LANDSCAPE.md](docs/SUI_LANDSCAPE.md) | What exists on Sui today and what it does not do |
 | [docs/SUI_POSITIONING.md](docs/SUI_POSITIONING.md) | The positioning and funding narrative |
-| [docs/MIGRATION_EVM_TO_SUI.md](docs/MIGRATION_EVM_TO_SUI.md) | What moved, what changed shape, and why |
-| [contracts/](contracts/), [web/](web/), [mobile/](mobile/) | The previous EVM build, kept for reference. See the migration note |
+| [docs/MIGRATION_EVM_TO_SUI.md](docs/MIGRATION_EVM_TO_SUI.md) | What moved from the previous EVM build, what changed shape, and why |
 
 ## Transport: gRPC and GraphQL, never JSON-RPC
 
@@ -65,8 +64,6 @@ SDK's typecheck, build and tests, the backend's typecheck, tests and migrations 
 Postgres, and the interface's typecheck and build. It skips rather than fails the steps whose
 tooling is absent — a missing Postgres is not a broken migration — and exits non-zero if anything
 genuinely breaks.
-
-`npm run verify -- --all` adds the previous EVM build's suites when Foundry is installed.
 
 ## Quick start
 

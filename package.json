@@ -15,8 +15,6 @@
     "app:build": "cd app && npm run build",
     "test": "npm run move:test && npm run sdk:test",
     "typecheck": "cd sdk && npm run typecheck && cd ../server && npm run typecheck && cd ../app && npm run typecheck",
-    "legacy:contracts:test": "cd contracts && forge test",
-    "legacy:web:test": "cd web && npm test",
     "sui:seed": "cd sdk && npm run seed",
     "sui:e2e": "cd sdk && npm run e2e",
     "verify": "scripts/verify.sh"

@@ -2,8 +2,6 @@
 # Everything CI would run, in one command, so a red check for reasons outside the code does not
 # leave you without a signal. Mirrors .github/workflows/sui.yml job for job.
 #
-#   scripts/verify.sh            the Sui build
-#   scripts/verify.sh --all      also the previous EVM build, if Foundry is installed
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -49,11 +47,6 @@ fi
 
 step "Interface · typecheck" bash -c "cd '$ROOT/app' && npm run --silent typecheck"
 step "Interface · build" bash -c "cd '$ROOT/app' && NEXT_TELEMETRY_DISABLED=1 npm run --silent build >/dev/null"
-
-if [ "${1:-}" = "--all" ] && have forge; then
-  step "EVM · contracts (previous build)" bash -c "cd '$ROOT/contracts' && forge test >/dev/null"
-  step "EVM · interface (previous build)" bash -c "cd '$ROOT/web' && npm run --silent test"
-fi
 
 printf '\n\033[1m%s passed, %s failed\033[0m\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

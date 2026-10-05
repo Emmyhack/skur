@@ -73,21 +73,35 @@ persists. The money does not move. This is tested by
 `crossing_the_loss_envelope_freezes_the_vault_instead_of_paying`, which asserts all three: the
 status, the unchanged balance, and the Lockdown.
 
-## What the old build is still here for
+## The old build is gone
 
-[`contracts/`](../contracts/), [`web/`](../web/) and [`mobile/`](../mobile/) are the EVM build. They
-are kept because:
+`contracts/`, `web/` and `mobile/` have been removed. Two implementations of one security model is
+one more than anyone can keep honest, and keeping the EVM build alongside the Sui one meant every
+claim on the site, in the docs and in the tests had to be read twice to know which chain it was
+about.
 
-- the deployed devnet vault and its verified sources are the only live thing to point an evaluator
-  at until the Sui package is published and audited;
-- `web/src/lib` is the reference the Move modules were ported against, and the EVM test suite is a
-  second opinion on the engines;
-- two pull requests against them are still open.
+Nothing is lost. The EVM build is in this repository's history and on three branches that were
+never deleted:
 
-They are not the direction. New work goes into [`sui/`](../sui/), [`sdk/`](../sdk/),
-[`app/`](../app/) and [`server/`](../server/). The root `package.json` keeps the old scripts under
-`legacy:` so nothing silently runs the wrong suite.
+| Branch | What it holds |
+|---|---|
+| `feat/skur-v1` | The original V1: Foundry contracts, the interface, the devnet deployment |
+| `feat/safe-pattern-ui` | The rebuilt interface, plus the mobile app merged into it |
+| `feat/mobile-app` | The Expo app on its own |
 
-When the Sui package is audited and deployed, the EVM build should be removed rather than
-maintained in parallel. Two implementations of a security model is one more than anyone can keep
-honest.
+```bash
+git show feat/safe-pattern-ui:contracts/src/SkurVault.sol   # read a file without checking out
+git checkout feat/safe-pattern-ui                            # or bring the whole thing back
+```
+
+The deployed Ark Constellation devnet vault and its verified sources are unaffected by any of
+this — they live on that chain, not in this repository.
+
+### What was not ported, and why
+
+- **The mobile app.** Sui wallet connection on a device is its own piece of work: the Wallet
+  Standard assumes a browser extension, and the mobile story goes through deep links to a wallet
+  app instead. It is a project, not a port, and it was not in the target stack.
+- **The devnet test tokens.** `SkurTestToken` existed because the EVM devnet had no stablecoin. On
+  Sui the treasury is keyed by coin type, so any coin works without a stand-in.
+- **The ABI export script.** Move has no ABI to export; the SDK's BCS layouts replace it.
