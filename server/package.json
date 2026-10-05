@@ -1,0 +1,26 @@
+{
+  "name": "@skur/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types --watch src/main.ts",
+    "start": "node --experimental-strip-types src/main.ts",
+    "migrate": "node --experimental-strip-types src/migrate.ts",
+    "index": "node --experimental-strip-types src/indexer.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@skur/sdk": "file:../sdk",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.13.3",
+    "@types/pg": "^8.15.5",
+    "typescript": "~6.0.2",
+    "vitest": "^3.2.7"
+  }
+}

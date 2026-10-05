@@ -1,0 +1,15 @@
+[package]
+name = "skur"
+edition = "2024.beta"
+license = "MIT"
+authors = ["Olajumoke Emmanuel"]
+published-at = "0x0"
+
+# The Sui framework is an implicit dependency, resolved from the toolchain that builds this
+# package. That keeps the build hermetic and pins the framework to the CLI you deploy with.
+
+[addresses]
+skur = "0x0"
+
+[dev-addresses]
+skur = "0x0"
