@@ -26,3 +26,10 @@ sui/Move.lock
 .DS_Store
 *.log
 crytic-export/
+
+# The EVM build was removed. These directories may still exist locally, holding build output,
+# node_modules and a .env — their own .gitignore files went with them, so without this a
+# `git add -A` happily commits an Expo prebuild. Never track these paths again.
+/contracts/
+/web/
+/mobile/
