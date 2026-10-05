@@ -366,6 +366,7 @@ public fun begin(
         created_at: now,
     };
 
+    let vault_id = object::id(&vault);
     let mut i = 0;
     while (i < members.length()) {
         let who = members[i];
@@ -374,6 +375,19 @@ public fun begin(
         assert!(!vault.members.contains(who), E_ALREADY_REGISTERED);
         vault.members.add(who, bits);
         tally(&mut vault, bits, true);
+        // The founding roster is announced member by member, like every later change.
+        //
+        // Without this the roster is the one piece of vault state that cannot be rebuilt from the
+        // event log: `VaultCreated` carries counts, not addresses, and a Move table cannot be
+        // iterated, so nothing downstream could ever learn who the original signers were.
+        event::emit(MemberChanged {
+            vault: vault_id,
+            proposal: 0,
+            member: who,
+            roles_before: 0,
+            roles_after: bits,
+            at: now,
+        });
         i = i + 1;
     };
 

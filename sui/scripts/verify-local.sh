@@ -33,6 +33,11 @@ sui client faucet --url http://127.0.0.1:9123/gas >/dev/null
 sleep 5
 
 echo "publishing ephemerally"
+# The ephemeral publication record remembers that this package is already published for this
+# environment, and refuses a second publish. The network it refers to was thrown away at the end
+# of the last run, so the record is stale by definition — clear it.
+rm -f "$HERE"/Pub.*.toml
+
 # `test-publish` needs a build environment because the local chain identifier is not declared in
 # Move.toml, and it should not be: it changes on every regenesis.
 RESULT="$(sui client test-publish --build-env testnet "$HERE" --gas-budget 2000000000 --json)"

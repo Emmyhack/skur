@@ -88,12 +88,15 @@ async function main() {
     proposalTtl: 2 * HOUR,
   };
 
+  // Named, because the event checks later compare against it.
+  const members = [{ address: me, roles: Role.OWNER | Role.APPROVER | Role.EXECUTOR }];
+
   console.log('1. create');
   const created = await send(
     build.createVault(packageId!, {
       name: 'Skur end-to-end',
       policy,
-      members: [{ address: me, roles: Role.OWNER | Role.APPROVER | Role.EXECUTOR }],
+      members,
       assets: [
         {
           coinType: SUI_TYPE_ARG,
@@ -241,9 +244,22 @@ async function main() {
   console.log('9. the events decode');
   const { events } = await listVaultEvents(client, { packageId: packageId!, vaultId, limit: 50 });
   const names = new Set(events.map((e) => e.event.name));
-  for (const expected of ['VaultCreated', 'Deposited', 'ProposalOpened', 'Approved', 'RecipientRegistered', 'Executed']) {
+  for (const expected of ['VaultCreated', 'Deposited', 'ProposalOpened', 'Approved', 'RecipientRegistered', 'MemberChanged', 'Executed']) {
     check(`${expected} decoded`, names.has(expected as never));
   }
+  // The roster has to be rebuildable from the log alone: VaultCreated carries counts, not
+  // addresses, and a Move table cannot be iterated, so if the founding members are not announced
+  // then nothing downstream can ever learn who they were.
+  const founding = events.filter(
+    (e) => e.event.name === 'MemberChanged' && e.event.proposal === 0n,
+  );
+  check('the founding roster is in the event log', founding.length === members.length, `${founding.length} of ${members.length}`);
+  check(
+    'with the roles it was created with',
+    founding.some(
+      (e) => e.event.name === 'MemberChanged' && e.event.member === me && e.event.rolesAfter === members[0].roles,
+    ),
+  );
   const executed = events.find((e) => e.event.name === 'Executed');
   check(
     'the Executed event carries the amount and the remaining balance',
