@@ -1,6 +1,7 @@
 import {
   DAY,
   Mode,
+  Status,
   Trust,
   computeMaxLoss,
   fmtDuration,
@@ -138,13 +139,13 @@ export async function outflow(
             a.daily_max,
             (SELECT sum(p.amount) FROM proposals p
               WHERE p.network = a.network AND p.vault_id = a.vault_id
-                AND p.coin_type = a.coin_type AND p.status = 2 AND p.settled_at >= $3) AS in_window,
+                AND p.coin_type = a.coin_type AND p.status = $5 AND p.settled_at >= $3) AS in_window,
             (SELECT sum(p.amount) FROM proposals p
               WHERE p.network = a.network AND p.vault_id = a.vault_id
-                AND p.coin_type = a.coin_type AND p.status = 2 AND p.settled_at >= $4) AS today
+                AND p.coin_type = a.coin_type AND p.status = $5 AND p.settled_at >= $4) AS today
        FROM assets a
       WHERE a.network = $1 AND a.vault_id = $2 AND a.approved`,
-    [network, vaultId, windowStart, dayStart],
+    [network, vaultId, windowStart, dayStart, Status.EXECUTED],
   );
 
   return rows.map((row) => {
