@@ -17,6 +17,12 @@ config.resolver.nodeModulesPaths = [
 
 // The Sui SDK ships ESM with an exports map and no CommonJS fallback.
 config.resolver.unstable_enablePackageExports = true;
-config.resolver.unstable_conditionNames = ['react-native', 'require', 'import', 'default'];
+config.resolver.unstable_conditionNames = ['react-native', 'import', 'require', 'default'];
+
+// Its gRPC entry is built from `.mjs` chunks that import each other by explicit path. Expo's
+// default sourceExts does not include `mjs`, so Metro would resolve those files without applying
+// the transform — the module loads, every export is undefined, and the first `new` on one fails
+// with "undefined cannot be used as a constructor" from somewhere with no stack.
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs'];
 
 module.exports = config;

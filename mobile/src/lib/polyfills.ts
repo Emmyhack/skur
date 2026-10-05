@@ -72,6 +72,49 @@ if (typeof globalThis.TextDecoder === 'undefined') {
   globalThis.TextDecoder = MinimalTextDecoder as unknown as typeof TextDecoder;
 }
 
+/**
+ * Hermes ships a partial `Intl`, and `PluralRules` is one of the pieces it leaves out.
+ *
+ * This matters more than it sounds. The Sui SDK builds an ordinal formatter at **module scope** —
+ * `new Intl.PluralRules("en-US", { type: "ordinal" })`, used to say "1st command" in an error —
+ * so on Hermes the constructor is `undefined` and importing anything from the SDK's client throws
+ * `undefined cannot be used as a constructor` before a line of app code runs. There is no stack
+ * worth reading, because it happens while the module graph is still loading.
+ *
+ * English only, which is all the SDK asks for, and only installed when it is genuinely absent.
+ */
+if (typeof (globalThis as { Intl?: { PluralRules?: unknown } }).Intl?.PluralRules === 'undefined') {
+  class MinimalPluralRules {
+    #ordinal: boolean;
+
+    constructor(_locales?: string | string[], options?: { type?: string }) {
+      this.#ordinal = options?.type === 'ordinal';
+    }
+
+    select(n: number): string {
+      if (!this.#ordinal) return n === 1 ? 'one' : 'other';
+      // en-US ordinals: 1st, 2nd, 3rd, 4th … and the 11th/12th/13th exceptions.
+      const tens = Math.abs(n) % 100;
+      const units = Math.abs(n) % 10;
+      if (units === 1 && tens !== 11) return 'one';
+      if (units === 2 && tens !== 12) return 'two';
+      if (units === 3 && tens !== 13) return 'few';
+      return 'other';
+    }
+
+    resolvedOptions() {
+      return { locale: 'en-US', type: this.#ordinal ? 'ordinal' : 'cardinal' };
+    }
+
+    static supportedLocalesOf(locales?: string | string[]): string[] {
+      return typeof locales === 'string' ? [locales] : (locales ?? []);
+    }
+  }
+
+  const intl = ((globalThis as { Intl?: Record<string, unknown> }).Intl ??= {} as Record<string, unknown>);
+  intl.PluralRules = MinimalPluralRules;
+}
+
 /** Fail loudly at startup rather than mid-signature. */
 export function assertCryptoReady() {
   if (typeof globalThis.crypto?.getRandomValues !== 'function') {
@@ -79,5 +122,10 @@ export function assertCryptoReady() {
   }
   if (new TextEncoder().encode('ß').length !== 2) {
     throw new Error('TextEncoder is not producing UTF-8');
+  }
+  // The SDK builds an ordinal formatter at module scope, so this has to work before it is imported.
+  const ordinals = new Intl.PluralRules('en-US', { type: 'ordinal' });
+  if (ordinals.select(1) !== 'one' || ordinals.select(11) !== 'other') {
+    throw new Error('Intl.PluralRules is not producing English ordinals');
   }
 }

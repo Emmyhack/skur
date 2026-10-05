@@ -61,8 +61,14 @@ Three things, all in [`src/lib/polyfills.ts`](src/lib/polyfills.ts) and
   much later as a corrupted transaction rather than a missing global, so there is a guarded UTF-8
   fallback.
 - **The Sui SDK is ESM with an exports map and no CommonJS fallback**, and `@skur/sdk` resolves
-  through a symlink to a sibling directory. Metro needs `unstable_enablePackageExports` and the
-  workspace in `watchFolders`, or an edit to the SDK is invisible until the bundler restarts.
+  through a symlink to a sibling directory. Metro needs `unstable_enablePackageExports`, `mjs` in
+  `sourceExts`, and the workspace in `watchFolders`.
+- **`Intl.PluralRules` does not exist in Hermes**, and the Sui SDK builds an ordinal formatter with
+  it at **module scope** — `new Intl.PluralRules("en-US", { type: "ordinal" })`, used to say "1st
+  command" in an error message. On Hermes the constructor is `undefined`, so importing anything
+  from the SDK's client throws `undefined cannot be used as a constructor` before a line of app
+  code runs, with no usable stack. An English-ordinals polyfill fixes it, and `assertCryptoReady`
+  checks it at startup.
 
 Transport is **gRPC-web over fetch**, which is what React Native can actually do — there is no
 HTTP/2 socket to reach for. JSON-RPC is not used anywhere: Sui switched it off on mainnet full
