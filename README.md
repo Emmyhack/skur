@@ -54,6 +54,20 @@ Nothing here depends on it, directly or transitively. That is why the interface 
 it is JSON-RPC only. The SDK's read layer targets the transport-agnostic Core API, so the same code
 runs over gRPC today and over anything implementing that contract later.
 
+## Verifying everything at once
+
+```bash
+npm run verify
+```
+
+Runs what CI runs, job for job: the Move build (which must be warning-free) and its 75 tests, the
+SDK's typecheck, build and tests, the backend's typecheck, tests and migrations against a real
+Postgres, and the interface's typecheck and build. It skips rather than fails the steps whose
+tooling is absent — a missing Postgres is not a broken migration — and exits non-zero if anything
+genuinely breaks.
+
+`npm run verify -- --all` adds the previous EVM build's suites when Foundry is installed.
+
 ## Quick start
 
 ```bash

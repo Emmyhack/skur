@@ -18,6 +18,7 @@
     "legacy:contracts:test": "cd contracts && forge test",
     "legacy:web:test": "cd web && npm test",
     "sui:seed": "cd sdk && npm run seed",
-    "sui:e2e": "cd sdk && npm run e2e"
+    "sui:e2e": "cd sdk && npm run e2e",
+    "verify": "scripts/verify.sh"
   }
 }
