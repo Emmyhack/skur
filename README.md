@@ -1,81 +1,122 @@
 # Skur
 
-Programmable treasury security for onchain businesses. Protect funds with adaptive policies, loss limits, guardians, and risk-aware approvals.
+**A programmable authorization and treasury security layer for Sui organizations.**
 
-> A valid signature proves authorization. It does not prove that a transaction is safe.
+> A valid signature proves authorization. It does not prove that a payment is safe.
 
-Skur is a self-custodial vault whose security requirements change with transaction risk. Valid approvals are necessary but never sufficient: amount tiers, treasury exposure, recipient trust, cumulative outflow, guardian veto and security modes are all enforced by the vault contract itself. No Skur server sits in the execution path.
+Every large onchain treasury loss of the last few years happened with valid signatures. The keys
+were real, the threshold was met, the contract did what it was told. Nothing between the signature
+and the money asked the second question:
+
+> Given the amount, the destination, what has already left today and what this organization knows
+> right now, *should* this payment settle?
+
+Skur answers that question in Move, in a shared object anyone can read. It is not a wallet, and it
+is not a nicer multisig — Sui has signature aggregation in the protocol already. It is the layer a
+treasury sits behind.
+
+## What the vault enforces
+
+| Control | What it does |
+|---|---|
+| **Risk-tiered authorization** | Five signals — amount against the asset's limits, share of holdings, recipient standing, the day's outflow, the vault's mode — each able to raise the tier and none able to lower it. The tier sets the approvals, the guardian sign-off and the wait. |
+| **Recipient trust** | An address the vault has never paid is escalated every time. A newly registered one serves an activation delay before it can be paid at all. |
+| **Velocity limits** | Per-transaction and 24-hour caps, counted cumulatively. Crossing half the day's allowance escalates everything after it, so splitting a drain meets a higher bar partway through rather than never. |
+| **Loss-envelope circuit breaker** | A share of the balance that may leave per window, measured against the balance when the window *opened*. The payment that would cross it is not made; the vault latches into Lockdown instead. |
+| **Guardians** | A role the contract refuses to combine with any treasury role. It can freeze, veto, block a recipient and start a recovery. It can never propose, approve or execute a payment. |
+| **Policy firewall** | Any change that gives up a control — including the ones that look like tightening, such as zeroing a threshold to disable it — waits out a delay, can be vetoed by any guardian, and cannot be proposed in Lockdown. |
+| **An agent role** | `PROPOSER` can open a payment and nothing else. A compromised automation key produces a queue nobody approved, not a withdrawal. |
+
+Details, with the test that proves each invariant, in
+[docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md).
 
 ## Repository layout
 
 | Path | What it is |
 |---|---|
-| [contracts/](contracts/) | Foundry project: `SkurVault`, `SkurFactory`, `SkurPolicyLib`, `SkurRisk`, the devnet stablecoin, tests, invariants and deploy script |
-| [web/](web/) | Client-side interface (Vite, React, wagmi/viem). Reads contract state and events directly; submits user-signed transactions |
-| [mobile/](mobile/) | iOS and Android app (Expo, React Native). Same vault reads, risk engine and error texts as the web app, shared from `web/src/lib`; signs with a key kept in the device keychain behind Face ID or Touch ID. |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Every open question from the blueprint, resolved |
-| [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md) | Roles, lifecycle, the twelve invariants and the tests that prove each |
-| [docs/scriipture-capability-report.md](docs/scriipture-capability-report.md) | Why the contracts are plain Solidity instead of Scriipture TypeScript |
-| [scripts/export-abi.py](scripts/export-abi.py) | Copies ABIs from the Foundry build into the web app |
+| [sui/](sui/) | The Move package: `types`, `policy`, `risk`, `vault`, and the test suites named after the attacks they defend against |
+| [sdk/](sdk/) | TypeScript SDK on `@mysten/sui` v2 — reads, PTB builders, event decoding, and the chain-agnostic engines (risk, policy rules, templates, maximum loss, posture, attack simulator) |
+| [app/](app/) | The interface: Next.js, React, `@mysten/dapp-kit-react` |
+| [server/](server/) | Node and PostgreSQL: the event indexer, the notification service and the advisory API |
+| [docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md) | Roles, lifecycle, the fifteen invariants, the threat map and the known limitations |
+| [docs/SUI_LANDSCAPE.md](docs/SUI_LANDSCAPE.md) | What exists on Sui today and what it does not do |
+| [docs/SUI_POSITIONING.md](docs/SUI_POSITIONING.md) | The positioning and funding narrative |
+| [docs/MIGRATION_EVM_TO_SUI.md](docs/MIGRATION_EVM_TO_SUI.md) | What moved, what changed shape, and why |
+| [contracts/](contracts/), [web/](web/), [mobile/](mobile/) | The previous EVM build, kept for reference. See the migration note |
 
-## Ark Constellation devnet deployment
+## Transport: gRPC and GraphQL, never JSON-RPC
 
-Chain id 9000, native token KASH. Sources are verified on the Blockscout explorer.
+JSON-RPC was switched off on Sui Foundation mainnet full nodes in the week of 27 July 2026, with
+full decommissioning — code removal included — scheduled for mid-October 2026.
 
-| Contract | Address |
-|---|---|
-| SkurFactory | [`0x018c12BA8b085da81E434b9e4001e07CF48764E9`](https://explorer.34.60.137.196.sslip.io/address/0x018c12BA8b085da81E434b9e4001e07CF48764E9) |
-| SkurVault implementation | [`0xE21C7ad3a56D187848F9915bb43f88820278DeA3`](https://explorer.34.60.137.196.sslip.io/address/0xE21C7ad3a56D187848F9915bb43f88820278DeA3) |
-| SkurPolicyLib | [`0x6bAA1A24B55796d8346748EE3565e40d844bA576`](https://explorer.34.60.137.196.sslip.io/address/0x6bAA1A24B55796d8346748EE3565e40d844bA576) |
-| SkurTestUSD (sUSD, 6 decimals, mintable) | [`0x3e41424ADF6Bb69B6271ef9B0541ACD59A0d454a`](https://explorer.34.60.137.196.sslip.io/address/0x3e41424ADF6Bb69B6271ef9B0541ACD59A0d454a) |
-| Demo vault (Startup template) | [`0xCC31c7474267ca5600c2D530ebD7657A09c042Dc`](https://explorer.34.60.137.196.sslip.io/address/0xCC31c7474267ca5600c2D530ebD7657A09c042Dc) |
-
-The full record, including the deployer address, is in [contracts/deployments/9000.json](contracts/deployments/9000.json). Endpoints live only in `contracts/foundry.toml` and `web/src/config/chain.ts`.
+Nothing here depends on it, directly or transitively. That is why the interface uses
+`@mysten/dapp-kit-react` 2.x and not `@mysten/dapp-kit` 1.x, which is deprecated precisely because
+it is JSON-RPC only. The SDK's read layer targets the transport-agnostic Core API, so the same code
+runs over gRPC today and over anything implementing that contract later.
 
 ## Quick start
 
-Dependencies are git submodules, so clone with `--recurse-submodules` (or run
-`git submodule update --init --recursive` in an existing clone).
-
 ```bash
-# contracts
-cd contracts
-forge build
-forge test                     # unit, fuzz and invariant suites
-slither . --filter-paths "lib/|test/|script/"
+# the Move core
+cd sui
+sui move build
+sui move test                      # the engine vectors and the end-to-end suite
 
-# interface
-cd ../web
+# the SDK
+cd ../sdk
+npm install && npm run build
+npm test                           # the same vectors as the Move suite
+
+# the backend
+cd ../server
+cp .env.example .env               # set DATABASE_URL and SKUR_PACKAGE_ID
+createdb skur && npm install && npm run migrate
+npm run dev                        # the indexer and the read API together
+
+# the interface
+cd ../app
 npm install
-npm run dev                    # http://localhost:5173, connect MetaMask on chain 9000
-npm test                       # risk-engine mirror vectors
+npm run dev                        # http://localhost:3000
 ```
 
-Get devnet KASH from the faucet at `https://faucet.34.60.137.196.sslip.io/` and mint sUSD by calling `mint(address,uint256)` on the test token.
+The Sui CLI is the one prerequisite that is not an npm install: get it from
+[the releases page](https://github.com/MystenLabs/sui/releases) or with
+`cargo install --locked --git https://github.com/MystenLabs/sui.git sui`.
 
-## Deploying your own instance
+## Deploying
 
 ```bash
-cd contracts
-cp .env.example .env           # set PRIVATE_KEY (devnet only) and DEMO_VAULT
-forge script script/Deploy.s.sol --rpc-url ark_devnet --broadcast --private-key $PRIVATE_KEY
-forge verify-contract <address> src/SkurVault.sol:SkurVault --verifier blockscout \
-  --verifier-url https://explorer-api.34.60.137.196.sslip.io/api --chain 9000 \
-  --libraries src/SkurPolicyLib.sol:SkurPolicyLib:<lib address>
-python3 ../scripts/export-abi.py && cp deployments/9000.json ../web/src/config/deployments.json
+cd sui
+scripts/publish.sh testnet         # builds, tests, publishes, writes deployments/testnet.json
+
+cd ../sdk
+SUI_PRIVATE_KEY=suiprivkey1... SKUR_NETWORK=testnet SKUR_PACKAGE_ID=0x... \
+  node --experimental-strip-types scripts/seed.ts
 ```
 
-For a keyless deploy, `npx scriipture deploy` can broadcast the compiled artifact through a browser wallet.
+`sui/deployments/<network>.json` is the only place a package address is configured. Nothing in the
+app, the SDK or the backend hardcodes one.
 
-## How the vault decides
+## How a payment goes out
 
-1. A proposal is created. The vault classifies it LOW, HIGH or CRITICAL from amount, share of holdings, recipient trust, today's outflow and the security mode, and pins the required approvals, guardian confirmations and delay.
-2. Approvers approve. Guardians confirm when the tier demands it. A guardian can veto any critical, probationary or security-reducing proposal at any time.
-3. An executor executes. The vault re-checks every limit at that moment: recipient not blocked and past activation, per-transaction cap, hard exposure block, daily bucket, and the loss envelope. Exceeding the envelope trips the vault into Lockdown instead of paying.
-4. Governance changes follow the same path with owner approvals. Anything that loosens security waits for the policy-change delay, is vetoable, and is refused while in Lockdown.
-
-Guardians can freeze, veto, confirm and recover. They hold no treasury role and can never move funds.
+1. **Opened.** The vault classifies it routine, high risk or critical from the amount, the share of
+   holdings, the recipient's standing, the day's outflow and the security mode, and pins the
+   approvals, the guardian confirmations and the delay.
+2. **Approved.** Approvers approve; guardians confirm when the tier demands it. A guardian can veto
+   any critical payment, any weakening of the vault, any recovery and any relaxation.
+3. **Executed.** The vault re-checks everything against live state: the approval set is recounted
+   against the current roster, the payment is reclassified and the *stricter* of the pinned and
+   live requirements applies, the recipient's standing and activation are re-read, and the caps and
+   the hard block are re-applied. The loss envelope is checked last; a payment that would cross it
+   is refused and the vault latches into Lockdown.
+4. **Governance** follows the same path with owner approvals. Anything that gives up a control waits
+   out the policy-change delay, is vetoable, and is refused in Lockdown.
 
 ## Status
 
-V1 as scoped in the blueprint: vault creation, protected membership, four roles, native and ERC-20 deposits and transfer proposals, amount tiers, recipient trust with activation delay, per-transaction and 24-hour caps, circuit breaker, critical timelock and veto, three security modes, policy-change timelock, recovery, human-readable review, policy templates, policy simulator, maximum-loss view and posture indicator. Not yet done: independent audit and pilot.
+Built and under test: the Move core with all seven proposal kinds, the SDK over gRPC and GraphQL,
+the indexer and notification service on PostgreSQL, the interface, and seven starting policies —
+startup, operating team, protocol/DAO, fund, payments company, nonprofit, family office.
+
+Not done, and not claimed: **no independent audit**, no mainnet deployment, no pilot. Do not put
+real value behind Skur until an audit is complete.

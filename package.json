@@ -2,17 +2,20 @@
   "name": "skur",
   "private": true,
   "version": "0.1.0",
-  "description": "Programmable treasury security for onchain businesses.",
+  "description": "A programmable authorization and treasury security layer for Sui organizations.",
   "scripts": {
-    "contracts:build": "cd contracts && forge build",
-    "contracts:test": "cd contracts && forge test",
-    "contracts:slither": "cd contracts && slither . --filter-paths \"lib/|test/|script/\" --exclude-informational --exclude-optimization",
-    "abi": "python3 scripts/export-abi.py",
-    "web:dev": "cd web && npm run dev",
-    "web:build": "cd web && npm run build",
-    "web:test": "cd web && npm test",
-    "mobile:start": "cd mobile && npx expo start",
-    "mobile:typecheck": "cd mobile && npx tsc --noEmit",
-    "test": "npm run contracts:test && npm run web:test && npm run mobile:typecheck"
+    "move:build": "cd sui && sui move build",
+    "move:test": "cd sui && sui move test",
+    "move:publish": "cd sui && scripts/publish.sh",
+    "sdk:build": "cd sdk && npm run build",
+    "sdk:test": "cd sdk && npm test",
+    "server:migrate": "cd server && npm run migrate",
+    "server:dev": "cd server && npm run dev",
+    "app:dev": "cd app && npm run dev",
+    "app:build": "cd app && npm run build",
+    "test": "npm run move:test && npm run sdk:test",
+    "typecheck": "cd sdk && npm run typecheck && cd ../server && npm run typecheck && cd ../app && npm run typecheck",
+    "legacy:contracts:test": "cd contracts && forge test",
+    "legacy:web:test": "cd web && npm test"
   }
 }

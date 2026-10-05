@@ -1,0 +1,17 @@
+{
+  "testnet": {
+    "network": "testnet",
+    "packageId": "0x0",
+    "vaults": []
+  },
+  "devnet": {
+    "network": "devnet",
+    "packageId": "0x0",
+    "vaults": []
+  },
+  "localnet": {
+    "network": "localnet",
+    "packageId": "0x0",
+    "vaults": []
+  }
+}

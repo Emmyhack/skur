@@ -12,6 +12,14 @@ contracts/broadcast/**/dry-run/
 node_modules/
 web/dist/
 web/coverage/
+sdk/dist/
+app/.next/
+app/out/
+app/next-env.d.ts
+
+# move
+sui/build/
+sui/Move.lock
 
 # tooling
 .DS_Store
