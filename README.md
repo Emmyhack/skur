@@ -94,6 +94,18 @@ SUI_PRIVATE_KEY=suiprivkey1... SKUR_NETWORK=testnet SKUR_PACKAGE_ID=0x... \
   node --experimental-strip-types scripts/seed.ts
 ```
 
+Then verify the whole stack against the live chain:
+
+```bash
+cd sdk
+SUI_PRIVATE_KEY=suiprivkey1... SKUR_NETWORK=testnet SKUR_PACKAGE_ID=0x... npm run e2e
+```
+
+`npm run e2e` is the test the unit suites cannot be: it creates a vault, funds it, previews a
+payment, opens it, approves it, proves the activation delay holds, executes it, and checks that
+every event decodes back into the shape the indexer projects. One wrong BCS field offset fails it
+loudly where a unit test would pass.
+
 `sui/deployments/<network>.json` is the only place a package address is configured. Nothing in the
 app, the SDK or the backend hardcodes one.
 

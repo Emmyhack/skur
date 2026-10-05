@@ -20,7 +20,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "prepare": "tsc -p tsconfig.build.json"
+    "prepare": "tsc -p tsconfig.build.json",
+    "seed": "node --experimental-strip-types scripts/seed.ts",
+    "e2e": "node --experimental-strip-types scripts/e2e.ts"
   },
   "dependencies": {
     "@mysten/sui": "^2.34.0"
