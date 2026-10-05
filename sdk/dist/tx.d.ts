@@ -54,6 +54,7 @@ export declare function proposeTransfer(packageId: string, input: {
     memo?: string;
 }): Transaction;
 export declare const approve: (pkg: string, vaultId: string, id: bigint) => Transaction;
+export declare const reject: (pkg: string, vaultId: string, id: bigint) => Transaction;
 export declare const confirm: (pkg: string, vaultId: string, id: bigint) => Transaction;
 export declare const veto: (pkg: string, vaultId: string, id: bigint) => Transaction;
 export declare const cancel: (pkg: string, vaultId: string, id: bigint) => Transaction;

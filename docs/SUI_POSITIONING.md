@@ -139,7 +139,7 @@ This is not a port looking for a chain.
 Done and under test:
 
 - the Move core: types, policy, risk engine, vault, with the seven proposal kinds and the full
-  lifecycle;
+  lifecycle — open, approve or reject, confirm, veto, cancel, expire, execute;
 - a TypeScript SDK on `@mysten/sui` v2 over **gRPC and GraphQL**;
 - a Node/PostgreSQL indexer, notification service and advisory API;
 - the chain-agnostic engines — risk classifier, policy rules, templates, maximum-loss calculation,

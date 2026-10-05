@@ -95,6 +95,20 @@ export async function project(
       );
       break;
 
+    case 'Rejected':
+      await c.query(
+        `INSERT INTO proposal_votes (network, vault_id, proposal_id, voter, kind, voted_at)
+         VALUES ($1,$2,$3,$4,'rejection',$5)
+         ON CONFLICT DO NOTHING`,
+        [...key, event.proposal.toString(), event.rejecter, at],
+      );
+      await c.query(
+        `UPDATE proposals SET rejections = $4
+         WHERE network = $1 AND vault_id = $2 AND proposal_id = $3`,
+        [...key, event.proposal.toString(), event.rejections],
+      );
+      break;
+
     case 'Confirmed':
       await c.query(
         `INSERT INTO proposal_votes (network, vault_id, proposal_id, voter, kind, voted_at)

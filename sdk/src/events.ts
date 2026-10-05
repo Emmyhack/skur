@@ -25,6 +25,7 @@ export const EVENT_NAMES = [
   'Deposited',
   'ProposalOpened',
   'Approved',
+  'Rejected',
   'Confirmed',
   'Settled',
   'Executed',
@@ -83,6 +84,16 @@ const ApprovedBcs = bcs.struct('Approved', {
   approver: bcs.Address,
   approvals: bcs.u64(),
   req_approvals: bcs.u8(),
+  at: bcs.u64(),
+});
+
+const RejectedBcs = bcs.struct('Rejected', {
+  vault: UID,
+  proposal: bcs.u64(),
+  rejecter: bcs.Address,
+  rejections: bcs.u64(),
+  req_approvals: bcs.u8(),
+  settled: bcs.bool(),
   at: bcs.u64(),
 });
 
@@ -221,6 +232,16 @@ export type SkurEvent =
       at: number;
     }
   | { name: 'Approved'; vault: string; proposal: bigint; approver: string; approvals: number; reqApprovals: number; at: number }
+  | {
+      name: 'Rejected';
+      vault: string;
+      proposal: bigint;
+      rejecter: string;
+      rejections: number;
+      reqApprovals: number;
+      settled: boolean;
+      at: number;
+    }
   | { name: 'Confirmed'; vault: string; proposal: bigint; guardian: string; confirmations: number; reqGuardians: number; at: number }
   | { name: 'Settled'; vault: string; proposal: bigint; kind: Kind; status: Status; actor: string; at: number }
   | {
@@ -319,6 +340,10 @@ export function decodeEvent(eventType: string, bytes: Uint8Array): SkurEvent | n
     case 'Approved': {
       const e = ApprovedBcs.parse(bytes);
       return { name, vault: e.vault, proposal: b(e.proposal), approver: e.approver, approvals: n(e.approvals), reqApprovals: n(e.req_approvals), at: n(e.at) };
+    }
+    case 'Rejected': {
+      const e = RejectedBcs.parse(bytes);
+      return { name, vault: e.vault, proposal: b(e.proposal), rejecter: e.rejecter, rejections: n(e.rejections), reqApprovals: n(e.req_approvals), settled: e.settled, at: n(e.at) };
     }
     case 'Confirmed': {
       const e = ConfirmedBcs.parse(bytes);

@@ -38,7 +38,7 @@ Details, with the test that proves each invariant, in
 | [sdk/](sdk/) | TypeScript SDK on `@mysten/sui` v2 — reads, PTB builders, event decoding, and the chain-agnostic engines (risk, policy rules, templates, maximum loss, posture, attack simulator) |
 | [app/](app/) | The interface: Next.js, React, `@mysten/dapp-kit-react` |
 | [server/](server/) | Node and PostgreSQL: the event indexer, the notification service and the advisory API |
-| [docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md) | Roles, lifecycle, the fifteen invariants, the threat map and the known limitations |
+| [docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md) | Roles, lifecycle, the sixteen invariants, the threat map and the known limitations |
 | [docs/SUI_LANDSCAPE.md](docs/SUI_LANDSCAPE.md) | What exists on Sui today and what it does not do |
 | [docs/SUI_POSITIONING.md](docs/SUI_POSITIONING.md) | The positioning and funding narrative |
 | [docs/MIGRATION_EVM_TO_SUI.md](docs/MIGRATION_EVM_TO_SUI.md) | What moved, what changed shape, and why |
@@ -102,8 +102,10 @@ app, the SDK or the backend hardcodes one.
 1. **Opened.** The vault classifies it routine, high risk or critical from the amount, the share of
    holdings, the recipient's standing, the day's outflow and the security mode, and pins the
    approvals, the guardian confirmations and the delay.
-2. **Approved.** Approvers approve; guardians confirm when the tier demands it. A guardian can veto
-   any critical payment, any weakening of the vault, any recovery and any relaxation.
+2. **Approved, or turned down.** Approvers approve; guardians confirm when the tier demands it.
+   Rejecting takes as many signers as approving, so a bad proposal can be cleared rather than left
+   to expire — and one signer cannot block the queue. A guardian can veto any critical payment, any
+   weakening of the vault, any recovery and any relaxation.
 3. **Executed.** The vault re-checks everything against live state: the approval set is recounted
    against the current roster, the payment is reclassified and the *stricter* of the pinned and
    live requirements applies, the recipient's standing and activation are re-read, and the caps and

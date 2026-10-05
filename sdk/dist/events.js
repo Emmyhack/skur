@@ -20,6 +20,7 @@ export const EVENT_NAMES = [
     'Deposited',
     'ProposalOpened',
     'Approved',
+    'Rejected',
     'Confirmed',
     'Settled',
     'Executed',
@@ -73,6 +74,15 @@ const ApprovedBcs = bcs.struct('Approved', {
     approver: bcs.Address,
     approvals: bcs.u64(),
     req_approvals: bcs.u8(),
+    at: bcs.u64(),
+});
+const RejectedBcs = bcs.struct('Rejected', {
+    vault: UID,
+    proposal: bcs.u64(),
+    rejecter: bcs.Address,
+    rejections: bcs.u64(),
+    req_approvals: bcs.u8(),
+    settled: bcs.bool(),
     at: bcs.u64(),
 });
 const ConfirmedBcs = bcs.struct('Confirmed', {
@@ -215,6 +225,10 @@ export function decodeEvent(eventType, bytes) {
         case 'Approved': {
             const e = ApprovedBcs.parse(bytes);
             return { name, vault: e.vault, proposal: b(e.proposal), approver: e.approver, approvals: n(e.approvals), reqApprovals: n(e.req_approvals), at: n(e.at) };
+        }
+        case 'Rejected': {
+            const e = RejectedBcs.parse(bytes);
+            return { name, vault: e.vault, proposal: b(e.proposal), rejecter: e.rejecter, rejections: n(e.rejections), reqApprovals: n(e.req_approvals), settled: e.settled, at: n(e.at) };
         }
         case 'Confirmed': {
             const e = ConfirmedBcs.parse(bytes);

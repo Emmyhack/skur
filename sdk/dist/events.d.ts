@@ -1,7 +1,7 @@
 import type { ClientWithCoreApi } from '@mysten/sui/client';
 import { AssetLimitsBcs, PolicyBcs } from './bcs.js';
 import type { Kind, Mode, Status, Tier, Trust } from './types.js';
-export declare const EVENT_NAMES: readonly ["VaultCreated", "Deposited", "ProposalOpened", "Approved", "Confirmed", "Settled", "Executed", "BreakerTripped", "ModeChanged", "PolicyChanged", "LimitsChanged", "MemberChanged", "RecipientRegistered", "RecipientTrustChanged", "Recovered"];
+export declare const EVENT_NAMES: readonly ["VaultCreated", "Deposited", "ProposalOpened", "Approved", "Rejected", "Confirmed", "Settled", "Executed", "BreakerTripped", "ModeChanged", "PolicyChanged", "LimitsChanged", "MemberChanged", "RecipientRegistered", "RecipientTrustChanged", "Recovered"];
 export type EventName = (typeof EVENT_NAMES)[number];
 export type SkurEvent = {
     name: 'VaultCreated';
@@ -45,6 +45,15 @@ export type SkurEvent = {
     approver: string;
     approvals: number;
     reqApprovals: number;
+    at: number;
+} | {
+    name: 'Rejected';
+    vault: string;
+    proposal: bigint;
+    rejecter: string;
+    rejections: number;
+    reqApprovals: number;
+    settled: boolean;
     at: number;
 } | {
     name: 'Confirmed';

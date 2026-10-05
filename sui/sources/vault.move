@@ -111,6 +111,8 @@ public struct Proposal has store {
     reduction_mask: u32,
     approvals: VecSet<address>,
     confirmations: VecSet<address>,
+    /// Signers who have turned it down. Settled once this reaches `req_approvals`.
+    rejections: VecSet<address>,
     // transfer payload
     asset: Option<TypeName>,
     amount: u64,
@@ -196,6 +198,16 @@ public struct Approved has copy, drop {
     approver: address,
     approvals: u64,
     req_approvals: u8,
+    at: u64,
+}
+
+public struct Rejected has copy, drop {
+    vault: ID,
+    proposal: u64,
+    rejecter: address,
+    rejections: u64,
+    req_approvals: u8,
+    settled: bool,
     at: u64,
 }
 
@@ -520,6 +532,11 @@ public fun proposal_confirmations(v: &Vault, id: u64): u64 {
     v.proposals.borrow(id).confirmations.size()
 }
 
+public fun proposal_rejections(v: &Vault, id: u64): u64 {
+    assert!(v.proposals.contains(id), E_UNKNOWN_PROPOSAL);
+    v.proposals.borrow(id).rejections.size()
+}
+
 /// Approvals that would still count right now: a removed signer's approval is not one.
 public fun live_approvals(v: &Vault, id: u64): u64 {
     assert!(v.proposals.contains(id), E_UNKNOWN_PROPOSAL);
@@ -717,6 +734,7 @@ fun blank(
         reduction_mask,
         approvals: vec_set::empty(),
         confirmations: vec_set::empty(),
+        rejections: vec_set::empty(),
         asset: option::none(),
         amount: 0,
         recipient: @0x0,
@@ -922,6 +940,46 @@ public fun approve(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
         req_approvals: req,
         at: now,
     });
+}
+
+/// Turn a proposal down.
+///
+/// Takes the same role that approving it would, and it takes as many rejections as the proposal
+/// needed approvals — so rejecting is exactly as hard as approving, and one signer cannot block
+/// the queue on their own. Without this the only ways to clear a bad proposal are an owner
+/// cancelling it or waiting out its lifetime.
+public fun reject(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
+    let now = clock::timestamp_ms(clock);
+    assert_live(v, id, now);
+    let sender = ctx.sender();
+    let kind = v.proposals.borrow(id).kind;
+    let role = if (kind == types::kind_transfer()) {
+        types::role_approver()
+    } else {
+        types::role_owner()
+    };
+    let code = if (kind == types::kind_transfer()) E_NOT_APPROVER else E_NOT_OWNER;
+    assert_role(v, sender, role, code);
+
+    let (keys, req) = {
+        let p = v.proposals.borrow_mut(id);
+        assert!(!p.rejections.contains(&sender), E_ALREADY_VOTED);
+        p.rejections.insert(sender);
+        (*p.rejections.keys(), p.req_approvals)
+    };
+    // Counted against live roles, for the same reason approvals are.
+    let live = count_with_role(v, &keys, role);
+    let settled = live >= (req as u64);
+    event::emit(Rejected {
+        vault: object::id(v),
+        proposal: id,
+        rejecter: sender,
+        rejections: live,
+        req_approvals: req,
+        settled,
+        at: now,
+    });
+    if (settled) settle(v, id, types::status_rejected(), sender, now);
 }
 
 /// A guardian's positive signature, required for critical transfers, recovery and leaving a

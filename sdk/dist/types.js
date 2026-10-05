@@ -99,6 +99,8 @@ export const Status = {
     EXPIRED: 5,
     /** Refused by the circuit breaker. The vault latched into Lockdown instead of paying. */
     BLOCKED: 6,
+    /** Turned down by the signers: as many rejections as it needed approvals. */
+    REJECTED: 7,
 };
 export const STATUS_LABELS = {
     [Status.NONE]: 'Unknown',
@@ -108,6 +110,7 @@ export const STATUS_LABELS = {
     [Status.VETOED]: 'Vetoed',
     [Status.EXPIRED]: 'Expired',
     [Status.BLOCKED]: 'Refused by the circuit breaker',
+    [Status.REJECTED]: 'Rejected',
 };
 export const Reason = {
     AMOUNT_HIGH: 1,

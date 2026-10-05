@@ -109,7 +109,7 @@ export function proposeTransfer(packageId, input) {
     });
     return tx;
 }
-/** `approve`, `confirm`, `veto`, `cancel` and `expire` all take the same arguments. */
+/** `approve`, `reject`, `confirm`, `veto`, `cancel` and `expire` all take the same arguments. */
 function proposalAction(packageId, fn, vaultId, proposalId) {
     const tx = new Transaction();
     tx.moveCall({
@@ -119,6 +119,7 @@ function proposalAction(packageId, fn, vaultId, proposalId) {
     return tx;
 }
 export const approve = (pkg, vaultId, id) => proposalAction(pkg, 'approve', vaultId, id);
+export const reject = (pkg, vaultId, id) => proposalAction(pkg, 'reject', vaultId, id);
 export const confirm = (pkg, vaultId, id) => proposalAction(pkg, 'confirm', vaultId, id);
 export const veto = (pkg, vaultId, id) => proposalAction(pkg, 'veto', vaultId, id);
 export const cancel = (pkg, vaultId, id) => proposalAction(pkg, 'cancel', vaultId, id);

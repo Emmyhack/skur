@@ -5,7 +5,7 @@ import { Reveal } from '@/marketing/Reveal';
 import { IconCheck } from '@/marketing/icons';
 import { NETWORK, PACKAGE_ID, CONFIGURED } from '@/config';
 
-/** The fifteen invariants, each with the control that enforces it. */
+/** The sixteen invariants, each with the control that enforces it. */
 const INVARIANTS: [string, string][] = [
   ['Nothing executes before every active condition is met', 'ordered assertions in execute_transfer'],
   ['A guardian cannot move treasury assets through guardian authority', 'types::roles_valid · role gates'],
@@ -22,6 +22,7 @@ const INVARIANTS: [string, string][] = [
   ['The breaker’s latch survives the attempt', 'execute_transfer returns without aborting'],
   ['Leaving a raised posture is never unilateral', 'owners + guardians + delay'],
   ['An automation key cannot authorize itself', 'PROPOSER satisfies only can_propose'],
+  ['Rejecting takes as many signers as approving', 'reject · counted against live roles'],
 ];
 
 export default function SecurityPage() {
@@ -101,7 +102,7 @@ export default function SecurityPage() {
       <section className="dark">
         <div className="wrap">
           <Reveal>
-            <h2>Fifteen invariants, each with a test</h2>
+            <h2>Sixteen invariants, each with a test</h2>
             <p className="lead">
               Every control is enforced by the Move code and proven by a test named after the attack
               it defends against. The mapping is public in the security model.

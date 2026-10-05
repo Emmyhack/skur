@@ -102,6 +102,9 @@ const STATUS_EXPIRED: u8 = 5;
 /// Refused at execution by a control that must survive the attempt: the circuit breaker. The
 /// transaction still succeeds, because the latch it sets has to persist.
 const STATUS_BLOCKED: u8 = 6;
+/// Turned down by the signers. It takes as many rejections as the proposal needed approvals, so
+/// rejecting is exactly as hard as approving and a single signer cannot block the queue.
+const STATUS_REJECTED: u8 = 7;
 
 public fun status_pending(): u8 { STATUS_PENDING }
 public fun status_executed(): u8 { STATUS_EXECUTED }
@@ -109,6 +112,7 @@ public fun status_cancelled(): u8 { STATUS_CANCELLED }
 public fun status_vetoed(): u8 { STATUS_VETOED }
 public fun status_expired(): u8 { STATUS_EXPIRED }
 public fun status_blocked(): u8 { STATUS_BLOCKED }
+public fun status_rejected(): u8 { STATUS_REJECTED }
 
 // ---------------------------------------------------------------- why a payment was escalated
 const REASON_AMOUNT_HIGH: u16 = 1;

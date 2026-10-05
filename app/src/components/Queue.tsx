@@ -128,6 +128,10 @@ function ProposalCard({
   const voteRole = isTransfer ? Role.APPROVER : Role.OWNER;
   const alreadyApproved = me ? p.approvals.includes(me) : false;
   const alreadyConfirmed = me ? p.confirmations.includes(me) : false;
+  const alreadyRejected = me ? p.rejections.includes(me) : false;
+  const liveRejections = p.rejections.filter((a) =>
+    hasRole(view.members.find((m) => m.address === a)?.roles ?? 0, voteRole),
+  ).length;
 
   const approvalsMet = liveApprovals >= p.reqApprovals;
   const guardiansMet = liveConfirmations >= p.reqGuardians;
@@ -265,6 +269,19 @@ function ProposalCard({
           }
         >
           {alreadyApproved ? 'Approved' : 'Approve'}
+        </button>
+
+        <button
+          className="btn sm"
+          disabled={!hasRole(roles, voteRole) || alreadyRejected || Boolean(tx.pending)}
+          onClick={() => tx.run(build.reject(PACKAGE_ID, vaultId, id), `reject-${id}`)}
+          title={
+            alreadyRejected
+              ? 'You have already rejected this'
+              : `Takes ${p.reqApprovals} rejection${p.reqApprovals === 1 ? '' : 's'} to turn this down — as many as it needs to be approved`
+          }
+        >
+          {alreadyRejected ? 'Rejected' : `Reject${liveRejections > 0 ? ` (${liveRejections}/${p.reqApprovals})` : ''}`}
         </button>
 
         {p.reqGuardians > 0 || vetoable ? (

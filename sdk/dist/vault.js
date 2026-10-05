@@ -180,6 +180,7 @@ function toProposal(raw) {
         reductionMask: num(raw.reduction_mask),
         approvals: raw.approvals.contents,
         confirmations: raw.confirmations.contents,
+        rejections: raw.rejections.contents,
         asset: raw.asset ? (raw.asset.name.startsWith('0x') ? raw.asset.name : `0x${raw.asset.name}`) : null,
         amount: big(raw.amount),
         recipient: raw.recipient,

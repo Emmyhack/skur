@@ -124,6 +124,13 @@ fun approve(sc: &mut Scenario, who: address, id: u64, clock: &Clock) {
     ts::return_shared(v);
 }
 
+fun reject(sc: &mut Scenario, who: address, id: u64, clock: &Clock) {
+    ts::next_tx(sc, who);
+    let mut v = ts::take_shared<Vault>(sc);
+    vault::reject(&mut v, id, clock, sc.ctx());
+    ts::return_shared(v);
+}
+
 fun confirm(sc: &mut Scenario, who: address, id: u64, clock: &Clock) {
     ts::next_tx(sc, who);
     let mut v = ts::take_shared<Vault>(sc);
@@ -326,6 +333,96 @@ fun a_payment_cannot_execute_twice() {
     approve(&mut sc, OWNER, id, &clock);
     execute(&mut sc, OWNER, id, &clock);
     execute(&mut sc, OWNER, id, &clock);
+
+    clock::destroy_for_testing(clock);
+    ts::end(sc);
+}
+
+// ---------------------------------------------------------------- turning a proposal down
+/// Rejecting is exactly as hard as approving, so one signer cannot block the queue.
+#[test]
+fun one_rejection_does_not_turn_down_a_payment_that_needs_two() {
+    let mut sc = ts::begin(OWNER);
+    let mut clock = settled_clock(&mut sc);
+    boot(&mut sc, base_policy(), 50_000, 100_000, &clock);
+    fund(&mut sc, &clock, TREASURY);
+    tick(&mut clock, 13 * HOUR);
+
+    let id = propose(&mut sc, OWNER, 5_000, BOB, &clock);
+    reject(&mut sc, OWNER, id, &clock);
+    assert!(status(&mut sc, id) == types::status_pending(), 0);
+
+    clock::destroy_for_testing(clock);
+    ts::end(sc);
+}
+
+/// And once it has as many rejections as it needed approvals, it is settled and the money stays.
+#[test]
+fun as_many_rejections_as_approvals_turns_a_payment_down() {
+    let mut sc = ts::begin(OWNER);
+    let mut clock = settled_clock(&mut sc);
+    boot(&mut sc, base_policy(), 50_000, 100_000, &clock);
+    fund(&mut sc, &clock, TREASURY);
+    tick(&mut clock, 13 * HOUR);
+
+    let id = propose(&mut sc, OWNER, 5_000, BOB, &clock);
+    reject(&mut sc, OWNER, id, &clock);
+    reject(&mut sc, APPROVER, id, &clock);
+
+    assert!(status(&mut sc, id) == types::status_rejected(), 0);
+    assert!(balance(&mut sc) == TREASURY, 1);
+
+    clock::destroy_for_testing(clock);
+    ts::end(sc);
+}
+
+#[test]
+#[expected_failure(abort_code = E_NOT_PENDING)]
+fun a_rejected_payment_cannot_execute() {
+    let mut sc = ts::begin(OWNER);
+    let mut clock = settled_clock(&mut sc);
+    boot(&mut sc, base_policy(), 50_000, 100_000, &clock);
+    fund(&mut sc, &clock, TREASURY);
+    tick(&mut clock, 13 * HOUR);
+
+    let id = propose(&mut sc, OWNER, 500, BOB, &clock);
+    approve(&mut sc, OWNER, id, &clock);
+    reject(&mut sc, OWNER2, id, &clock); // routine needs one, so one rejection settles it
+    execute(&mut sc, OWNER, id, &clock);
+
+    clock::destroy_for_testing(clock);
+    ts::end(sc);
+}
+
+#[test]
+#[expected_failure(abort_code = E_ALREADY_VOTED)]
+fun a_rejection_cannot_be_replayed() {
+    let mut sc = ts::begin(OWNER);
+    let mut clock = settled_clock(&mut sc);
+    boot(&mut sc, base_policy(), 50_000, 100_000, &clock);
+    fund(&mut sc, &clock, TREASURY);
+    tick(&mut clock, 13 * HOUR);
+
+    let id = propose(&mut sc, OWNER, 5_000, BOB, &clock);
+    reject(&mut sc, OWNER, id, &clock);
+    reject(&mut sc, OWNER, id, &clock);
+
+    clock::destroy_for_testing(clock);
+    ts::end(sc);
+}
+
+/// An agent can ask, and it cannot answer — including answering no.
+#[test]
+#[expected_failure(abort_code = E_NOT_APPROVER)]
+fun an_agent_cannot_reject() {
+    let mut sc = ts::begin(OWNER);
+    let mut clock = settled_clock(&mut sc);
+    boot(&mut sc, base_policy(), 50_000, 100_000, &clock);
+    fund(&mut sc, &clock, TREASURY);
+    tick(&mut clock, 13 * HOUR);
+
+    let id = propose(&mut sc, AGENT, 500, BOB, &clock);
+    reject(&mut sc, AGENT, id, &clock);
 
     clock::destroy_for_testing(clock);
     ts::end(sc);

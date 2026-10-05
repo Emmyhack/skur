@@ -74,6 +74,7 @@ export const ProposalBcs = bcs.struct('Proposal', {
     reduction_mask: bcs.u32(),
     approvals: VecSetAddress,
     confirmations: VecSetAddress,
+    rejections: VecSetAddress,
     asset: bcs.option(TypeNameBcs),
     amount: bcs.u64(),
     recipient: bcs.Address,

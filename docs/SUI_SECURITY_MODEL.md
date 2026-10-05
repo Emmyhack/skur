@@ -32,7 +32,9 @@ confirmation, not execution, not governance.
    `executable_at` (the tier's delay, or the recipient's activation time, whichever is later) and
    `expires_at`.
 2. **`approve`** takes the approver role for a payment and the owner role for governance, and
-   records the approval against the address. **`confirm`** takes the guardian role.
+   records the approval against the address. **`reject`** takes the same role and records the
+   opposite, settling the proposal once as many signers have rejected it as it needed to be
+   approved. **`confirm`** takes the guardian role.
 3. **`execute_transfer<T>`** re-evaluates everything against live state — see below — and only then
    writes the status, charges the windows, and moves the coin.
 
@@ -76,7 +78,8 @@ applies. Tightening the policy affects payments already in flight; loosening it 
 | 12 | The roster always satisfies the policy | `assert_counts_valid` after `finish`, `execute_member` and `execute_recovery` | `counts_must_satisfy_the_policy`, and the roster assertions in the recovery tests |
 | 13 | The breaker's latch survives the attempt | `execute_transfer` returns without aborting, so the Lockdown write commits | `crossing_the_loss_envelope_freezes_the_vault_instead_of_paying` |
 | 14 | Leaving a raised posture is never unilateral | `propose_mode_relax` needs owners, guardians and the policy-change delay | `leaving_lockdown_takes_owners_a_guardian_and_time`, `owners_alone_cannot_lift_a_freeze` |
-| 15 | An automation key cannot authorize itself | `PROPOSER` satisfies only `can_propose` | `an_agent_cannot_approve_its_own_proposal`, `an_agent_cannot_execute`, `a_proposer_can_only_propose` |
+| 15 | An automation key cannot authorize itself | `PROPOSER` satisfies only `can_propose` | `an_agent_cannot_approve_its_own_proposal`, `an_agent_cannot_execute`, `an_agent_cannot_reject`, `a_proposer_can_only_propose` |
+| 16 | Rejecting takes as many signers as approving | `reject` counts rejections against live roles and compares to `req_approvals` | `one_rejection_does_not_turn_down_a_payment_that_needs_two`, `as_many_rejections_as_approvals_turns_a_payment_down`, `a_rejected_payment_cannot_execute` |
 
 Reentrancy is absent by construction rather than defended against: Move has no dynamic dispatch
 into a caller, and the only outgoing value movement is `transfer::public_transfer` of a coin split

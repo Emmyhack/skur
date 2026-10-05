@@ -98,7 +98,7 @@ export default function Landing() {
         ))}
         <div className="wrap">
           <div className="eyebrow">
-            <b>15 invariants</b> enforced by the vault, not by a server
+            <b>16 invariants</b> enforced by the vault, not by a server
           </div>
           <h1>
             {words.map((w, i) => (
@@ -441,7 +441,7 @@ export default function Landing() {
           </blockquote>
           <cite>The Skur thesis</cite>
           <div className="stats">
-            <Stat n={15} label="Invariants, each with a test" />
+            <Stat n={16} label="Invariants, each with a test" />
             <Stat n={4} label="Move modules in the core" />
             <Stat n={0} label="Servers between you and your vault" />
           </div>

@@ -67,6 +67,8 @@ export declare const Status: {
     readonly EXPIRED: 5;
     /** Refused by the circuit breaker. The vault latched into Lockdown instead of paying. */
     readonly BLOCKED: 6;
+    /** Turned down by the signers: as many rejections as it needed approvals. */
+    readonly REJECTED: 7;
 };
 export type Status = (typeof Status)[keyof typeof Status];
 export declare const STATUS_LABELS: Record<Status, string>;
@@ -153,6 +155,7 @@ export type Proposal = {
     reductionMask: number;
     approvals: string[];
     confirmations: string[];
+    rejections: string[];
     asset: string | null;
     amount: bigint;
     recipient: string;

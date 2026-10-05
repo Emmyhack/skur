@@ -115,6 +115,8 @@ export const Status = {
   EXPIRED: 5,
   /** Refused by the circuit breaker. The vault latched into Lockdown instead of paying. */
   BLOCKED: 6,
+  /** Turned down by the signers: as many rejections as it needed approvals. */
+  REJECTED: 7,
 } as const;
 export type Status = (typeof Status)[keyof typeof Status];
 export const STATUS_LABELS: Record<Status, string> = {
@@ -125,6 +127,7 @@ export const STATUS_LABELS: Record<Status, string> = {
   [Status.VETOED]: 'Vetoed',
   [Status.EXPIRED]: 'Expired',
   [Status.BLOCKED]: 'Refused by the circuit breaker',
+  [Status.REJECTED]: 'Rejected',
 };
 
 export const Reason = {
@@ -231,6 +234,7 @@ export type Proposal = {
   reductionMask: number;
   approvals: string[];
   confirmations: string[];
+  rejections: string[];
   asset: string | null;
   amount: bigint;
   recipient: string;

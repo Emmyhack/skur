@@ -65,6 +65,11 @@ export declare const ProposalBcs: import("@mysten/sui/bcs").BcsStruct<{
             length: number;
         }, string>;
     }, string>;
+    rejections: import("@mysten/sui/bcs").BcsStruct<{
+        contents: import("@mysten/sui/bcs").BcsType<string[], Iterable<string | Uint8Array<ArrayBufferLike>> & {
+            length: number;
+        }, string>;
+    }, string>;
     asset: import("@mysten/sui/bcs").BcsType<{
         name: string;
     } | null, {

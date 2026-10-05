@@ -8,7 +8,7 @@ rules can be read, tested and argued about without reasoning about the object th
 | [`types.move`](sources/types.move) | ~145 | The vocabulary: role bits, risk tiers, trust levels, security modes, proposal kinds, statuses and the reason bitmask. No state, no logic beyond `roles_valid` |
 | [`policy.move`](sources/policy.move) | ~340 | The seventeen policy fields, the per-asset limits, every validation rule, and `reductions` — the comparison that decides whether a change weakens the vault |
 | [`risk.move`](sources/risk.move) | ~170 | The classifier. Five signals in, a tier, a reason mask and an exposure out. Pure and total |
-| [`vault.move`](sources/vault.move) | ~1,630 | The shared object, the proposal lifecycle and every enforcement point |
+| [`vault.move`](sources/vault.move) | ~1,700 | The shared object, the proposal lifecycle and every enforcement point |
 
 ## Reading order, for a review
 

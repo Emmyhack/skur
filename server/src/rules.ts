@@ -110,6 +110,19 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
         },
       ];
 
+    case 'Rejected':
+      // A single rejection is a vote in progress, not news. The one that settles it is.
+      if (!event.settled) return [];
+      return [
+        {
+          rule: 'proposal.rejected',
+          title: 'A proposal was rejected',
+          body: `Proposal #${event.proposal} was turned down by ${event.rejections} signer${event.rejections === 1 ? '' : 's'}, which is as many as it needed to be approved.`,
+          severity: 'info',
+          roles: 0,
+        },
+      ];
+
     case 'BreakerTripped':
       return [
         {

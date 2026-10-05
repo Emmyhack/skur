@@ -116,6 +116,31 @@ describe('approvals', () => {
   });
 });
 
+describe('rejections', () => {
+  const base = {
+    name: 'Rejected' as const,
+    vault: '0xV',
+    proposal: 7n,
+    rejecter: '0xA',
+    rejections: 1,
+    reqApprovals: 2,
+    settled: false,
+    at: 1,
+  };
+
+  it('stays quiet on a rejection that has not settled anything', () => {
+    expect(rulesFor(wrap(base))).toEqual([]);
+  });
+
+  it('tells the vault once the rejection carries', () => {
+    const rules = rulesFor(wrap({ ...base, rejections: 2, settled: true }));
+    expect(rules).toHaveLength(1);
+    expect(rules[0].rule).toBe('proposal.rejected');
+    expect(rules[0].roles).toBe(0);
+    expect(rules[0].body).toMatch(/2 signers/);
+  });
+});
+
 describe('the things everyone hears about', () => {
   it('tells the whole vault when the breaker trips, and says the money did not move', () => {
     const rules = rulesFor(

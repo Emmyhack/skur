@@ -158,10 +158,10 @@ const DOCS: Doc[] = [
           rows={[
             [
               'Owner (1)',
-              'Open and approve governance: the policy, asset limits, the roster, recipient trust, lowering the mode. Register a recipient. Cancel any proposal',
+              'Open, approve or reject governance: the policy, asset limits, the roster, recipient trust, lowering the mode. Register a recipient. Cancel any proposal',
               'Move funds without meeting the payment policy',
             ],
-            ['Approver (2)', 'Approve a payment', 'Execute one, or govern'],
+            ['Approver (2)', 'Approve or reject a payment', 'Execute one, or govern'],
             ['Executor (4)', 'Execute a payment once every condition holds', 'Approve one'],
             [
               'Guardian (8)',
@@ -182,6 +182,13 @@ const DOCS: Doc[] = [
           there is no way to install an exception. That makes guardians a second control plane an
           attacker has to breach separately — and one they cannot profit from, because there is no
           withdrawal path from guardian authority.
+        </p>
+        <H>Approving, and rejecting</H>
+        <p>
+          A signer who thinks a proposal is wrong can reject it, and it takes as many rejections as
+          the proposal needed approvals. Rejecting is therefore exactly as hard as approving: one
+          signer cannot block the queue, and a bad proposal can be cleared the same day instead of
+          sitting there until it expires or an owner cancels it.
         </p>
         <H>Why approvals are recounted</H>
         <p>
@@ -631,7 +638,7 @@ const DOCS: Doc[] = [
     body: () => (
       <>
         <p className="doc-lead">
-          Fifteen properties, each enforced by named code and proven by a test named after the
+          Sixteen properties, each enforced by named code and proven by a test named after the
           attack it defends against.
         </p>
         <ol className="doc-inv">
@@ -650,6 +657,7 @@ const DOCS: Doc[] = [
           <li>The breaker’s latch survives the attempt.</li>
           <li>Leaving a raised posture is never unilateral.</li>
           <li>An automation key cannot authorize itself.</li>
+          <li>Rejecting a proposal takes as many signers as approving it.</li>
         </ol>
         <p>
           The full mapping — invariant, the code that enforces it, the test that proves it — is in{' '}
