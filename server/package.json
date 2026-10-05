@@ -4,12 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node --experimental-strip-types --watch src/main.ts",
-    "start": "node --experimental-strip-types src/main.ts",
+    "dev": "npm run sdk && node --experimental-strip-types --watch src/main.ts",
+    "start": "npm run sdk && node --experimental-strip-types src/main.ts",
     "migrate": "node --experimental-strip-types src/migrate.ts",
-    "index": "node --experimental-strip-types src/indexer.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "index": "npm run sdk && node --experimental-strip-types src/indexer.ts",
+    "typecheck": "npm run sdk && tsc --noEmit",
+    "test": "npm run sdk && vitest run",
+    "sdk": "npm --prefix ../sdk run --silent build"
   },
   "dependencies": {
     "@skur/sdk": "file:../sdk",
