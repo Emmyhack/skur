@@ -968,8 +968,13 @@ public fun reject(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
         (*p.rejections.keys(), p.req_approvals)
     };
     // Counted against live roles, for the same reason approvals are.
+    //
+    // A recovery pins zero approvals, because what it needs is guardian confirmations. Flooring
+    // the threshold at one keeps rejection meaningful there instead of settling on an empty set —
+    // which matches the documented rule that any owner can stop a recovery.
+    let threshold = if (req == 0) 1 else (req as u64);
     let live = count_with_role(v, &keys, role);
-    let settled = live >= (req as u64);
+    let settled = live >= threshold;
     event::emit(Rejected {
         vault: object::id(v),
         proposal: id,

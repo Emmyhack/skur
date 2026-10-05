@@ -428,6 +428,32 @@ fun an_agent_cannot_reject() {
     ts::end(sc);
 }
 
+/// A recovery pins no approvals, so the rejection threshold has to be floored at one rather than
+/// settling on an empty set.
+#[test]
+fun one_owner_can_reject_a_recovery() {
+    let mut sc = ts::begin(OWNER);
+    let clock = settled_clock(&mut sc);
+    boot(&mut sc, base_policy(), 50_000, 100_000, &clock);
+
+    ts::next_tx(&mut sc, GUARD);
+    let mut v = ts::take_shared<Vault>(&sc);
+    let id = vault::propose_recovery(&mut v, APPROVER, NEWKEY, &clock, sc.ctx());
+    ts::return_shared(v);
+
+    reject(&mut sc, OWNER, id, &clock);
+    assert!(status(&mut sc, id) == types::status_rejected(), 0);
+    // The roster is untouched.
+    ts::next_tx(&mut sc, OWNER);
+    let v2 = ts::take_shared<Vault>(&sc);
+    assert!(vault::member_roles(&v2, APPROVER) == types::role_approver(), 1);
+    assert!(vault::member_roles(&v2, NEWKEY) == 0, 2);
+    ts::return_shared(v2);
+
+    clock::destroy_for_testing(clock);
+    ts::end(sc);
+}
+
 // ---------------------------------------------------------------- recipients
 /// A brand-new destination cannot be paid until its activation delay has run, however many
 /// signatures it collects.
