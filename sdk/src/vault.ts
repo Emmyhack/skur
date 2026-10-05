@@ -305,22 +305,24 @@ export async function previewTransfer(
 ): Promise<TransferPreview> {
   const tx = previewTransferTx(input.packageId, input);
   tx.setSender(input.sender);
+  // `commandResults` carries each command's return values as BCS bytes. The transaction is never
+  // signed or submitted — this is a read dressed as a transaction, which is the only way to call a
+  // Move function and get its return values back.
   const result = await client.core.simulateTransaction({
-    transaction: await tx.build({ client }),
+    transaction: tx,
     include: { commandResults: true },
   });
   const values = result.commandResults?.[0]?.returnValues;
   if (!values || values.length < 6) {
     throw new Error('preview_transfer returned no values; is the package id correct?');
   }
-  const at = (i: number) => values[i].bcs ?? values[i];
   return {
-    tier: num(bcs.u8().parse(at(0) as Uint8Array)) as Tier,
-    reasons: num(bcs.u16().parse(at(1) as Uint8Array)),
-    exposureBps: num(bcs.u64().parse(at(2) as Uint8Array)),
-    reqApprovals: num(bcs.u8().parse(at(3) as Uint8Array)),
-    reqGuardians: num(bcs.u8().parse(at(4) as Uint8Array)),
-    delay: num(bcs.u64().parse(at(5) as Uint8Array)),
+    tier: num(bcs.u8().parse(values[0].bcs)) as Tier,
+    reasons: num(bcs.u16().parse(values[1].bcs)),
+    exposureBps: num(bcs.u64().parse(values[2].bcs)),
+    reqApprovals: num(bcs.u8().parse(values[3].bcs)),
+    reqGuardians: num(bcs.u8().parse(values[4].bcs)),
+    delay: num(bcs.u64().parse(values[5].bcs)),
   };
 }
 

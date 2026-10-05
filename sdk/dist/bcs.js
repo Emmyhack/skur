@@ -109,9 +109,5 @@ export const VaultBcs = bcs.struct('Vault', {
 });
 /** `sui::balance::Balance<T>` is a single u64 on the wire. */
 export const BalanceBcs = bcs.struct('Balance', { value: bcs.u64() });
-/** A `Table` entry is stored as `Field<K, V>` under the table's own id. */
-export function fieldBcs(key, value) {
-    return { key, value };
-}
 export { bcs };
 //# sourceMappingURL=bcs.js.map

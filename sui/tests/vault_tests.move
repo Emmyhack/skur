@@ -568,6 +568,7 @@ fun leaving_lockdown_takes_owners_a_guardian_and_time() {
     ts::end(sc);
 }
 
+/// Every owner can agree and the freeze still holds: a guardian has to sign it off.
 #[test]
 #[expected_failure(abort_code = E_NOT_ENOUGH_GUARDIANS)]
 fun owners_alone_cannot_lift_a_freeze() {
@@ -579,12 +580,24 @@ fun owners_alone_cannot_lift_a_freeze() {
     ts::next_tx(&mut sc, GUARD);
     let mut v = ts::take_shared<Vault>(&sc);
     vault::raise_mode(&mut v, types::mode_lockdown(), 0, &clock, sc.ctx());
-    let rid = vault::propose_mode_relax(&mut v, types::mode_normal(), &clock, sc.ctx());
     ts::return_shared(v);
+
+    ts::next_tx(&mut sc, OWNER);
+    let mut v2 = ts::take_shared<Vault>(&sc);
+    let rid = vault::propose_mode_relax(&mut v2, types::mode_normal(), &clock, sc.ctx());
+    ts::return_shared(v2);
+
+    approve(&mut sc, OWNER, rid, &clock);
+    approve(&mut sc, OWNER2, rid, &clock);
+
+    tick(&mut clock, 2 * DAY + HOUR);
+    ts::next_tx(&mut sc, OWNER);
+    let mut v3 = ts::take_shared<Vault>(&sc);
+    vault::execute_mode_relax(&mut v3, rid, &clock, sc.ctx());
+    ts::return_shared(v3);
 
     clock::destroy_for_testing(clock);
     ts::end(sc);
-    let _ = rid;
 }
 
 // ---------------------------------------------------------------- guardians

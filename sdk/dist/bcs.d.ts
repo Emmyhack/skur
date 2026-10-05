@@ -190,14 +190,5 @@ export declare const VaultBcs: import("@mysten/sui/bcs").BcsStruct<{
 export declare const BalanceBcs: import("@mysten/sui/bcs").BcsStruct<{
     value: import("@mysten/sui/bcs").BcsType<string, string | number | bigint, "u64">;
 }, string>;
-/** A `Table` entry is stored as `Field<K, V>` under the table's own id. */
-export declare function fieldBcs<K, V>(key: ReturnType<typeof bcs.u64>, value: {
-    parse: (bytes: Uint8Array) => V;
-}): {
-    key: import("@mysten/sui/bcs").BcsType<string, string | number | bigint, "u64">;
-    value: {
-        parse: (bytes: Uint8Array) => V;
-    };
-};
 export { bcs };
 //# sourceMappingURL=bcs.d.ts.map

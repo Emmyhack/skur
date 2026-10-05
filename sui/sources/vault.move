@@ -49,12 +49,10 @@ const E_INSUFFICIENT_BALANCE: u64 = 123;
 const E_ZERO_AMOUNT: u64 = 124;
 const E_NOT_VETOABLE: u64 = 125;
 const E_ALREADY_REGISTERED: u64 = 126;
-const E_UNKNOWN_RECIPIENT: u64 = 127;
 const E_INVALID_TRUST: u64 = 128;
 const E_INVALID_MODE: u64 = 129;
 const E_NOT_A_RELAXATION: u64 = 130;
 const E_NOT_PROPOSER_OR_OWNER: u64 = 131;
-const E_LAST_OWNER: u64 = 132;
 const E_GUARDIAN_HAS_TREASURY_ROLE: u64 = 133;
 const E_ASSET_ALREADY_SET_UP: u64 = 134;
 const E_ROSTER_MISMATCH: u64 = 135;
@@ -430,7 +428,6 @@ public fun finish(s: VaultSetup, ctx: &TxContext) {
 
 // ---------------------------------------------------------------- roster bookkeeping
 fun tally(v: &mut Vault, bits: u8, add: bool) {
-    let d = if (add) 1 else 0;
     if (types::has_role(bits, types::role_owner())) {
         v.owner_count = if (add) v.owner_count + 1 else v.owner_count - 1;
     };
@@ -443,7 +440,6 @@ fun tally(v: &mut Vault, bits: u8, add: bool) {
     if (types::has_role(bits, types::role_guardian())) {
         v.guardian_count = if (add) v.guardian_count + 1 else v.guardian_count - 1;
     };
-    let _ = d;
 }
 
 fun roles_of(v: &Vault, who: address): u8 {
@@ -1532,20 +1528,19 @@ public fun propose_mode_relax(
 
 public fun execute_mode_relax(v: &mut Vault, id: u64, clock: &Clock, ctx: &TxContext) {
     let now = clock::timestamp_ms(clock);
-    let (to, confirm_keys) = {
+    let (to, approval_keys, confirm_keys) = {
         let p = v.proposals.borrow(id);
         assert!(p.kind == types::kind_mode_relax(), E_WRONG_KIND);
         assert!(p.status == types::status_pending(), E_NOT_PENDING);
         assert!(now < p.expires_at, E_EXPIRED);
         assert!(now >= p.executable_at, E_TOO_EARLY);
-        let keys = *p.approvals.keys();
-        assert!(
-            count_with_role(v, &keys, types::role_owner())
-                >= (v.policy.governance_threshold() as u64),
-            E_NOT_ENOUGH_APPROVALS,
-        );
-        (p.target_mode, *p.confirmations.keys())
+        (p.target_mode, *p.approvals.keys(), *p.confirmations.keys())
     };
+    assert!(
+        count_with_role(v, &approval_keys, types::role_owner())
+            >= (v.policy.governance_threshold() as u64),
+        E_NOT_ENOUGH_APPROVALS,
+    );
     assert!(
         count_with_role(v, &confirm_keys, types::role_guardian())
             >= (v.policy.guardian_threshold() as u64),

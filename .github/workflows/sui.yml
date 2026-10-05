@@ -1,0 +1,125 @@
+name: Sui
+
+permissions: {}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Pin the toolchain: the Move compiler and the bundled framework move together, and a job that
+  # silently upgrades either is a job that cannot reproduce a failure.
+  SUI_VERSION: mainnet-v1.80.1
+
+jobs:
+  move:
+    name: Move
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Cache the Sui CLI
+        id: cache-sui
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/sui
+          key: sui-${{ env.SUI_VERSION }}-ubuntu
+
+      - name: Install the Sui CLI
+        if: steps.cache-sui.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/bin
+          curl -fsSL --retry 5 \
+            "https://github.com/MystenLabs/sui/releases/download/${SUI_VERSION}/sui-${SUI_VERSION}-ubuntu-x86_64.tgz" \
+            -o /tmp/sui.tgz
+          tar -xzf /tmp/sui.tgz -C /tmp
+          find /tmp -maxdepth 3 -type f -name sui -perm -u+x -exec cp {} ~/.local/bin/sui \;
+          chmod +x ~/.local/bin/sui
+
+      - name: Build
+        run: ~/.local/bin/sui move build --path sui
+
+      - name: Test
+        run: ~/.local/bin/sui move test --path sui
+
+  typescript:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build and test the SDK
+        working-directory: sdk
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+          npm test
+
+      - name: Test the backend
+        working-directory: server
+        env:
+          # The rule tests are pure; nothing here touches a database.
+          DATABASE_URL: postgres://localhost:5432/unused
+          SKUR_PACKAGE_ID: '0x0'
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+      - name: Typecheck the interface
+        working-directory: app
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+
+  migrations:
+    name: Migrations
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          # No password, rather than a hardcoded one. This container exists for the length of one
+          # job, is reachable only from it, and is thrown away afterwards — so a credential here
+          # protects nothing and is one more string to leak. `trust` removes it entirely.
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: skur
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # A migration that does not apply to an empty database is a migration nobody can deploy.
+      - name: Apply the migrations
+        working-directory: server
+        env:
+          DATABASE_URL: postgres://postgres@localhost:5432/skur
+          SKUR_PACKAGE_ID: '0x0'
+        run: |
+          npm install --no-audit --no-fund
+          npm run migrate
