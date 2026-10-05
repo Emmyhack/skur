@@ -8,7 +8,7 @@
 /// interface or a backend.
 module skur::vault;
 
-use std::string::String;
+use std::string::{Self, String};
 use std::type_name::{Self, TypeName};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
@@ -470,8 +470,8 @@ public fun member_roles(v: &Vault, who: address): u8 { roles_of(v, who) }
 
 public fun balance_of<T>(v: &Vault): u64 {
     let key = type_name::get<T>();
-    if (!v.funds.contains(key)) return 0;
-    balance::value(v.funds.borrow<TypeName, Balance<T>>(key))
+    if (!bag::contains(&v.funds, key)) return 0;
+    balance::value(bag::borrow<TypeName, Balance<T>>(&v.funds, key))
 }
 
 public fun limits_of<T>(v: &Vault): AssetLimits {
@@ -551,10 +551,10 @@ public fun deposit<T>(v: &mut Vault, c: Coin<T>, clock: &Clock, ctx: &TxContext)
     let amount = c.value();
     assert!(amount > 0, E_ZERO_AMOUNT);
     let incoming = c.into_balance();
-    if (v.funds.contains(key)) {
-        balance::join(v.funds.borrow_mut<TypeName, Balance<T>>(key), incoming);
+    if (bag::contains(&v.funds, key)) {
+        balance::join(bag::borrow_mut<TypeName, Balance<T>>(&mut v.funds, key), incoming);
     } else {
-        v.funds.add(key, incoming);
+        bag::add(&mut v.funds, key, incoming);
     };
     event::emit(Deposited {
         vault: object::id(v),
@@ -624,7 +624,7 @@ public fun guardian_restrict(
             activates_at: now,
             paid_count: 0,
             last_paid: 0,
-            label: b"".to_string(),
+            label: string::utf8(b""),
         });
         types::trust_unknown()
     };
@@ -720,7 +720,7 @@ fun blank(
         asset: option::none(),
         amount: 0,
         recipient: @0x0,
-        memo: b"".to_string(),
+        memo: string::utf8(b""),
         new_policy: option::none(),
         new_limits: option::none(),
         member: @0x0,
@@ -1174,7 +1174,7 @@ public fun execute_transfer<T>(v: &mut Vault, id: u64, clock: &Clock, ctx: &mut 
         r.last_paid = now;
     };
 
-    let paid = balance::split(v.funds.borrow_mut<TypeName, Balance<T>>(key), amount);
+    let paid = balance::split(bag::borrow_mut<TypeName, Balance<T>>(&mut v.funds, key), amount);
     transfer::public_transfer(coin::from_balance(paid, ctx), recipient);
 
     event::emit(Executed {
@@ -1279,7 +1279,7 @@ public fun propose_policy(
     let delay = if (mask == 0) 0 else v.policy.policy_change_delay();
     let id = open_governance(v, types::kind_policy_update(), mask, delay, now, ctx.sender());
     v.proposals.borrow_mut(id).new_policy = option::some(next);
-    emit_opened(v, id, types::kind_policy_update(), ctx.sender(), mask, b"policy".to_string());
+    emit_opened(v, id, types::kind_policy_update(), ctx.sender(), mask, string::utf8(b"policy"));
     id
 }
 
@@ -1326,7 +1326,7 @@ public fun propose_asset_limits<T>(
         p.new_limits = option::some(next);
         p.asset = option::some(key);
     };
-    emit_opened(v, id, types::kind_asset_limits(), ctx.sender(), mask, b"limits".to_string());
+    emit_opened(v, id, types::kind_asset_limits(), ctx.sender(), mask, string::utf8(b"limits"));
     id
 }
 
@@ -1389,7 +1389,7 @@ public fun propose_member(
         p.member = who;
         p.member_roles = roles;
     };
-    emit_opened(v, id, types::kind_member_set(), ctx.sender(), mask, b"member".to_string());
+    emit_opened(v, id, types::kind_member_set(), ctx.sender(), mask, string::utf8(b"member"));
     id
 }
 
@@ -1453,7 +1453,7 @@ public fun propose_recipient_trust(
         p.recipient = who;
         p.trust_level = to;
     };
-    emit_opened(v, id, types::kind_recipient_trust(), ctx.sender(), mask, b"trust".to_string());
+    emit_opened(v, id, types::kind_recipient_trust(), ctx.sender(), mask, string::utf8(b"trust"));
     id
 }
 
@@ -1476,7 +1476,7 @@ public fun execute_recipient_trust(v: &mut Vault, id: u64, clock: &Clock, ctx: &
             activates_at: now + v.policy.recipient_activation_delay(),
             paid_count: 0,
             last_paid: 0,
-            label: b"".to_string(),
+            label: string::utf8(b""),
         });
         types::trust_unknown()
     };
@@ -1522,7 +1522,7 @@ public fun propose_mode_relax(
     p.target_mode = to;
     v.proposals.add(id, p);
     v.pending_count = v.pending_count + 1;
-    emit_opened(v, id, types::kind_mode_relax(), sender, 1, b"relax".to_string());
+    emit_opened(v, id, types::kind_mode_relax(), sender, 1, string::utf8(b"relax"));
     id
 }
 
@@ -1587,7 +1587,7 @@ public fun propose_recovery(
     p.member_roles = roles_of(v, lost);
     v.proposals.add(id, p);
     v.pending_count = v.pending_count + 1;
-    emit_opened(v, id, types::kind_recovery(), sender, 1, b"recovery".to_string());
+    emit_opened(v, id, types::kind_recovery(), sender, 1, string::utf8(b"recovery"));
     id
 }
 

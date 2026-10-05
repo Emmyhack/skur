@@ -2,7 +2,6 @@
 
 import {
   Mode,
-  Reason,
   Status,
   describeReasons,
   fmtAmount,
@@ -10,7 +9,7 @@ import {
   type VaultView,
 } from '@skur/sdk';
 import { EXPLORER } from '@/config';
-import { Addr, Amount, ModePill, Notice, coinDecimals, coinSymbol } from './ui';
+import { Addr, ModePill, Notice, coinDecimals, coinSymbol } from './ui';
 
 /**
  * What the vault is right now: its posture, what it holds, how much of each window is used, and

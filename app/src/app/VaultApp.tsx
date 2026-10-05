@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Role, hasRole } from '@skur/sdk';
 import { CONFIGURED } from '@/config';
 import { useVaultTx, useVaultView } from '@/hooks/useVault';
-import { CreateVault } from '@/components/CreateVault';
 import { Overview } from '@/components/Overview';
 import { People } from '@/components/People';
 import { PolicyPanel } from '@/components/PolicyPanel';
@@ -87,5 +86,3 @@ function RoleBadge({ roles }: { roles: number }) {
   if (hasRole(roles, Role.PROPOSER)) names.push('proposer');
   return <span className="pill accent">{names.join(' · ')}</span>;
 }
-
-export { CreateVault };

@@ -3,7 +3,6 @@
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
 import { useMemo, useState } from 'react';
 import {
-  Role,
   Trust,
   canPropose,
   describeReasons,
@@ -13,7 +12,7 @@ import {
   tx as build,
   type VaultView,
 } from '@skur/sdk';
-import { API_URL, PACKAGE_ID } from '@/config';
+import { PACKAGE_ID } from '@/config';
 import { useTransferPreview, type TxState } from '@/hooks/useVault';
 import { Addr, Amount, Countdown, Notice, TierPill, TrustPill, coinDecimals, coinSymbol } from './ui';
 
