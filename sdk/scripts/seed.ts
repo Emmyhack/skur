@@ -16,7 +16,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
-import { grpcClient, Role, templateById, tx as build, type Network } from '../src/index.ts';
+import { grpcClient, Role, templateById, tx as build, type Network } from '../dist/index.js';
 
 const network = (process.env.SKUR_NETWORK ?? 'testnet') as Network;
 const packageId = process.env.SKUR_PACKAGE_ID;

@@ -60,7 +60,8 @@ runs over gRPC today and over anything implementing that contract later.
 # the Move core
 cd sui
 sui move build
-sui move test                      # the engine vectors and the end-to-end suite
+sui move test                      # 75 tests: the engine vectors and the end-to-end suite
+scripts/verify-local.sh            # publish to a throwaway local network and drive it
 
 # the SDK
 cd ../sdk

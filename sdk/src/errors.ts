@@ -76,14 +76,48 @@ export function describeAbort(module: string | undefined, code: number | bigint)
   return POLICY_ERRORS[n] ?? VAULT_ERRORS[n] ?? `The vault refused the transaction (code ${n}).`;
 }
 
-/** Pull a readable reason out of a failed execution result. */
+/**
+ * Pull the abort code out of a failed execution, whatever shape the message arrives in.
+ *
+ * The shapes differ by where the failure happened. A transaction rejected during resolution reads
+ * `MoveAbort in 1st command, abort code: 119, in '0x…'`; one that executed and aborted reads
+ * `MoveAbort(MoveLocation { … name: Identifier("vault") … }, 119) in command 0`.
+ *
+ * Scanning loosely for the first run of digits is what a careless version of this does, and it is
+ * wrong in a way that matters: in the first shape it finds the `1` of `1st command` and reports
+ * code 1, so a signer told "the recipient is still in its activation delay" is instead told
+ * "routine transfers must need at least one approval". Both patterns below are anchored on text
+ * that only ever precedes the real code.
+ */
+function abortCode(text: string): number | null {
+  const labelled = /abort\s*code:?\s*(\d+)/i.exec(text);
+  if (labelled) return Number(labelled[1]);
+  const call = /MoveAbort\([\s\S]*,\s*(\d+)\s*\)/.exec(text);
+  if (call) return Number(call[1]);
+  return null;
+}
+
+function abortModule(text: string): string | undefined {
+  const identifier = /name:\s*Identifier\(\s*"(\w+)"\s*\)/.exec(text);
+  if (identifier) return identifier[1];
+  const qualified = /0x[0-9a-fA-F]+::(\w+)::/.exec(text);
+  if (qualified) return qualified[1];
+  return undefined;
+}
+
+/** Turn a failure into the sentence the contract means by it. */
 export function describeFailure(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
-  const abort = /MoveAbort.*?(\w+)::(\w+).*?(\d+)/.exec(text);
-  if (abort) return describeAbort(abort[2], Number(abort[3]));
-  const bare = /MoveAbort[^0-9]*(\d+)/.exec(text);
-  if (bare) return describeAbort(undefined, Number(bare[1]));
-  if (/InsufficientGas|GasBalanceTooLow/.test(text)) return 'Not enough SUI to pay for gas.';
-  if (/ObjectNotFound/.test(text)) return 'That object no longer exists on this network.';
+  const code = abortCode(text);
+  if (code !== null) return describeAbort(abortModule(text), code);
+  if (/InsufficientGas|GasBalanceTooLow|InsufficientCoinBalance/.test(text)) {
+    return 'Not enough SUI to pay for gas.';
+  }
+  if (/ObjectNotFound|ObjectDeleted/.test(text)) {
+    return 'That object no longer exists on this network.';
+  }
+  if (/ObjectVersionUnavailable|ObjectLockConflict/.test(text)) {
+    return 'The vault was changed by someone else a moment ago. Read it again and retry.';
+  }
   return text;
 }

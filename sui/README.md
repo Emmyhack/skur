@@ -74,6 +74,26 @@ and `an_agent_cannot_execute` say what they defend; `test_execute_transfer_3` wo
   no dynamic dispatch into a caller, so reentrancy is absent by construction rather than defended
   against, but the ordering is kept anyway because it costs nothing and survives a refactor.
 
+## Verifying against a real chain
+
+The unit suites cannot prove that the BCS layouts match these structs, that the PTB builders
+produce transactions the vault accepts, or that the events decode back into the shapes the indexer
+projects. A wrong field offset passes every unit test and then reads a plausible wrong number off
+the chain.
+
+```bash
+scripts/verify-local.sh
+```
+
+Starts a throwaway local network, publishes ephemerally, and runs
+[`../sdk/scripts/e2e.ts`](../sdk/scripts/e2e.ts) against it: create, read back, deposit, preview,
+open, approve, prove the activation delay refuses an early execution, execute, prove probation
+expires, and decode every event. Nothing touches a public network or your `~/.sui`.
+
+This found a real bug the unit tests could not: the SDK's abort-code parser was scanning for the
+first run of digits, so `MoveAbort in 1st command, abort code: 119` reported code **1**, and a
+signer held up by a recipient's activation delay was told their policy needed more approvals.
+
 ## Publishing
 
 ```bash
@@ -82,3 +102,14 @@ scripts/publish.sh testnet
 
 Builds, runs the tests, publishes, and writes [`deployments/testnet.json`](deployments/). It will
 not publish a package whose tests fail.
+
+Two things about the package-management model, because it changed and the old shape silently fails:
+
+- **`mainnet` and `testnet` are system environments.** They are built in and must *not* be declared
+  in `[environments]` — doing so fails with "cannot override default environments". Any other
+  network needs an entry with its chain identifier from `sui client chain-identifier`, and devnet's
+  changes every time it is wiped.
+- **`Published.toml` records the published address** and is committed, so other packages can depend
+  on this one. `published-at` and `[addresses]` in `Move.toml` are the old system and are gone.
+  `Move.lock` pins the framework revision the package was built against and is also committed —
+  reproducing a build means reproducing that pin.

@@ -21,6 +21,7 @@ import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import type { Transaction } from '@mysten/sui/transactions';
 import {
   HOUR,
+  Reason,
   Role,
   Status,
   Tier,
@@ -33,7 +34,7 @@ import {
   templateById,
   tx as build,
   type Network,
-} from '../src/index.ts';
+} from '../dist/index.js';
 
 const network = (process.env.SKUR_NETWORK ?? 'testnet') as Network;
 const packageId = process.env.SKUR_PACKAGE_ID;
@@ -80,7 +81,7 @@ async function main() {
     guardianThreshold: 0,
     guardianRequiredCritical: false,
     delayHigh: 0,
-    delayCritical: 0,
+    delayCritical: 30_000,
     recipientActivationDelay: 60_000,
     policyChangeDelay: 60_000,
     recoveryDelay: 60_000,
@@ -144,8 +145,15 @@ async function main() {
     recipient: stranger,
     sender: me,
   });
-  check('an unknown recipient is escalated', unknown.tier === Tier.HIGH, `tier ${unknown.tier}`);
-  check('and the reason says so', describeReasons(unknown.reasons).some((r) => /never paid/.test(r)), describeReasons(unknown.reasons).join('; '));
+  check('an unknown recipient is escalated', unknown.tier >= Tier.HIGH, `tier ${unknown.tier}`);
+  check('for being unknown, specifically', (unknown.reasons & Reason.RECIPIENT_UNKNOWN) !== 0, describeReasons(unknown.reasons).join('; '));
+  check(
+    'and the chain mapped the tier to this policy',
+    unknown.reqApprovals === policy.approvalsCritical &&
+      unknown.reqGuardians === 0 &&
+      unknown.delay === policy.delayCritical,
+    `${unknown.reqApprovals} approvals, ${unknown.reqGuardians} guardians, ${unknown.delay}ms`,
+  );
 
   console.log('5. preview, to ourselves (a registered recipient)');
   await send(
@@ -160,7 +168,9 @@ async function main() {
     recipient: me,
     sender: me,
   });
-  check('a registered recipient still waits out probation', probation.tier === Tier.HIGH, `tier ${probation.tier}`);
+  check('a registered recipient still waits out probation', (probation.reasons & Reason.RECIPIENT_PROBATION) !== 0, describeReasons(probation.reasons).join('; '));
+  check('and is no longer flagged as never paid', (probation.reasons & Reason.RECIPIENT_UNKNOWN) === 0);
+  check('so it is still escalated', probation.tier >= Tier.HIGH, `tier ${probation.tier}`);
 
   console.log('6. open a payment and clear it');
   const opened = await send(
@@ -194,8 +204,12 @@ async function main() {
     );
     check('executing before activation is refused', false, 'it went through');
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    check('executing before activation is refused', /waiting period|probation|activation/i.test(message), message.slice(0, 120));
+    const reason = describeFailure(e);
+    check(
+      'executing before activation is refused, and says why',
+      reason === 'The recipient is still in its activation delay.',
+      reason,
+    );
   }
 
   console.log('   waiting out the 60s activation delay');
@@ -211,7 +225,20 @@ async function main() {
   check('the pending count came back down', view.vault.pendingCount === 0);
   check('the recipient was credited', view.recipients.find((r) => r.address === me)?.paidCount === 1);
 
-  console.log('8. the events decode');
+  console.log('8. probation has now expired, so a small payment is routine again');
+  const routine = await previewTransfer(client, {
+    packageId: packageId!,
+    vaultId,
+    coinType: SUI_TYPE_ARG,
+    amount: 1_000n, // far below every threshold, to isolate the recipient signal
+    recipient: me,
+    sender: me,
+  });
+  check('the tier is back to routine', routine.tier === Tier.LOW, `tier ${routine.tier}`);
+  check('with no reasons at all', routine.reasons === 0, describeReasons(routine.reasons).join('; '));
+  check('one approval and no wait', routine.reqApprovals === policy.approvalsLow && routine.delay === 0);
+
+  console.log('9. the events decode');
   const { events } = await listVaultEvents(client, { packageId: packageId!, vaultId, limit: 50 });
   const names = new Set(events.map((e) => e.event.name));
   for (const expected of ['VaultCreated', 'Deposited', 'ProposalOpened', 'Approved', 'RecipientRegistered', 'Executed']) {
