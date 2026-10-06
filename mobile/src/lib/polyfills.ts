@@ -129,3 +129,120 @@ export function assertCryptoReady() {
     throw new Error('Intl.PluralRules is not producing English ordinals');
   }
 }
+
+/**
+ * Hermes has neither `structuredClone` (used by the Sui SDK while building a transaction — the
+ * resolver splices cloned commands) nor `Promise.withResolvers` (used by its gRPC transport).
+ * Without the first, every `tx.build()` dies with "undefined is not a function" *after* the user
+ * has already passed the biometric prompt, which reads like a signing failure and is not.
+ *
+ * The clone below covers what the SDK actually clones — plain objects, arrays, strings, numbers,
+ * bytes — not the full HTML algorithm. Uint8Array is the one typed case that matters: transaction
+ * arguments carry BCS bytes, and JSON round-tripping would quietly turn them into objects.
+ */
+if (typeof (globalThis as { structuredClone?: unknown }).structuredClone !== 'function') {
+  const clone = (value: unknown, seen: WeakMap<object, unknown>): unknown => {
+    if (value === null || typeof value !== 'object') return value;
+    const hit = seen.get(value);
+    if (hit) return hit;
+    if (value instanceof Uint8Array) return new Uint8Array(value);
+    if (value instanceof ArrayBuffer) return value.slice(0);
+    if (value instanceof Date) return new Date(value.getTime());
+    if (value instanceof Map) {
+      const out = new Map();
+      seen.set(value, out);
+      for (const [k, v] of value) out.set(clone(k, seen), clone(v, seen));
+      return out;
+    }
+    if (value instanceof Set) {
+      const out = new Set();
+      seen.set(value, out);
+      for (const v of value) out.add(clone(v, seen));
+      return out;
+    }
+    if (Array.isArray(value)) {
+      const out: unknown[] = [];
+      seen.set(value, out);
+      for (const v of value) out.push(clone(v, seen));
+      return out;
+    }
+    const out: Record<string, unknown> = {};
+    seen.set(value, out);
+    for (const [k, v] of Object.entries(value)) out[k] = clone(v, seen);
+    return out;
+  };
+  (globalThis as { structuredClone?: unknown }).structuredClone = (value: unknown) =>
+    clone(value, new WeakMap());
+}
+
+if (typeof (Promise as { withResolvers?: unknown }).withResolvers !== 'function') {
+  (Promise as { withResolvers?: unknown }).withResolvers = function withResolvers<T>() {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+}
+
+/**
+ * Hermes (via React Native) ships `AbortController` but not the static helpers on `AbortSignal`.
+ * The Sui client's `waitForTransaction` builds its deadline with `AbortSignal.timeout` and merges
+ * it with the caller's signal via `AbortSignal.any` — so without these, a payment executes on
+ * chain and then the app throws while *waiting to report it*, which is the worst possible place
+ * to fail.
+ */
+type AbortSignalStatics = {
+  timeout?: (ms: number) => AbortSignal;
+  any?: (signals: Iterable<AbortSignal>) => AbortSignal;
+  abort?: (reason?: unknown) => AbortSignal;
+};
+const signalStatics = AbortSignal as unknown as AbortSignalStatics;
+
+if (typeof signalStatics.timeout !== 'function') {
+  signalStatics.timeout = (ms: number) => {
+    const controller = new AbortController();
+    setTimeout(() => {
+      controller.abort(new Error(`signal timed out after ${ms}ms`));
+    }, ms);
+    return controller.signal;
+  };
+}
+
+if (typeof signalStatics.any !== 'function') {
+  signalStatics.any = (signals: Iterable<AbortSignal>) => {
+    const controller = new AbortController();
+    for (const signal of signals) {
+      if (signal.aborted) {
+        controller.abort(signal.reason);
+        break;
+      }
+      signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
+    }
+    return controller.signal;
+  };
+}
+
+if (typeof signalStatics.abort !== 'function') {
+  signalStatics.abort = (reason?: unknown) => {
+    const controller = new AbortController();
+    controller.abort(reason);
+    return controller.signal;
+  };
+}
+
+/**
+ * React Native's own `AbortSignal` predates `throwIfAborted`. The Sui client calls it on every
+ * poll of `waitForTransaction`.
+ */
+type AbortSignalWithThrow = AbortSignal & { throwIfAborted?: () => void };
+const signalProto = AbortSignal.prototype as AbortSignalWithThrow;
+if (typeof signalProto.throwIfAborted !== 'function') {
+  signalProto.throwIfAborted = function throwIfAborted(this: AbortSignal) {
+    if (this.aborted) {
+      throw (this as { reason?: unknown }).reason ?? new Error('the operation was aborted');
+    }
+  };
+}

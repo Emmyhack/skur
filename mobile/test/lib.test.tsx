@@ -1,10 +1,12 @@
 import { Text } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { parseLink } from '../src/lib/links';
+import { StoreProvider, useStore } from '../src/state/store';
 import { deserialize, serialize } from '../src/lib/persist';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { OfflineBanner, TxProgress } from '../src/components/ui';
 import { renderScreen } from './harness';
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 
 describe('the links the app answers to', () => {
   it('parses a vault link', () => {
@@ -122,5 +124,40 @@ describe('being offline', () => {
   it('says only that it is offline when there is nothing cached to date', async () => {
     const r = await renderScreen(<OfflineBanner />);
     expect(r.queryByText('Offline')).not.toBeNull();
+  });
+});
+
+describe('restoring the open vault', () => {
+  const EVM = '0xD3f026024e015e1eC841a88D983883d4a017ED52'; // 40 hex — an EVM address
+  const SUI = '0x' + 'ab'.repeat(32); // 64 hex — a normalised Sui object id
+
+  async function restoredVaultId(stored: string | null): Promise<string | null> {
+    if (stored === null) await AsyncStorage.removeItem('skur.vault');
+    else await AsyncStorage.setItem('skur.vault', stored);
+    let seen: string | null = null;
+    function Probe() {
+      const s = useStore();
+      if (s.ready) seen = s.vaultId;
+      return null;
+    }
+    await renderScreen(
+      <StoreProvider>
+        <Probe />
+      </StoreProvider>,
+    );
+    // The store loads asynchronously; flush until ready.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    return seen;
+  }
+
+  it('restores a Sui object id', async () => {
+    expect(await restoredVaultId(SUI)).toBe(SUI);
+  });
+
+  it('discards an EVM address left by an earlier build', async () => {
+    expect(await restoredVaultId(EVM)).toBeNull();
+    expect(await AsyncStorage.getItem('skur.vault')).toBeNull();
   });
 });

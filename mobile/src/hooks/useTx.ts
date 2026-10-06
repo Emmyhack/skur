@@ -67,6 +67,7 @@ export function useTx(vaultId: string | null) {
           return null;
         }
         hapticError();
+        if (__DEV__) console.error('tx failed', e, e instanceof Error ? e.stack : '');
         setState({ phase: 'error', message: describeFailure(e) });
         return null;
       }

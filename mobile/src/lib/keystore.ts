@@ -21,11 +21,23 @@ import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
  * for.
  */
 const KEY = 'skur.signer.v1';
+/**
+ * The address, in its own entry without `requireAuthentication`. An address is public — screens
+ * show it constantly — and on Android any read of an authenticated keystore entry raises the
+ * system biometric prompt no matter what options the *read* passes. Keeping the address beside
+ * the secret meant a fingerprint prompt just to launch the app, and pulled the secret into JS
+ * memory to derive something that was never secret.
+ */
+const ADDR = 'skur.signer.addr.v1';
 
 const OPTIONS: SecureStore.SecureStoreOptions = {
   requireAuthentication: true,
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   authenticationPrompt: 'Unlock your Skur signing key',
+};
+
+const ADDR_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
 };
 
 export type BiometricSupport = {
@@ -50,20 +62,19 @@ export async function biometricSupport(): Promise<BiometricSupport> {
 }
 
 export async function hasSigner(): Promise<boolean> {
-  // Checked without `requireAuthentication`, so merely asking whether a key exists does not
-  // prompt for a face.
-  const stored = await SecureStore.getItemAsync(KEY, {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-  }).catch(() => null);
-  return Boolean(stored);
+  // The address entry is the existence marker: it is not auth-gated, so asking whether a key
+  // exists never prompts for a face.
+  return Boolean(await signerAddress());
 }
 
 /** Generate a key and store it. Refuses to overwrite one that already exists. */
 export async function createSigner(): Promise<string> {
   if (await hasSigner()) throw new Error('a signing key already exists on this device');
   const keypair = Ed25519Keypair.generate();
+  const address = keypair.toSuiAddress();
   await SecureStore.setItemAsync(KEY, keypair.getSecretKey(), OPTIONS);
-  return keypair.toSuiAddress();
+  await SecureStore.setItemAsync(ADDR, address, ADDR_OPTIONS);
+  return address;
 }
 
 /** Import an existing key, so a signer already on a vault can use their phone. */
@@ -72,8 +83,10 @@ export async function importSigner(secret: string): Promise<string> {
   // Validate before storing: a key that cannot be decoded is worse in the keychain than rejected.
   const { secretKey } = decodeSuiPrivateKey(trimmed);
   const keypair = Ed25519Keypair.fromSecretKey(secretKey);
+  const address = keypair.toSuiAddress();
   await SecureStore.setItemAsync(KEY, trimmed, OPTIONS);
-  return keypair.toSuiAddress();
+  await SecureStore.setItemAsync(ADDR, address, ADDR_OPTIONS);
+  return address;
 }
 
 /**
@@ -81,13 +94,16 @@ export async function importSigner(secret: string): Promise<string> {
  * action — nothing here caches it, because a cached signer is a signer that acts without a face.
  */
 export async function unlockSigner(reason = 'Approve with your Skur key'): Promise<Ed25519Keypair> {
-  const auth = await LocalAuthentication.authenticateAsync({
-    promptMessage: reason,
-    cancelLabel: 'Cancel',
-    disableDeviceFallback: false,
-  });
-  if (!auth.success) throw new Error('cancelled');
-  const stored = await SecureStore.getItemAsync(KEY, OPTIONS);
+  // One prompt, raised by the OS for the key release itself. A separate LocalAuthentication
+  // check before the read meant two fingerprints per action — and the second one was the only
+  // one that actually protected anything.
+  let stored: string | null;
+  try {
+    stored = await SecureStore.getItemAsync(KEY, { ...OPTIONS, authenticationPrompt: reason });
+  } catch {
+    // The OS prompt was dismissed or failed. A decision, not an error.
+    throw new Error('cancelled');
+  }
   if (!stored) throw new Error('no signing key on this device');
   const { secretKey } = decodeSuiPrivateKey(stored);
   return Ed25519Keypair.fromSecretKey(secretKey);
@@ -95,15 +111,7 @@ export async function unlockSigner(reason = 'Approve with your Skur key'): Promi
 
 /** The address, read without unlocking — it is public, and screens need it constantly. */
 export async function signerAddress(): Promise<string | null> {
-  const stored = await SecureStore.getItemAsync(KEY, {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-  }).catch(() => null);
-  if (!stored) return null;
-  try {
-    return Ed25519Keypair.fromSecretKey(decodeSuiPrivateKey(stored).secretKey).toSuiAddress();
-  } catch {
-    return null;
-  }
+  return await SecureStore.getItemAsync(ADDR, ADDR_OPTIONS).catch(() => null);
 }
 
 /**
@@ -114,4 +122,5 @@ export async function forgetSigner(): Promise<void> {
   await SecureStore.deleteItemAsync(KEY, {
     keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   }).catch(() => undefined);
+  await SecureStore.deleteItemAsync(ADDR, ADDR_OPTIONS).catch(() => undefined);
 }

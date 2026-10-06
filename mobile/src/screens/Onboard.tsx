@@ -49,8 +49,10 @@ export function Onboard({ onDone }: { onDone: () => void }) {
     setBusy(true);
     try {
       const addr = mode === 'create' ? await createSigner() : await importSigner(secret);
+      // Only the local state. Refreshing the store's signer here would swap this screen out from
+      // under the user before the confirmation — and its Continue button is what records that
+      // onboarding finished. Without that record, every cold start began at the welcome tour.
       setAddress(addr);
-      await refreshSigner();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -62,7 +64,17 @@ export function Onboard({ onDone }: { onDone: () => void }) {
     return (
       <Screen
         top={<TopBar title="Your key is ready" />}
-        footer={<Button onPress={onDone} icon="arrow-right">Continue</Button>}
+        footer={
+          <Button
+            onPress={() => {
+              onDone();
+              void refreshSigner();
+            }}
+            icon="arrow-right"
+          >
+            Continue
+          </Button>
+        }
       >
         <View style={{ gap: 20 }}>
           <Notice tone="ok">

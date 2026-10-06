@@ -28,7 +28,9 @@ export function OpenVault() {
   const { address, openVault } = useStore();
   const [manual, setManual] = useState('');
   const mine = useMyVaults(address);
-  const valid = /^0x[0-9a-fA-F]{10,66}$/.test(manual);
+  // Exactly a normalised Sui object id. The looser shapes this used to accept — an EVM address
+  // is 40 hex chars — all name vaults that cannot exist on a Sui network.
+  const valid = /^0x[0-9a-fA-F]{64}$/.test(manual.trim());
 
   return (
     <Screen
@@ -90,7 +92,7 @@ export function OpenVault() {
           <Field label="Vault object id" hint="A vault is a shared object. Anyone can read one.">
             <Input mono value={manual} onChangeText={setManual} placeholder="0x…" autoCapitalize="none" autoCorrect={false} />
           </Field>
-          <Button onPress={() => openVault(manual)} disabled={!valid} icon="arrow-right">
+          <Button onPress={() => openVault(manual.trim())} disabled={!valid} icon="arrow-right">
             Open
           </Button>
         </View>

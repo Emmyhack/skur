@@ -36,6 +36,14 @@ type Store = {
 const Ctx = createContext<Store | null>(null);
 const K = { vault: 'skur.vault', onboarded: 'skur.onboarded', book: 'skur.book' } as const;
 
+/**
+ * A normalised Sui object id: 0x and exactly 32 bytes of hex. Storage is validated on load
+ * because this app's storage keys are older than its chain — an earlier build wrote an EVM
+ * address (40 hex chars) under the same key, and restoring it silently points every screen at a
+ * vault that cannot exist.
+ */
+const SUI_ID = /^0x[0-9a-fA-F]{64}$/;
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
@@ -54,7 +62,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem(K.onboarded),
         AsyncStorage.getItem(K.book),
       ]);
-      setVaultId(v);
+      if (v && SUI_ID.test(v)) {
+        setVaultId(v);
+      } else if (v) {
+        // Residue from before, or hand-edited: drop it rather than show a vault that can't load.
+        void AsyncStorage.removeItem(K.vault);
+      }
       setOnboarded(o === '1');
       try {
         setBook(b ? (JSON.parse(b) as Labelled[]) : []);

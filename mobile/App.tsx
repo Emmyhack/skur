@@ -63,7 +63,11 @@ const persistOptions = {
   persister,
   maxAge: 24 * 3_600_000,
   dehydrateOptions: {
-    shouldDehydrateQuery: (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === 'vault',
+    // Only settled vault reads. A query dehydrated while still pending is rehydrated as a
+    // promise that nothing will ever resolve — react-query rejects it on restore and logs a
+    // warning over the UI.
+    shouldDehydrateQuery: (q: { queryKey: readonly unknown[]; state: { status: string } }) =>
+      q.queryKey[0] === 'vault' && q.state.status === 'success',
   },
 };
 
@@ -240,7 +244,9 @@ function Root() {
     <NavigationContainer ref={navRef} theme={nav} onReady={() => setNavReady(true)}>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <DeepLinks navReady={navReady} />
-      {!onboarded && !seenWelcome ? (
+      {!onboarded && !address && !seenWelcome ? (
+        // A device that already holds a key never re-sees the tour, even if the onboarded flag
+        // was lost — the key is the stronger evidence.
         <Welcome onStart={() => setSeenWelcome(true)} />
       ) : !address ? (
         <Onboard onDone={finishOnboarding} />
