@@ -54,6 +54,17 @@ Nothing here depends on it, directly or transitively. That is why the interface 
 it is JSON-RPC only. The SDK's read layer targets the transport-agnostic Core API, so the same code
 runs over gRPC today and over anything implementing that contract later.
 
+## The short commands
+
+```bash
+npm run ios          # the phone, on a simulator
+npm run android
+npm run dev          # the web interface on :3000
+npm run indexer      # the backend and its indexer
+npm test             # the Move suite and the TypeScript suites
+npm run verify       # everything CI runs
+```
+
 ## Verifying everything at once
 
 ```bash
