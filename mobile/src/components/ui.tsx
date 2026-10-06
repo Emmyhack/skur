@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MODE_LABELS,
@@ -27,11 +27,14 @@ export function Icon({ name, size = 18, color }: { name: IconName; size?: number
 export function Screen({ children, top, footer, refreshControl, padded = true }: { children: ReactNode; top?: ReactNode; footer?: ReactNode; refreshControl?: ReactNode; padded?: boolean }) {
   const C = useTheme(); const s = useStyles(); const insets = useSafeAreaInsets();
   return (
-    <View style={s.screen}>
+    // Without the avoiding view, the keyboard covers the footer — which on Send is the submit
+    // button, so the screen looks broken exactly when someone is mid-payment. Android resizes the
+    // window itself (adjustResize), so the behaviour only applies on iOS.
+    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {top ? <View style={{ paddingTop: insets.top + 6 }}>{top}</View> : null}
       <ScrollView contentContainerStyle={{ padding: padded ? 16 : 0, paddingBottom: footer ? 120 : 40 }} refreshControl={refreshControl as never} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" indicatorStyle={C.canvas === "#ffffff" ? "black" : "white"}>{children}</ScrollView>
       {footer ? <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>{footer}</View> : null}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -220,19 +223,129 @@ export function Notice({ tone = "info", children }: { tone?: Tone; children: Rea
   return <View style={[s.notice, { backgroundColor: t.bg }]}><Text style={{ color: t.fg, fontFamily: F.body, fontSize: 14, lineHeight: 20 }}>{children}</Text></View>;
 }
 
+/**
+ * A transaction, step by step. "Working…" tells a person nothing when the thing working is their
+ * money; which step it is on tells them what is left and roughly how long.
+ */
+const TX_STEPS: [TxState['phase'], string][] = [
+  ['unlocking', 'Unlock the key'],
+  ['signing', 'Sign and send'],
+  ['waiting', 'Settle on the network'],
+];
+
+export function TxProgress({ state }: { state: TxState }) {
+  const C = useTheme();
+  if (state.phase === 'idle') return null;
+  if (state.phase === 'cancelled') return <Notice tone="neutral">Cancelled.</Notice>;
+  if (state.phase === 'error') return <Notice tone="bad">{state.message}</Notice>;
+  if (state.phase === 'done') {
+    return <Notice tone="ok">Executed · {short(state.digest, 6)}</Notice>;
+  }
+  const current = TX_STEPS.findIndex(([phase]) => phase === state.phase);
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Transaction in progress: ${TX_STEPS[current]?.[1] ?? ''}`}
+      style={{ backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.border, padding: 12, gap: 7 }}
+    >
+      {TX_STEPS.map(([phase, label], i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <View key={phase} style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+            {active ? (
+              <ActivityIndicator size={13} color={C.text2} />
+            ) : (
+              <Icon name={done ? 'check-circle' : 'circle'} size={13} color={done ? C.success : C.text3} />
+            )}
+            <Text style={{ fontFamily: active ? F.bodyMedium : F.body, fontSize: 13, color: done ? C.success : active ? C.text : C.text3 }}>
+              {label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Kept as the compact single-line form, for places a step list will not fit. */
 export function TxStatus({ state }: { state: TxState }) {
-  if (state.phase === "idle") return null;
-  // A declined fingerprint is a decision, not a failure.
-  if (state.phase === "cancelled") return <Notice tone="neutral">Cancelled.</Notice>;
-  if (state.phase === "error") return <Notice tone="bad">{state.message}</Notice>;
-  if (state.phase === "done") return <Notice tone="ok">Executed · {short(state.digest, 6)}</Notice>;
-  const msg =
-    state.phase === "unlocking"
-      ? "Waiting for you to unlock the key…"
-      : state.phase === "signing"
-        ? "Signing and sending…"
-        : "Waiting for the network to settle it…";
-  return <Notice tone="info">{msg}</Notice>;
+  return <TxProgress state={state} />;
+}
+
+/**
+ * A failed read, with the way out. "Error" with no retry makes the person restart the app, which
+ * works by accident and teaches them the app is flaky.
+ */
+export function ErrorState({
+  title = 'Could not reach the vault',
+  detail,
+  onRetry,
+}: {
+  title?: string;
+  detail?: string;
+  onRetry?: () => void;
+}) {
+  const C = useTheme();
+  return (
+    <View style={{ padding: 28, alignItems: 'center', gap: 12 }}>
+      <CircleIcon name="cloud-off" size={48} tone="bad" />
+      <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: C.text, textAlign: 'center' }}>{title}</Text>
+      {detail ? (
+        <Text style={{ fontFamily: F.body, fontSize: 13, lineHeight: 19, color: C.text2, textAlign: 'center' }}>
+          {detail}
+        </Text>
+      ) : null}
+      {onRetry ? (
+        <Button kind="secondary" size="sm" icon="refresh-cw" onPress={onRetry} testID="retry">
+          Try again
+        </Button>
+      ) : null}
+    </View>
+  );
+}
+
+/** Placeholder blocks while a read is in flight, so the layout arrives before the numbers do. */
+export function Skeleton({ lines = 3 }: { lines?: number }) {
+  const C = useTheme();
+  return (
+    <View accessibilityLabel="Loading" style={{ gap: 10 }}>
+      {Array.from({ length: lines }, (_, i) => (
+        <View
+          key={i}
+          style={{
+            height: i === 0 ? 24 : 14,
+            borderRadius: 6,
+            backgroundColor: C.card2,
+            width: `${[62, 94, 78, 88, 70][i % 5]}%`,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Shown when the device believes it is offline. The data on screen is the cache, which is worth
+ * far more than a spinner — as long as its age is stated rather than implied.
+ */
+export function OfflineBanner({ asOf }: { asOf?: number }) {
+  const C = useTheme();
+  const age =
+    asOf && asOf > 0
+      ? ` — showing the vault as of ${new Date(asOf).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+      : '';
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={{ backgroundColor: C.warningBg, paddingVertical: 7, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+    >
+      <Icon name="wifi-off" size={13} color={C.warning} />
+      <Text style={{ fontFamily: F.bodyMedium, fontSize: 12.5, color: C.warning, flex: 1 }}>
+        Offline{age}
+      </Text>
+    </View>
+  );
 }
 
 export function Empty({ icon = "inbox", children }: { icon?: IconName; children: ReactNode }) {

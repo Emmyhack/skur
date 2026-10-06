@@ -28,7 +28,14 @@ type Rule = {
   body: string;
   severity: 'info' | 'action' | 'alert';
   roles: number;
+  /** The deep link that opens what this is about. Defaults to the vault itself. */
+  link?: string;
 };
+
+/** skur://vault/0x…[/proposal/n] — the scheme the mobile app answers to. */
+export function linkTo(vault: string, proposal?: bigint): string {
+  return proposal === undefined ? `skur://vault/${vault}` : `skur://vault/${vault}/proposal/${proposal}`;
+}
 
 const fmtAmount = (v: bigint) => v.toLocaleString('en-US');
 
@@ -55,6 +62,7 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
             .join(' '),
           severity: 'action',
           roles: who,
+          link: linkTo(event.vault, event.proposal),
         });
         if (event.tier === Tier.CRITICAL) {
           out.push({
@@ -63,6 +71,7 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
             body: `${fmtAmount(event.amount)} to ${short(event.recipient)}, at ${(event.exposureBps / 100).toFixed(1)}% of holdings. You can veto it until it executes.`,
             severity: 'alert',
             roles: Role.GUARDIAN,
+            link: linkTo(event.vault, event.proposal),
           });
         }
       } else {
@@ -72,6 +81,7 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
           body: `Opened by ${short(event.proposer)}.`,
           severity: 'action',
           roles: who,
+          link: linkTo(event.vault, event.proposal),
         });
       }
 
@@ -83,6 +93,7 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
           body: `It cannot take effect before ${new Date(event.executableAt).toUTCString()}, and any guardian can veto it until then.`,
           severity: 'alert',
           roles: Role.GUARDIAN | Role.OWNER,
+          link: linkTo(event.vault, event.proposal),
         });
       }
       if (event.kind === Kind.RECOVERY) {
@@ -92,6 +103,7 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
           body: `Proposed by ${short(event.proposer)}. Any owner can cancel it before it executes.`,
           severity: 'alert',
           roles: Role.OWNER,
+          link: linkTo(event.vault, event.proposal),
         });
       }
       return out;
@@ -107,6 +119,7 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
           body: `Proposal #${event.proposal} is fully approved. It executes once its waiting period has elapsed.`,
           severity: 'action',
           roles: Role.EXECUTOR,
+          link: linkTo(event.vault, event.proposal),
         },
       ];
 
@@ -242,3 +255,38 @@ export function rulesFor({ event }: DecodedEvent): Rule[] {
   }
 }
 
+/** What Expo's push service accepts, built where a test can look at it. */
+export type ExpoPushMessage = {
+  to: string;
+  title: string;
+  body: string;
+  sound: 'default';
+  priority: 'high' | 'default';
+  data: { url: string };
+};
+
+const EXPO_TOKEN = /^(ExponentPushToken|ExpoPushToken)\[[^\]]+\]$/;
+
+export function buildExpoPushMessage(n: {
+  endpoint: string;
+  title: string;
+  body: string;
+  severity: string;
+  link: string | null;
+  vault_id: string;
+}): ExpoPushMessage {
+  if (!EXPO_TOKEN.test(n.endpoint)) {
+    // Refused here rather than by Expo, so the row records a reason instead of burning its six
+    // attempts on a 400.
+    throw new Error(`not an Expo push token: ${n.endpoint.slice(0, 24)}…`);
+  }
+  return {
+    to: n.endpoint,
+    title: n.title,
+    body: n.body,
+    sound: 'default',
+    // An alert is worth waking a phone for; information is not.
+    priority: n.severity === 'alert' ? 'high' : 'default',
+    data: { url: n.link ?? `skur://vault/${n.vault_id}` },
+  };
+}

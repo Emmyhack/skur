@@ -2,7 +2,9 @@ import { createHmac } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { fmtDuration, type DecodedEvent } from '@skur/sdk';
 import { pool } from './db.ts';
-import { rulesFor } from './rules.ts';
+import { buildExpoPushMessage, rulesFor } from './rules.ts';
+
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 /**
  * Queue notifications for an event. The unique constraint on
@@ -34,8 +36,8 @@ export async function queueNotifications(
     for (const row of rows) {
       const res = await c.query(
         `INSERT INTO notifications (
-           subscription_id, network, vault_id, tx_digest, event_index, rule, title, body, severity
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+           subscription_id, network, vault_id, tx_digest, event_index, rule, title, body, severity, link
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
          ON CONFLICT DO NOTHING`,
         [
           row.id,
@@ -47,6 +49,7 @@ export async function queueNotifications(
           r.title,
           r.body,
           r.severity,
+          r.link ?? `skur://vault/${event.vault}`,
         ],
       );
       queued += res.rowCount ?? 0;
@@ -70,10 +73,11 @@ export async function deliverPending(limit = 25): Promise<number> {
     title: string;
     body: string;
     severity: string;
+    link: string | null;
     attempts: number;
   }>(
     `SELECT n.id, s.channel, s.endpoint, s.secret, n.vault_id, n.rule, n.title, n.body,
-            n.severity, n.attempts
+            n.severity, n.link, n.attempts
        FROM notifications n
        JOIN subscriptions s ON s.id = n.subscription_id
       WHERE n.delivered_at IS NULL AND n.attempts < 6 AND s.active
@@ -90,6 +94,7 @@ export async function deliverPending(limit = 25): Promise<number> {
       title: n.title,
       body: n.body,
       severity: n.severity,
+      link: n.link,
     });
     try {
       if (n.channel === 'webhook') {
@@ -99,6 +104,18 @@ export async function deliverPending(limit = 25): Promise<number> {
         }
         const res = await fetch(n.endpoint, { method: 'POST', headers, body: payload });
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      } else if (n.channel === 'push') {
+        const res = await fetch(EXPO_PUSH_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify([buildExpoPushMessage(n)]),
+        });
+        if (!res.ok) throw new Error(`expo push: ${res.status} ${res.statusText}`);
+        const body = (await res.json()) as { data?: { status: string; message?: string }[] };
+        const ticket = body.data?.[0];
+        if (ticket && ticket.status !== 'ok') {
+          throw new Error(`expo push ticket: ${ticket.message ?? ticket.status}`);
+        }
       } else if (n.channel === 'log') {
         console.log(`[${n.severity}] ${n.title} — ${n.body}`);
       } else {

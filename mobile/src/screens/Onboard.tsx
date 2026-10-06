@@ -1,3 +1,4 @@
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import {
@@ -26,6 +27,10 @@ import { useStore } from '../state/store';
  * collapses the two planes the contract works to keep apart.
  */
 export function Onboard({ onDone }: { onDone: () => void }) {
+  // No screenshots and no screen recording while this screen can hold a private key. The OS also
+  // blanks it in the app switcher. Nothing stops a second phone pointed at the first — the copy
+  // on the import path says to treat the key accordingly.
+  usePreventScreenCapture();
   const C = useTheme();
   const { refreshSigner } = useStore();
   const [mode, setMode] = useState<'create' | 'import'>('create');

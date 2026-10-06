@@ -11,6 +11,7 @@ import {
   Address,
   Card,
   Empty,
+  ErrorState,
   IconButton,
   KV,
   ModeBadge,
@@ -18,6 +19,7 @@ import {
   Row,
   Screen,
   SectionLabel,
+  Skeleton,
   Tape,
   TopBar,
 } from '../components/ui';
@@ -36,16 +38,24 @@ export function Home({ onOpenQueue, onSwitch }: { onOpenQueue: () => void; onSwi
   if (q.isLoading) {
     return (
       <Screen top={<TopBar title="Treasury" />}>
-        <Text style={{ fontFamily: F.body, color: C.text2 }}>Reading the vault…</Text>
+        <Skeleton lines={5} />
       </Screen>
     );
   }
   if (q.error || !q.data) {
+    const message = q.error instanceof Error ? q.error.message : '';
+    const badId = /not found|deleted|invalid|parse/i.test(message);
     return (
       <Screen top={<TopBar title="Treasury" right={<IconButton name="repeat" label="Switch vault" onPress={onSwitch} />} />}>
-        <Notice tone="bad">
-          Could not read that vault. Check the id and the network.
-        </Notice>
+        <ErrorState
+          title={badId ? 'That vault does not exist here' : 'Could not reach the vault'}
+          detail={
+            badId
+              ? 'The id may be wrong, or it may live on a different network than this app points at.'
+              : 'The vault itself is unaffected — this is a read, and reads can be retried freely.'
+          }
+          onRetry={() => q.refetch()}
+        />
       </Screen>
     );
   }

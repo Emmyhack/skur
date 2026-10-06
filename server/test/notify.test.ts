@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Kind, Mode, Role, Status, Tier, Trust, type DecodedEvent } from '@skur/sdk';
-import { rulesFor } from '../src/rules.ts';
+import { buildExpoPushMessage, linkTo, rulesFor } from '../src/rules.ts';
 
 /**
  * The rules decide who gets interrupted. Getting this wrong in either direction is a real failure:
@@ -222,5 +222,55 @@ describe('the things everyone hears about', () => {
         wrap({ name: 'Deposited', vault: '0xV', asset: '0x2::sui::SUI', amount: 1n, balance: 1n, from: '0xX', at: 1 }),
       ),
     ).toEqual([]);
+  });
+});
+
+
+describe('push delivery to a device', () => {
+  const queued = {
+    endpoint: 'ExponentPushToken[abc123]',
+    title: 'A critical payment is open and can be vetoed',
+    body: 'Body.',
+    severity: 'alert',
+    link: 'skur://vault/0xV/proposal/7',
+    vault_id: '0xV',
+  };
+
+  it('builds what Expo accepts, with the deep link in the data', () => {
+    const m = buildExpoPushMessage(queued);
+    expect(m.to).toBe('ExponentPushToken[abc123]');
+    expect(m.data.url).toBe('skur://vault/0xV/proposal/7');
+    expect(m.sound).toBe('default');
+  });
+
+  it('wakes a phone for an alert and not for information', () => {
+    expect(buildExpoPushMessage(queued).priority).toBe('high');
+    expect(buildExpoPushMessage({ ...queued, severity: 'info' }).priority).toBe('default');
+  });
+
+  it('refuses an endpoint that is not an Expo token, before Expo has to', () => {
+    expect(() => buildExpoPushMessage({ ...queued, endpoint: 'https://example.com/hook' })).toThrow(
+      /not an Expo push token/,
+    );
+  });
+
+  it('falls back to the vault link when a rule carried none', () => {
+    expect(buildExpoPushMessage({ ...queued, link: null }).data.url).toBe('skur://vault/0xV');
+  });
+});
+
+describe('the links the rules carry', () => {
+  it('a payment notification opens that payment', () => {
+    const rules = rulesFor(
+      wrap({ ...openedBase, tier: Tier.CRITICAL, reqGuardians: 1 }),
+    );
+    for (const r of rules) {
+      expect(r.link).toBe('skur://vault/0xV/proposal/7');
+    }
+  });
+
+  it('linkTo composes the scheme the app parses', () => {
+    expect(linkTo('0xabc')).toBe('skur://vault/0xabc');
+    expect(linkTo('0xabc', 42n)).toBe('skur://vault/0xabc/proposal/42');
   });
 });

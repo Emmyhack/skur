@@ -3,10 +3,11 @@ import { KIND_LABELS, Kind, Status, fmtAmount, fmtRelative, type Proposal } from
 import {
   Card,
   Empty,
-  Notice,
+  ErrorState,
   Row,
   Screen,
   SectionLabel,
+  Skeleton,
   StatusBadge,
   TierBadge,
   TopBar,
@@ -41,7 +42,8 @@ export function Transactions({ onOpen }: { onOpen: (id: bigint) => void }) {
       }
     >
       <View style={{ gap: 20 }}>
-        {q.error ? <Notice tone="bad">Could not read the vault.</Notice> : null}
+        {q.isLoading ? <Skeleton lines={4} /> : null}
+        {q.error ? <ErrorState onRetry={() => q.refetch()} /> : null}
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Awaiting action</SectionLabel>

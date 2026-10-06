@@ -6,6 +6,7 @@ import { useTheme } from '../state/theme';
 import { F } from '../theme';
 import { API_URL, NETWORK, PACKAGE_ID, explorer } from '../lib/config';
 import { biometricSupport, forgetSigner, type BiometricSupport } from '../lib/keystore';
+import { enablePush, type PushResult } from '../lib/notifications';
 import { useStore } from '../state/store';
 
 export function Settings() {
@@ -13,6 +14,8 @@ export function Settings() {
   const { scheme, setScheme } = useScheme();
   const { address, vaultId, closeVault, refreshSigner } = useStore();
   const [bio, setBio] = useState<BiometricSupport | null>(null);
+  const [push, setPush] = useState<PushResult | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     void biometricSupport().then(setBio);
@@ -81,6 +84,34 @@ export function Settings() {
             </Button>
           ) : null}
         </View>
+
+        {vaultId && address ? (
+          <View style={{ gap: 8 }}>
+            <SectionLabel>Notifications</SectionLabel>
+            <Button
+              kind="secondary"
+              icon="bell"
+              loading={pushBusy}
+              disabled={pushBusy || push?.ok === true}
+              onPress={() => {
+                setPushBusy(true);
+                enablePush(vaultId, address)
+                  .then(setPush)
+                  .catch((e) => setPush({ ok: false, reason: e instanceof Error ? e.message : String(e) }))
+                  .finally(() => setPushBusy(false));
+              }}
+            >
+              {push?.ok ? 'Notifications are on' : 'Notify me when a payment needs me'}
+            </Button>
+            {push && !push.ok ? <Notice tone="warn">{push.reason}</Notice> : null}
+            {push?.ok ? (
+              <Text style={{ fontFamily: F.body, fontSize: 12, lineHeight: 18, color: C.text3 }}>
+                This device hears about proposals that need its role, vetoes, freezes and the
+                circuit breaker. Tapping one opens the exact proposal.
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Network</SectionLabel>

@@ -187,9 +187,9 @@ export function makeApi() {
       send(res, { error: 'vaultId, address, channel and endpoint are required' });
       return;
     }
-    if (!['webhook', 'email', 'log'].includes(channel)) {
+    if (!['webhook', 'email', 'log', 'push'].includes(channel)) {
       res.status(400);
-      send(res, { error: 'channel must be webhook, email or log' });
+      send(res, { error: 'channel must be webhook, email, log or push' });
       return;
     }
     const { rows } = await pool.query(

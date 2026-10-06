@@ -45,3 +45,30 @@ console.warn = (...args: unknown[]) => {
   if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) return;
   warn(...args);
 };
+
+jest.mock('expo-haptics', () => ({
+  notificationAsync: jest.fn(async () => undefined),
+  impactAsync: jest.fn(async () => undefined),
+  NotificationFeedbackType: { Success: 'success', Error: 'error' },
+  ImpactFeedbackStyle: { Light: 'light' },
+}));
+
+jest.mock('expo-screen-capture', () => ({ usePreventScreenCapture: jest.fn() }));
+
+jest.mock('expo-network', () => ({
+  useNetworkState: jest.fn(() => ({ isConnected: true, isInternetReachable: true })),
+}));
+
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  getExpoPushTokenAsync: jest.fn(async () => ({ data: 'ExponentPushToken[test]' })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+}));
+
+jest.mock('expo-linking', () => ({
+  useURL: jest.fn(() => null),
+  openURL: jest.fn(async () => true),
+  createURL: jest.fn((p: string) => `skur://${p}`),
+}));

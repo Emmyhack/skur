@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import type { Transaction } from '@mysten/sui/transactions';
 import { describeFailure } from '@skur/sdk';
+import { hapticError, hapticSuccess } from '../lib/haptics';
 import { client } from '../lib/client';
 import { NETWORK } from '../lib/config';
 import { unlockSigner } from '../lib/keystore';
@@ -44,6 +45,7 @@ export function useTx(vaultId: string | null) {
           const message = describeFailure(
             result.FailedTransaction.status.error?.message ?? 'the vault refused it',
           );
+          hapticError();
           setState({ phase: 'error', message });
           return null;
         }
@@ -54,6 +56,7 @@ export function useTx(vaultId: string | null) {
 
         await queryClient.invalidateQueries({ queryKey: ['vault', NETWORK, vaultId] });
         await queryClient.invalidateQueries({ queryKey: ['preview', NETWORK, vaultId] });
+        hapticSuccess();
         setState({ phase: 'done', digest });
         return digest;
       } catch (e) {
@@ -63,6 +66,7 @@ export function useTx(vaultId: string | null) {
           setState({ phase: 'cancelled' });
           return null;
         }
+        hapticError();
         setState({ phase: 'error', message: describeFailure(e) });
         return null;
       }
