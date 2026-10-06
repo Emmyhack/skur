@@ -6,8 +6,20 @@
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "module": "esnext",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": [
+      "jest",
+      "node"
+    ]
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "ios", "android", ".expo"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "ios",
+    "android",
+    ".expo"
+  ]
 }

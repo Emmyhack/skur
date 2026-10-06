@@ -113,7 +113,8 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <Button
                   style={{ flex: 1 }}
-                  onPress={() => tx.run(() => build.approve(PACKAGE_ID, vaultId!, id), 'Approve this proposal')}
+                  testID="action-approve"
+                onPress={() => tx.run(() => build.approve(PACKAGE_ID, vaultId!, id), 'Approve this proposal')}
                   disabled={voted || tx.busy}
                   loading={tx.busy}
                   icon="check"
@@ -123,7 +124,8 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
                 <Button
                   style={{ flex: 1 }}
                   kind="secondary"
-                  onPress={() => tx.run(() => build.reject(PACKAGE_ID, vaultId!, id), 'Reject this proposal')}
+                  testID="action-reject"
+                onPress={() => tx.run(() => build.reject(PACKAGE_ID, vaultId!, id), 'Reject this proposal')}
                   disabled={rejected || tx.busy}
                   icon="x"
                 >
@@ -134,6 +136,7 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
             {isGuardian && (p.reqGuardians > 0 || vetoable) ? (
               <Button
                 kind="secondary"
+                testID="action-confirm"
                 onPress={() => tx.run(() => build.confirm(PACKAGE_ID, vaultId!, id), 'Confirm as guardian')}
                 disabled={confirmed || tx.busy}
                 icon="shield"
@@ -144,6 +147,7 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
             {isGuardian && vetoable ? (
               <Button
                 kind="danger"
+                testID="action-veto"
                 onPress={() => tx.run(() => build.veto(PACKAGE_ID, vaultId!, id), 'Veto this proposal')}
                 disabled={tx.busy}
                 icon="slash"
@@ -153,6 +157,7 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
             ) : null}
             {canExecute ? (
               <Button
+                testID="action-execute"
                 onPress={() => tx.run(executeTx, 'Execute this proposal')}
                 disabled={!ready || tx.busy}
                 icon="arrow-up-right"

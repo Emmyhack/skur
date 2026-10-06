@@ -150,12 +150,12 @@ export const ModeBadge = ({ mode }: { mode: Mode }) => <Badge tone={mode === Mod
 export const StatusBadge = ({ status }: { status: Status }) => <Badge tone={status === Status.EXECUTED ? "ok" : status === Status.PENDING ? "warn" : status === Status.VETOED ? "bad" : "neutral"}>{STATUS_LABELS[status]}</Badge>;
 export const TrustBadge = ({ trust }: { trust: Trust }) => <Badge tone={trust === Trust.BLOCKED || trust === Trust.RESTRICTED ? "bad" : trust === Trust.NEW || trust === Trust.UNKNOWN ? "info" : "ok"}>{TRUST_LABELS[trust]}</Badge>;
 
-export function Button({ children, onPress, kind = "primary", disabled, loading, icon, style, size = "md" }: { children: ReactNode; onPress?: () => void; kind?: "primary" | "secondary" | "danger" | "ghost"; disabled?: boolean; loading?: boolean; icon?: IconName; style?: StyleProp<ViewStyle>; size?: "md" | "sm" }) {
+export function Button({ children, onPress, kind = "primary", disabled, loading, icon, style, size = "md", testID }: { children: ReactNode; onPress?: () => void; kind?: "primary" | "secondary" | "danger" | "ghost"; disabled?: boolean; loading?: boolean; icon?: IconName; style?: StyleProp<ViewStyle>; size?: "md" | "sm"; testID?: string }) {
   const C = useTheme(); const s = useStyles();
   const bg = kind === "primary" ? C.accent : kind === "danger" ? C.errorBg : kind === "secondary" ? C.card2 : "transparent";
   const fg = kind === "primary" ? C.onAccent : kind === "danger" ? C.error : C.text;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={typeof children === "string" ? children : undefined} onPress={onPress} disabled={disabled || loading} style={({ pressed }) => [s.btn, size === "sm" && { height: 36, paddingHorizontal: 14 }, { backgroundColor: bg, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 }, style]}>
+    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={typeof children === "string" ? children : undefined} onPress={onPress} disabled={disabled || loading} style={({ pressed }) => [s.btn, size === "sm" && { height: 36, paddingHorizontal: 14 }, { backgroundColor: bg, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 }, style]}>
       {loading ? <ActivityIndicator color={fg} /> : <>{icon ? <Icon name={icon} size={16} color={fg} /> : null}<Text style={[s.btnText, size === "sm" && { fontSize: 13 }, { color: fg }]}>{children}</Text></>}
     </Pressable>
   );

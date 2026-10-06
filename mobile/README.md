@@ -26,6 +26,39 @@ control plane an attacker has to breach separately; keeping a guardian key on th
 approver key collapses the two planes the contract works to keep apart. The app says so where it
 matters, and the contract will refuse to give one address both roles anyway.
 
+## Testing it
+
+```bash
+npm test
+```
+
+Twenty-eight tests that render the real screens and press their real buttons. They exist in this
+form because there is no way to send a touch to a device from a headless machine — no Simulator
+GUI, no `idb_companion` — and because a render-and-press suite is repeatable in a way a
+hand-driven simulator session is not.
+
+What they cover is the part of the interface that can actually hurt someone: **which action each
+role is offered**. The contract refuses an action the caller has no role for, so an interface that
+offers it is not merely unsafe, it is lying to the person holding the phone. So each case asserts
+both halves — what appears, and what does not:
+
+- an approver is offered Approve and Reject, and not Execute;
+- an executor the reverse;
+- a guardian is never offered Approve on a payment, only Confirm and Veto;
+- an **agent is offered nothing at all**, because proposing is the whole of its authority;
+- a veto appears on a critical payment and on a weakening, and not on a routine one;
+- approvals are counted against live roles, so a removed signer's approval shows as not counting;
+- a disabled Execute does not fire when pressed.
+
+Two things about React Native Testing Library 14 that cost real time, recorded so they do not cost
+it twice: **`render` and `fireEvent` are both asynchronous.** An un-awaited `fireEvent` does not
+fail the test that fired it — it leaves React's work queue mid-flight, and the *next* test's render
+resolves to an empty tree, which looks like a dozen unrelated failures.
+
+The action buttons carry `testID`s rather than being found by their labels, because the Execute
+button's label changes with its state — "Not enough approvals yet" until it is ready — and that
+state is exactly what is worth testing.
+
 ## Running it
 
 ```bash

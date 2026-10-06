@@ -49,6 +49,10 @@ step "Interface · typecheck" bash -c "cd '$ROOT/app' && npm run --silent typech
 step "Interface · build" bash -c "cd '$ROOT/app' && NEXT_TELEMETRY_DISABLED=1 npm run --silent build >/dev/null"
 
 step "Mobile · typecheck" bash -c "cd '$ROOT/mobile' && npm run --silent typecheck"
+# The screens are rendered and pressed here. This environment has no Simulator GUI and no
+# idb_companion, so there is no way to send a touch to a device — and a render-and-press suite is
+# repeatable in a way a hand-driven simulator session never is.
+step "Mobile · 28 screen tests" bash -c "cd '$ROOT/mobile' && npm run --silent test"
 # Bundling is the check that matters for mobile: it proves the Sui SDK and its ESM exports resolve
 # under Metro and Hermes, which no typecheck can tell you.
 step "Mobile · bundles for iOS" bash -c "cd '$ROOT/mobile' && npx expo export --platform ios --output-dir \"\$(mktemp -d)\" >/dev/null 2>&1"

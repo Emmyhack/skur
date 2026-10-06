@@ -190,7 +190,7 @@ export function Send({ onDone }: { onDone: () => void }) {
         ) : null}
 
         {problems.length > 0 ? (
-          <Notice tone="bad">The vault would refuse this. {problems.join(' ')}</Notice>
+          <Notice tone="bad">{`The vault would refuse this. ${problems.join(' ')}`}</Notice>
         ) : null}
 
         {preview.data ? (
