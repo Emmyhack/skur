@@ -16,7 +16,7 @@ import {
   Tape,
   TopBar,
 } from '../components/ui';
-import { BarChart, PortfolioBar } from '../components/kit';
+import { BarChart, Donut, PortfolioBar } from '../components/kit';
 import { TokenMark, coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
@@ -107,12 +107,15 @@ export function Home({
 
         <Card>
           <SectionLabel>Total balance</SectionLabel>
-          <Text style={{ fontFamily: F.display, fontSize: 36, color: C.text, letterSpacing: -0.5 }}>
-            {primary ? fmtAmount(primary.balance, coinDecimals(primary.coinType)) : '0'}
-            <Text style={{ fontSize: 20, color: C.text2 }}> {primary ? coinSymbol(primary.coinType) : ''}</Text>
-          </Text>
+          <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+            <Donut
+              slices={normalized.length ? normalized : [{ label: '—', value: 1, color: C.card2 }]}
+              centerTitle={primary ? fmtAmount(primary.balance, coinDecimals(primary.coinType)) : '0'}
+              centerSub={primary ? `${coinSymbol(primary.coinType)} total` : 'no assets yet'}
+            />
+          </View>
           {normalized.length > 1 ? (
-            <View style={{ marginTop: 14 }}>
+            <View style={{ marginTop: 10 }}>
               <PortfolioBar slices={normalized} />
             </View>
           ) : null}

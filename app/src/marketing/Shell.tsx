@@ -26,7 +26,8 @@ export function MarketingShell({
       <header className={`land-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="wrap">
           <Link className="logo" href="/">
-            <span className="mark">S</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="mark" src="/mark.png" alt="" width={28} height={28} />
             <span>Skur</span>
           </Link>
           <nav>

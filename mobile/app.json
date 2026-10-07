@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "scheme": "skur",
     "icon": "./assets/icon.png",
-    "backgroundColor": "#212529",
+    "backgroundColor": "#000000",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -26,7 +26,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["android.permission.USE_BIOMETRIC", "android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,7 +41,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#212529"
+          "backgroundColor": "#000000"
         }
       ],
       [

@@ -81,13 +81,6 @@ export function Security() {
               Enforced by the vault object, not by this app.
             </Text>
           </View>
-          <View style={{ marginTop: 10 }}>
-            <Meter
-              value={posture.length === 0 ? 0 : holding / posture.length}
-              label="Controls holding"
-              trailing={`${holding} of ${posture.length}`}
-            />
-          </View>
         </Card>
 
         <View style={{ gap: 8 }}>
@@ -162,6 +155,23 @@ export function Security() {
             </Notice>
           )}
         </View>
+
+        <Card>
+          <SectionLabel>Security posture</SectionLabel>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+            <Text style={{ fontFamily: F.display, fontSize: 26, color: C.text }}>
+              {allOk ? 'Strong' : holding >= posture.length - 1 ? 'Good' : 'Needs attention'}
+            </Text>
+            <Text style={{ fontFamily: F.monoMedium, fontSize: 14, color: C.text2 }}>
+              {holding}/{posture.length} controls
+            </Text>
+          </View>
+          <Meter value={posture.length === 0 ? 0 : holding / posture.length} />
+          <Text style={{ fontFamily: F.body, fontSize: 12, lineHeight: 18, color: C.text3, marginTop: 10 }}>
+            Counted from the checks above — not a score of absolute security, which nothing can
+            honestly claim to measure.
+          </Text>
+        </Card>
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Maximum possible loss</SectionLabel>

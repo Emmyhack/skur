@@ -54,6 +54,9 @@ export function CreateOrg({
             onChangeText={setDescription}
             placeholder="Main company treasury for payments and operations."
             maxLength={120}
+            multiline
+            numberOfLines={3}
+            style={{ height: 96, paddingTop: 12, textAlignVertical: 'top' }}
           />
         </Field>
 

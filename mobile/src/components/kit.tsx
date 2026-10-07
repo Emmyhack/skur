@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Switch, Text, View } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
 import { Icon, type IconName } from './ui';
 import { useTheme } from '../state/theme';
 import { F, R } from '../theme';
@@ -260,6 +261,115 @@ export function Stat({ value, label, tone }: { value: string; label: string; ton
         {value}
       </Text>
       <Text style={{ fontFamily: F.body, fontSize: 12, color: C.text2 }}>{label}</Text>
+    </View>
+  );
+}
+
+/** Two-to-three equal buttons acting as one choice — the reference's Send / Request toggle. */
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: Array<[T, string]>;
+  onChange: (v: T) => void;
+}) {
+  const C = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', gap: 10 }}>
+      {options.map(([v, label]) => {
+        const on = v === value;
+        return (
+          <Text
+            key={v}
+            onPress={() => onChange(v)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            style={{
+              flex: 1,
+              textAlign: 'center',
+              paddingVertical: 13,
+              borderRadius: R.md,
+              overflow: 'hidden',
+              fontFamily: F.bodyBold,
+              fontSize: 15,
+              backgroundColor: on ? C.accent : C.card,
+              color: on ? C.onAccent : C.text2,
+            }}
+          >
+            {label}
+          </Text>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * The donut from the reference: segments by share, the total in the hole. Shares are by
+ * normalised units — this app carries no price oracle, and a chart that silently guessed at
+ * dollars would be a lie with a legend.
+ */
+export function Donut({
+  slices,
+  centerTitle,
+  centerSub,
+  size = 200,
+}: {
+  slices: Slice[];
+  centerTitle: string;
+  centerSub?: string;
+  size?: number;
+}) {
+  const C = useTheme();
+  const total = slices.reduce((s, x) => s + x.value, 0);
+  const stroke = size * 0.13;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const gap = slices.length > 1 ? circumference * 0.012 : 0;
+  let offset = 0;
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size}>
+        <G rotation={-90} originX={size / 2} originY={size / 2}>
+          {total <= 0 ? (
+            <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.card2} strokeWidth={stroke} fill="none" />
+          ) : (
+            slices.map((s) => {
+              const length = (s.value / total) * circumference - gap;
+              const el = (
+                <Circle
+                  key={s.label}
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={r}
+                  stroke={s.color}
+                  strokeWidth={stroke}
+                  fill="none"
+                  strokeLinecap={slices.length > 1 ? 'round' : 'butt'}
+                  strokeDasharray={`${Math.max(length, 1)} ${circumference}`}
+                  strokeDashoffset={-offset}
+                />
+              );
+              offset += (s.value / total) * circumference;
+              return el;
+            })
+          )}
+        </G>
+      </Svg>
+      <View style={{ position: 'absolute', alignItems: 'center', gap: 2 }}>
+        <Text
+          style={{ fontFamily: F.display, fontSize: size * 0.14, color: C.text }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {centerTitle}
+        </Text>
+        {centerSub ? (
+          <Text style={{ fontFamily: F.body, fontSize: size * 0.065, color: C.text2 }}>{centerSub}</Text>
+        ) : null}
+      </View>
     </View>
   );
 }

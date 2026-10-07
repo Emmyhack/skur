@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { forwardRef, useState, type ComponentProps, type ReactNode } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MODE_LABELS,
@@ -24,7 +24,7 @@ export function Icon({ name, size = 18, color }: { name: IconName; size?: number
   return <Feather name={name} size={size} color={color ?? C.text} />;
 }
 
-export function Screen({ children, top, footer, refreshControl, padded = true }: { children: ReactNode; top?: ReactNode; footer?: ReactNode; refreshControl?: ReactNode; padded?: boolean }) {
+export function Screen({ children, top, footer, refreshControl, padded = true, centered = false }: { children: ReactNode; top?: ReactNode; footer?: ReactNode; refreshControl?: ReactNode; padded?: boolean; centered?: boolean }) {
   const C = useTheme(); const s = useStyles(); const insets = useSafeAreaInsets();
   return (
     // Without the avoiding view, the keyboard covers the footer — which on Send is the submit
@@ -32,7 +32,9 @@ export function Screen({ children, top, footer, refreshControl, padded = true }:
     // window itself (adjustResize), so the behaviour only applies on iOS.
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {top ? <View style={{ paddingTop: insets.top + 6 }}>{top}</View> : null}
-      <ScrollView contentContainerStyle={{ padding: padded ? 16 : 0, paddingBottom: footer ? 120 : 40 }} refreshControl={refreshControl as never} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" indicatorStyle={C.canvas === "#ffffff" ? "black" : "white"}>{children}</ScrollView>
+      {/* `centered`: sparse screens (the launch, the fork, a lone empty state) sit in the
+          middle of the viewport instead of hugging the status bar with a void below. */}
+      <ScrollView contentContainerStyle={{ padding: padded ? 16 : 0, paddingBottom: footer ? 120 : 40, ...(centered ? { flexGrow: 1, justifyContent: "center" } : null) }} refreshControl={refreshControl as never} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" indicatorStyle={C.canvas === "#ffffff" ? "black" : "white"}>{children}</ScrollView>
       {footer ? <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>{footer}</View> : null}
     </KeyboardAvoidingView>
   );
@@ -66,9 +68,8 @@ export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?:
   const C = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: size * 0.32 }}>
-      <View style={{ width: size, height: size, borderRadius: size * 0.24, backgroundColor: C.accent, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ fontFamily: F.display, fontSize: size * 0.58, color: C.onAccent, lineHeight: size * 0.72 }}>S</Text>
-      </View>
+      {/* The mark itself, not a stand-in letter. Yellow on transparent, so it sits on either ground. */}
+      <Image source={require("../../assets/mark.png")} style={{ width: size, height: size }} resizeMode="contain" accessibilityLabel="Skur" />
       {wordmark ? <Text style={{ fontFamily: F.display, fontSize: size * 0.8, color: C.text, letterSpacing: -0.5 }}>Skur</Text> : null}
     </View>
   );

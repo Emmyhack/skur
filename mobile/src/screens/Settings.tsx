@@ -5,6 +5,7 @@ import {
   Address,
   Button,
   Card,
+  CircleIcon,
   Field,
   IconButton,
   Input,
@@ -85,8 +86,14 @@ export function Settings({ onOpenHelp, onOpenSecurity }: { onOpenHelp?: () => vo
           <View style={{ gap: 8 }}>
             <SectionLabel>Organisation</SectionLabel>
             <Card flush>
-              <Row title="Vault" subtitle={`${vaultId.slice(0, 18)}…`} />
-              <Row title="Close this vault" subtitle="Keeps the key; just stops showing it" onPress={closeVault} last />
+              <Row leading={<CircleIcon name="briefcase" size={34} />} title="Vault" subtitle={`${vaultId.slice(0, 18)}…`} />
+              <Row
+                leading={<CircleIcon name="log-out" size={34} />}
+                title="Close this vault"
+                subtitle="Keeps the key; just stops showing it"
+                onPress={closeVault}
+                last
+              />
             </Card>
           </View>
         ) : null}
@@ -117,6 +124,7 @@ export function Settings({ onOpenHelp, onOpenSecurity }: { onOpenHelp?: () => vo
           <SectionLabel>Security</SectionLabel>
           <Card flush>
             <Row
+              leading={<CircleIcon name="shield" size={34} tone="ok" />}
               title="Security Center"
               subtitle="Posture, the brake, and maximum possible loss"
               onPress={onOpenSecurity}
@@ -183,7 +191,14 @@ export function Settings({ onOpenHelp, onOpenSecurity }: { onOpenHelp?: () => vo
             <KV k="Indexer" v={API_URL || 'not configured — reads go straight to the chain'} last />
           </Card>
           <Card flush>
-            <Row title="Help & Support" subtitle="FAQs, documentation, contact" onPress={onOpenHelp} chevron last />
+            <Row
+              leading={<CircleIcon name="help-circle" size={34} tone="accent" />}
+              title="Help & Support"
+              subtitle="FAQs, documentation, contact"
+              onPress={onOpenHelp}
+              chevron
+              last
+            />
           </Card>
         </View>
 

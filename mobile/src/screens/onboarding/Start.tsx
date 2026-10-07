@@ -8,6 +8,7 @@ export function Start({ onCreate, onJoin }: { onCreate: () => void; onJoin: () =
   const C = useTheme();
   return (
     <Screen
+      centered
       footer={
         <View style={{ gap: 10 }}>
           <Button onPress={onCreate} icon="plus" testID="create-org">
@@ -19,7 +20,7 @@ export function Start({ onCreate, onJoin }: { onCreate: () => void; onJoin: () =
         </View>
       }
     >
-      <View style={{ gap: 24, paddingTop: 32, alignItems: 'center' }}>
+      <View style={{ gap: 24, alignItems: 'center' }}>
         <Text style={{ fontFamily: F.display, fontSize: 34, lineHeight: 40, color: C.text, textAlign: 'center' }}>
           Welcome to Skur!
         </Text>
@@ -36,7 +37,7 @@ export function Start({ onCreate, onJoin }: { onCreate: () => void; onJoin: () =
             backgroundColor: C.card,
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: 20,
+            marginTop: 8,
           }}
         >
           <Logo size={96} wordmark={false} />

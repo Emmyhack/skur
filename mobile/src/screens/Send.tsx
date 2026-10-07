@@ -19,12 +19,12 @@ import {
   Notice,
   Screen,
   SectionLabel,
-  Tabs,
   TierBadge,
   TopBar,
   TrustBadge,
   TxStatus,
 } from '../components/ui';
+import { Segmented } from '../components/kit';
 import { coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
@@ -102,7 +102,7 @@ export function Send({ onDone }: { onDone: () => void }) {
     return (
       <Screen top={<TopBar title="New Transaction" />}>
         <View style={{ gap: 16 }}>
-          <Tabs
+          <Segmented
             value={direction}
             options={[
               ['send', 'Send'],
@@ -165,7 +165,7 @@ export function Send({ onDone }: { onDone: () => void }) {
       }
     >
       <View style={{ gap: 18 }}>
-        <Tabs
+        <Segmented
           value={direction}
           options={[
             ['send', 'Send'],

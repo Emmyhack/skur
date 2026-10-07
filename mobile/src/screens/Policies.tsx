@@ -16,6 +16,23 @@ import {
   TxStatus,
 } from '../components/ui';
 import { CheckItem } from '../components/kit';
+import { CircleIcon, type IconName } from '../components/ui';
+
+/** One policy band, drawn as the reference draws it: an icon chip, the band, what it demands. */
+function RuleCard({ icon, tone, title, detail }: { icon: IconName; tone: 'ok' | 'warn' | 'info' | 'dark'; title: string; detail: string }) {
+  const C = useTheme();
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <CircleIcon name={icon} size={38} tone={tone} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 15, color: C.text }}>{title}</Text>
+          <Text style={{ fontFamily: F.body, fontSize: 13, lineHeight: 19, color: C.text2 }}>{detail}</Text>
+        </View>
+      </View>
+    </Card>
+  );
+}
 import { coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
@@ -90,12 +107,16 @@ export function Policies({ onBack }: { onBack: () => void }) {
     >
       <View style={{ gap: 16 }}>
         <SectionLabel>Policy rules</SectionLabel>
-        <Card>
-          <CheckItem
+        <View style={{ gap: 10 }}>
+          <RuleCard
+            icon="check-circle"
+            tone="ok"
             title={asset ? `Under ${fmtAmount(asset.limits.lowMax, d)} ${sym}` : 'Routine payments'}
             detail={`${p.approvalsLow} approval${p.approvalsLow === 1 ? '' : 's'} required, no wait`}
           />
-          <CheckItem
+          <RuleCard
+            icon="alert-circle"
+            tone="info"
             title={
               asset
                 ? `${fmtAmount(asset.limits.lowMax, d)} – ${fmtAmount(asset.limits.highMax, d)} ${sym}`
@@ -103,26 +124,29 @@ export function Policies({ onBack }: { onBack: () => void }) {
             }
             detail={`${p.approvalsHigh} approvals required, waits ${fmtDuration(p.delayHigh)}`}
           />
-          <CheckItem
+          <RuleCard
+            icon="shield"
+            tone="warn"
             title={asset ? `Over ${fmtAmount(asset.limits.highMax, d)} ${sym}` : 'Critical payments'}
             detail={`${p.approvalsCritical} approvals${p.guardianRequiredCritical ? ` + ${p.guardianThreshold} guardian` : ''}, waits ${fmtDuration(p.delayCritical)}`}
           />
-          <CheckItem
+          <RuleCard
+            icon="clock"
+            tone="warn"
             title="Unknown recipients"
             detail={`${fmtDuration(p.recipientActivationDelay)} timelock before a new address can be paid`}
-            ok="warn"
-            icon="clock"
           />
-          <CheckItem
+          <RuleCard
+            icon="umbrella"
+            tone="dark"
             title="Loss envelope"
             detail={
               p.envelopeBps === 0
                 ? 'Off'
                 : `At most ${p.envelopeBps / 100}% of the treasury may leave per ${fmtDuration(p.envelopeWindow)}`
             }
-            icon="umbrella"
           />
-        </Card>
+        </View>
 
         {asset ? (
           <Card>

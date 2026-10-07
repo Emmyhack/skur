@@ -9,14 +9,15 @@ export function Launch({ onStart }: { onStart: () => void }) {
   const C = useTheme();
   return (
     <Screen
+      centered
       footer={
         <Button onPress={onStart} icon="arrow-right" testID="get-started">
           Get started
         </Button>
       }
     >
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingTop: 120 }}>
-        <Logo size={72} wordmark={false} />
+      <View style={{ alignItems: 'center', gap: 18 }}>
+        <Logo size={110} wordmark={false} />
         <View style={{ alignItems: 'center', gap: 8 }}>
           <Text style={{ fontFamily: F.display, fontSize: 40, color: C.text, letterSpacing: -1 }}>Skur</Text>
           <Text style={{ fontFamily: F.bodyMedium, fontSize: 15, color: C.text2 }}>
