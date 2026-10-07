@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RefreshControl, Text, View } from 'react-native';
-import { KIND_LABELS, Kind, Status, fmtAmount, fmtRelative, type Proposal } from '@skur/sdk';
+import { KIND_LABELS, Kind, Status, fmtAmount, fmtRelative, short, type Proposal } from '@skur/sdk';
 import {
   Address,
   Card,
@@ -46,6 +46,14 @@ export function Transactions({ onOpen }: { onOpen: (id: bigint) => void }) {
       ? fmtAmount(p.amount, coinDecimals(p.asset), coinSymbol(p.asset))
       : KIND_LABELS[p.kind];
 
+  // "To: Supplier A" when the vault has a label for the recipient; the address otherwise.
+  const toLine = (p: Proposal) => {
+    if (p.kind !== Kind.TRANSFER) return p.memo || KIND_LABELS[p.kind];
+    const known = q.data?.recipients.find((r) => r.address === p.recipient);
+    const who = known?.label || short(p.recipient);
+    return p.memo ? `To: ${who} · ${p.memo}` : `To: ${who}`;
+  };
+
   const item = (p: Proposal, i: number, arr: Proposal[]) => (
     <Row
       key={p.id.toString()}
@@ -55,10 +63,10 @@ export function Transactions({ onOpen }: { onOpen: (id: bigint) => void }) {
       title={line(p)}
       subtitle={
         p.status === Status.PENDING ? (
-          `${p.memo || KIND_LABELS[p.kind]} · ${p.approvals.length}/${p.reqApprovals} approvals`
+          `${toLine(p)} · ${p.approvals.length}/${p.reqApprovals} approvals`
         ) : (
           <Text style={{ fontFamily: F.body, fontSize: 13, color: C.text3 }}>
-            {(p.memo ? `${p.memo} · ` : '') + fmtRelative(p.createdAt)}
+            {`${toLine(p)} · ${fmtRelative(p.createdAt)}`}
           </Text>
         )
       }

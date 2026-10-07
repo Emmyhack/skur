@@ -14,7 +14,7 @@ import { useStore } from '../../state/store';
  * stay on this device: the chain identifies members by address, and the backend only ever sees
  * what notification registration sends it.
  */
-export function CreateAccount({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
+export function CreateAccount({ onBack, onDone, onWallet }: { onBack: () => void; onDone: () => void; onWallet: () => void }) {
   const C = useTheme();
   const { profile, saveProfile } = useStore();
   const [name, setName] = useState(profile?.name ?? '');
@@ -91,6 +91,19 @@ export function CreateAccount({ onBack, onDone }: { onBack: () => void; onDone: 
           No password. Your signing key — created on the next step, held in this phone&apos;s
           secure element — is the credential.
         </Notice>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+          <Text style={{ fontFamily: F.body, fontSize: 12, color: C.text3 }}>or</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+        </View>
+
+        <Button kind="secondary" icon="credit-card" onPress={onWallet} testID="continue-wallet">
+          Continue with Wallet
+        </Button>
+        <Text style={{ fontFamily: F.body, fontSize: 12, lineHeight: 18, color: C.text3, textAlign: 'center', marginTop: -6 }}>
+          Skip the profile and go straight to your signing key.
+        </Text>
       </View>
     </Screen>
   );

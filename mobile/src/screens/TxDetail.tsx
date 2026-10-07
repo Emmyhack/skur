@@ -34,6 +34,7 @@ import {
 } from '../components/ui';
 import { CheckItem, Meter, TimelineStep } from '../components/kit';
 import { coinDecimals, coinSymbol } from '../components/TokenMark';
+import { Identicon } from '../components/Identicon';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
 import { PACKAGE_ID } from '../lib/config';
@@ -373,6 +374,18 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
               liveApprovals < p.approvals.length ? ` (${p.approvals.length - liveApprovals} no longer count)` : ''
             }`}
           />
+          {p.approvals.length > 0 ? (
+            <View style={{ flexDirection: 'row', gap: 6, paddingVertical: 8, alignItems: 'center' }}>
+              {p.approvals.slice(0, 6).map((a) => (
+                <Identicon key={a} address={a} size={26} />
+              ))}
+              {p.approvals.length > 6 ? (
+                <Text style={{ fontFamily: F.bodyMedium, fontSize: 12, color: C.text3 }}>
+                  +{p.approvals.length - 6}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
           {p.reqGuardians > 0 ? (
             <KV k="Guardian confirmations" v={`${liveConfirmations} of ${p.reqGuardians}`} />
           ) : null}

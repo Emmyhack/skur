@@ -25,6 +25,8 @@ import {
   TxStatus,
 } from '../components/ui';
 import { Segmented } from '../components/kit';
+import { ScanSheet } from '../components/Scan';
+import { IconButton } from '../components/ui';
 import { coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
@@ -52,6 +54,7 @@ export function Send({ onDone }: { onDone: () => void }) {
   const [to, setTo] = useState('');
   const [amountText, setAmountText] = useState('');
   const [memo, setMemo] = useState('');
+  const [scanning, setScanning] = useState(false);
 
   const asset = approved.find((a) => a.coinType === coinType) ?? approved[0];
   const activeType = asset?.coinType ?? '';
@@ -197,7 +200,12 @@ export function Send({ onDone }: { onDone: () => void }) {
         ) : null}
 
         <Field label="Recipient" hint={labelled ? labelled.label : undefined}>
-          <Input mono value={to} onChangeText={(t) => setTo(t.trim())} placeholder="0x…" autoCapitalize="none" autoCorrect={false} />
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <Input mono value={to} onChangeText={(t) => setTo(t.trim())} placeholder="0x…" autoCapitalize="none" autoCorrect={false} />
+            </View>
+            <IconButton name="maximize" label="Scan an address QR" onPress={() => setScanning(true)} />
+          </View>
         </Field>
         {validTo ? (
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -262,6 +270,8 @@ export function Send({ onDone }: { onDone: () => void }) {
           <Text style={{ fontFamily: F.body, fontSize: 13, color: C.text3 }}>Asking the vault…</Text>
         ) : null}
       </View>
+
+      <ScanSheet open={scanning} onClose={() => setScanning(false)} onAddress={setTo} />
     </Screen>
   );
 }

@@ -334,7 +334,15 @@ function Onboarding({ onDone }: { onDone: () => void }) {
       );
     case 'account':
       return (
-        <CreateAccount onBack={() => setStep('start')} onDone={() => setStep(joining ? 'wallet' : 'org')} />
+        <CreateAccount
+          onBack={() => setStep('start')}
+          onDone={() => setStep(joining ? 'wallet' : 'org')}
+          onWallet={() => {
+            // "Continue with Wallet": straight to the key; the vault picker follows.
+            setJoining(true);
+            setStep('wallet');
+          }}
+        />
       );
     case 'org':
       return (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import { Role, templateById, tx as build } from '@skur/sdk';
 import {
@@ -279,6 +279,14 @@ export function ConnectWallet({
             />
           </Card>
         ) : null}
+
+        <Text
+          onPress={() => void Linking.openURL('mailto:support@skur.app')}
+          accessibilityRole="link"
+          style={{ fontFamily: F.bodyMedium, fontSize: 14, color: C.info, textAlign: 'center', paddingVertical: 6 }}
+        >
+          Need help?
+        </Text>
       </View>
 
       <Sheet open={importing} onClose={() => setImporting(false)} title="Import a key">
