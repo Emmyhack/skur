@@ -13,6 +13,7 @@ import {
 import {
   Button,
   Card,
+  CircleIcon,
   Icon,
   KV,
   Notice,
@@ -21,6 +22,7 @@ import {
   TopBar,
   TxStatus,
 } from '../components/ui';
+import { Meter } from '../components/kit';
 import { coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
@@ -60,13 +62,34 @@ export function Security() {
 
   const v = q.data;
   const p = v.vault.policy;
+  const holding = posture.filter((i) => i.ok === 'ok').length;
+  const allOk = holding === posture.length;
 
   return (
     <Screen
-      top={<TopBar title="Security" />}
+      top={<TopBar title="Security Center" />}
       footer={tx.state.phase !== 'idle' ? <TxStatus state={tx.state} /> : null}
     >
       <View style={{ gap: 20 }}>
+        <Card>
+          <View style={{ alignItems: 'center', gap: 10, paddingVertical: 8 }}>
+            <CircleIcon name="shield" size={56} tone={allOk ? 'ok' : 'warn'} />
+            <Text style={{ fontFamily: F.display, fontSize: 20, color: C.text }}>
+              {allOk ? 'Your assets are protected' : 'Posture has gaps'}
+            </Text>
+            <Text style={{ fontFamily: F.body, fontSize: 13, color: C.text2 }}>
+              Enforced by the vault object, not by this app.
+            </Text>
+          </View>
+          <View style={{ marginTop: 10 }}>
+            <Meter
+              value={posture.length === 0 ? 0 : holding / posture.length}
+              label="Controls holding"
+              trailing={`${holding} of ${posture.length}`}
+            />
+          </View>
+        </Card>
+
         <View style={{ gap: 8 }}>
           <SectionLabel>What holds</SectionLabel>
           <Card>

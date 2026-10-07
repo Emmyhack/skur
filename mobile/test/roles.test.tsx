@@ -30,7 +30,9 @@ async function show(roles: number, over = {}) {
   mockStore.mockReturnValue({ vaultId: VAULT, address: ME, book: [], ready: true });
   mockView.mockReturnValue({ data: view(roles, over), isLoading: false, error: null, refetch: jest.fn() });
   const r = await renderScreen(<TxDetail id={1n} onBack={jest.fn()} />);
-  return Object.assign((label: string | RegExp) => r.queryByText(label) !== null, {
+  // queryAllByText: a fact may legitimately appear twice — once in the review-before-signing
+  // card and once in the what-it-needs card. The assertion is "the screen says it", not "once".
+  return Object.assign((label: string | RegExp) => r.queryAllByText(label).length > 0, {
     action: (id: string) => r.queryByTestId(`action-${id}`) !== null,
     enabled: (id: string) => {
       const node = r.queryByTestId(`action-${id}`);

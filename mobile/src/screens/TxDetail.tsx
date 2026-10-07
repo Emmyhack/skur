@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import {
   KIND_LABELS,
@@ -5,12 +6,15 @@ import {
   Role,
   Status,
   Tier,
+  Trust,
   describeReasons,
   fmtAmount,
   fmtDuration,
+  fmtRelative,
   fmtTimestamp,
   hasRole,
   policyReductions,
+  short,
   tx as build,
 } from '@skur/sdk';
 import {
@@ -26,17 +30,20 @@ import {
   TierBadge,
   TopBar,
   TxStatus,
+  Sheet,
 } from '../components/ui';
+import { CheckItem, Meter, TimelineStep } from '../components/kit';
 import { coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
 import { PACKAGE_ID } from '../lib/config';
 import { useTx } from '../hooks/useTx';
-import { useVaultView } from '../hooks/useVault';
+import { useTransferPreview, useVaultView } from '../hooks/useVault';
 import { useStore } from '../state/store';
 
 /**
- * One proposal, and the actions this device's key is actually allowed to take on it.
+ * Screens 12–14 in one place: the details of a proposal, its approval flow as a timeline, the
+ * review-before-signing checks, and the actions this device's key is actually allowed to take.
  *
  * Every button is gated on the role the contract requires, so a signer is never offered something
  * the vault would refuse. The requirements shown are the ones pinned when the proposal was opened;
@@ -48,9 +55,21 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
   const { vaultId, address } = useStore();
   const q = useVaultView(vaultId);
   const tx = useTx(vaultId);
+  const [simulating, setSimulating] = useState(false);
 
   const p = q.data?.proposals.find((x) => x.id === id);
   const roles = address ? (q.data?.members.find((m) => m.address === address)?.roles ?? 0) : 0;
+
+  const isTransfer = p?.kind === Kind.TRANSFER;
+  // The simulation re-runs the vault's own preview for this exact payment, on demand.
+  const preview = useTransferPreview({
+    vaultId,
+    coinType: p?.asset ?? '',
+    amount: p?.amount ?? 0n,
+    recipient: p?.recipient ?? '',
+    sender: address,
+    enabled: simulating && Boolean(isTransfer && p?.asset),
+  });
 
   if (!p || !q.data) {
     return (
@@ -60,7 +79,6 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
     );
   }
 
-  const isTransfer = p.kind === Kind.TRANSFER;
   const voteRole = isTransfer ? Role.APPROVER : Role.OWNER;
   const canVote = hasRole(roles, voteRole);
   const canExecute = isTransfer ? hasRole(roles, Role.EXECUTOR) : roles !== 0;
@@ -89,6 +107,14 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
   const reasons = describeReasons(p.reasons);
   const reductions = p.newPolicy ? policyReductions(q.data.vault.policy, p.newPolicy) : [];
 
+  // Screen 14's checks, computed from chain state rather than asserted.
+  const recipientRecord = q.data.recipients.find((r) => r.address === p.recipient);
+  const trust = recipientRecord?.trust ?? Trust.UNKNOWN;
+  const asset = p.asset ? q.data.assets.find((a) => a.coinType === p.asset) : undefined;
+  const withinPerTx = !asset || asset.limits.perTxMax === 0n || p.amount <= asset.limits.perTxMax;
+  const recipientKnown = trust !== Trust.UNKNOWN && trust !== Trust.BLOCKED;
+  const noRedFlags = trust !== Trust.BLOCKED && p.reductionMask === 0;
+
   const executeTx = () => {
     if (isTransfer && p.asset)
       return build.executeTransfer(PACKAGE_ID, { vaultId: vaultId!, coinType: p.asset, proposalId: id });
@@ -102,6 +128,46 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
     throw new Error('nothing to execute for this kind');
   };
 
+  // Screen 13 — the approval flow, as it stands on chain right now.
+  const flow: { title: string; subtitle: string; state: 'done' | 'active' | 'todo' }[] = [
+    {
+      title: 'Proposed',
+      subtitle: `by ${short(p.proposer)} · ${fmtRelative(p.createdAt)}`,
+      state: 'done',
+    },
+    ...p.approvals.map((a) => ({
+      title: 'Approved',
+      subtitle: short(a),
+      state: 'done' as const,
+    })),
+    ...Array.from({ length: Math.max(0, p.reqApprovals - liveApprovals) }).map((_, i) => ({
+      title: 'Approval',
+      subtitle: i === 0 && canVote && !voted ? 'Yours, if you give it' : 'Awaiting a signer',
+      state: (i === 0 ? 'active' : 'todo') as 'active' | 'todo',
+    })),
+    ...(p.reqGuardians > 0
+      ? [
+          {
+            title: 'Guardian confirmation',
+            subtitle: `${liveConfirmations} of ${p.reqGuardians}`,
+            state: (liveConfirmations >= p.reqGuardians ? 'done' : 'todo') as 'done' | 'todo',
+          },
+        ]
+      : []),
+    {
+      title: p.status === Status.EXECUTED ? 'Executed' : 'Execution',
+      subtitle:
+        p.status === Status.EXECUTED
+          ? 'Settled on chain'
+          : !timeMet
+            ? `Waits until ${fmtTimestamp(p.executableAt)}`
+            : ready
+              ? 'Ready now'
+              : 'After the approvals above',
+      state: p.status === Status.EXECUTED ? 'done' : ready && open ? 'active' : 'todo',
+    },
+  ];
+
   return (
     <Screen
       top={<TopBar left={<BackButton onPress={onBack} />} title={`#${id} · ${KIND_LABELS[p.kind]}`} />}
@@ -114,7 +180,7 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
                 <Button
                   style={{ flex: 1 }}
                   testID="action-approve"
-                onPress={() => tx.run(() => build.approve(PACKAGE_ID, vaultId!, id), 'Approve this proposal')}
+                  onPress={() => tx.run(() => build.approve(PACKAGE_ID, vaultId!, id), 'Approve this proposal')}
                   disabled={voted || tx.busy}
                   loading={tx.busy}
                   icon="check"
@@ -125,7 +191,7 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
                   style={{ flex: 1 }}
                   kind="secondary"
                   testID="action-reject"
-                onPress={() => tx.run(() => build.reject(PACKAGE_ID, vaultId!, id), 'Reject this proposal')}
+                  onPress={() => tx.run(() => build.reject(PACKAGE_ID, vaultId!, id), 'Reject this proposal')}
                   disabled={rejected || tx.busy}
                   icon="x"
                 >
@@ -189,9 +255,25 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
               <Address value={p.recipient} full />
             </View>
             {p.memo ? (
-              <Text style={{ fontFamily: F.body, fontSize: 14, color: C.text2, marginTop: 10 }}>
-                {p.memo}
-              </Text>
+              <Text style={{ fontFamily: F.body, fontSize: 14, color: C.text2, marginTop: 10 }}>{p.memo}</Text>
+            ) : null}
+          </Card>
+        ) : null}
+
+        {isTransfer && p.asset ? (
+          <Card>
+            <SectionLabel>Details</SectionLabel>
+            <KV k="From" v={q.data.vault.name} />
+            <KV k="Asset" v={coinSymbol(p.asset)} />
+            <KV k="Amount" v={fmtAmount(p.amount, coinDecimals(p.asset))} />
+            {p.memo ? <KV k="Purpose" v={p.memo} /> : null}
+            <KV k="Risk level" v={<TierBadge tier={p.tier} />} last />
+            {open ? (
+              <View style={{ marginTop: 12 }}>
+                <Button kind="secondary" size="sm" icon="play" onPress={() => setSimulating(true)}>
+                  View simulation
+                </Button>
+              </View>
             ) : null}
           </Card>
         ) : null}
@@ -226,6 +308,63 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
           </Notice>
         ) : null}
 
+        {open && isTransfer && (canVote || canExecute || isGuardian) ? (
+          <Card>
+            <SectionLabel>Review before signing</SectionLabel>
+            <CheckItem
+              title={recipientKnown ? 'Recipient known to this vault' : 'Recipient is new to this vault'}
+              detail={
+                recipientKnown
+                  ? `Paid ${recipientRecord?.paidCount ?? 0} time${(recipientRecord?.paidCount ?? 0) === 1 ? '' : 's'} before`
+                  : 'Never paid by this vault — look twice at the address'
+              }
+              ok={recipientKnown ? true : 'warn'}
+            />
+            <CheckItem
+              title={withinPerTx ? 'Within spending limits' : 'Above the per-payment cap'}
+              detail={
+                asset && asset.limits.perTxMax !== 0n
+                  ? `Cap ${fmtAmount(asset.limits.perTxMax, coinDecimals(asset.coinType))} ${coinSymbol(asset.coinType)}`
+                  : 'No per-payment cap is set for this asset'
+              }
+              ok={withinPerTx ? true : false}
+            />
+            <CheckItem
+              title={noRedFlags ? 'No red flags' : 'Red flags'}
+              detail={
+                noRedFlags
+                  ? 'Recipient is not blocked, and nothing here weakens the vault'
+                  : trust === Trust.BLOCKED
+                    ? 'This recipient is blocked by the vault'
+                    : 'This change weakens the vault'
+              }
+              ok={noRedFlags}
+            />
+            <View style={{ marginTop: 8 }}>
+              <Meter
+                value={p.reqApprovals === 0 ? 1 : liveApprovals / p.reqApprovals}
+                label="Required approvals"
+                trailing={`${liveApprovals} of ${p.reqApprovals}`}
+              />
+            </View>
+          </Card>
+        ) : null}
+
+        <Card>
+          <SectionLabel>Approval flow</SectionLabel>
+          <View style={{ marginTop: 6 }}>
+            {flow.map((step, i) => (
+              <TimelineStep
+                key={`${step.title}-${i}`}
+                title={step.title}
+                subtitle={step.subtitle}
+                state={step.state}
+                last={i === flow.length - 1}
+              />
+            ))}
+          </View>
+        </Card>
+
         <Card>
           <SectionLabel>What it needs</SectionLabel>
           <KV
@@ -249,6 +388,33 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
           </Notice>
         ) : null}
       </View>
+
+      <Sheet open={simulating} onClose={() => setSimulating(false)} title="Simulation">
+        <View style={{ gap: 12, paddingBottom: 8 }}>
+          <Text style={{ fontFamily: F.body, fontSize: 13, lineHeight: 20, color: C.text2 }}>
+            The vault&apos;s own preview, re-run against its state right now — the same code
+            execution will run.
+          </Text>
+          {preview.isLoading ? (
+            <Text style={{ fontFamily: F.body, fontSize: 13, color: C.text3 }}>Asking the vault…</Text>
+          ) : preview.data ? (
+            <Card>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <SectionLabel>It would demand</SectionLabel>
+                <TierBadge tier={preview.data.tier} />
+              </View>
+              <KV k="Approvals" v={String(preview.data.reqApprovals)} />
+              <KV k="Guardian" v={preview.data.reqGuardians === 0 ? 'none' : String(preview.data.reqGuardians)} />
+              <KV k="Waits" v={preview.data.delay === 0 ? 'no wait' : fmtDuration(preview.data.delay)} />
+              <KV k="Share of this asset" v={`${(preview.data.exposureBps / 100).toFixed(2)}%`} last />
+            </Card>
+          ) : preview.error ? (
+            <Notice tone="warn">
+              The vault refused the simulation: {preview.error instanceof Error ? preview.error.message : 'it would not execute as-is.'}
+            </Notice>
+          ) : null}
+        </View>
+      </Sheet>
     </Screen>
   );
 }

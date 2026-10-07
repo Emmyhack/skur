@@ -1,20 +1,13 @@
 import { RefreshControl, Text, View } from 'react-native';
-import {
-  Mode,
-  Status,
-  describeReasons,
-  fmtAmount,
-  fmtDuration,
-  type VaultView,
-} from '@skur/sdk';
+import { Mode, describeReasons, fmtAmount, fmtDuration, type VaultView } from '@skur/sdk';
 import {
   Address,
+  Button,
   Card,
   Empty,
   ErrorState,
   IconButton,
   KV,
-  ModeBadge,
   Notice,
   Row,
   Screen,
@@ -23,14 +16,29 @@ import {
   Tape,
   TopBar,
 } from '../components/ui';
-import { Identicon } from '../components/Identicon';
+import { BarChart, PortfolioBar } from '../components/kit';
 import { TokenMark, coinDecimals, coinSymbol } from '../components/TokenMark';
 import { useTheme } from '../state/theme';
 import { F } from '../theme';
 import { useVaultView } from '../hooks/useVault';
 import { useStore } from '../state/store';
 
-export function Home({ onOpenQueue, onSwitch }: { onOpenQueue: () => void; onSwitch: () => void }) {
+/**
+ * Screen 9 — the treasury overview: total balance, the portfolio breakdown, send/request, and
+ * what the vault enforces. Shares are by normalised units, not price — this app carries no
+ * oracle, and a breakdown that silently guessed at dollars would be a lie with a legend.
+ */
+export function Home({
+  onOpenQueue,
+  onSwitch,
+  onSend,
+  onRequest,
+}: {
+  onOpenQueue?: () => void;
+  onSwitch: () => void;
+  onSend?: () => void;
+  onRequest?: () => void;
+}) {
   const C = useTheme();
   const { vaultId } = useStore();
   const q = useVaultView(vaultId);
@@ -62,22 +70,25 @@ export function Home({ onOpenQueue, onSwitch }: { onOpenQueue: () => void; onSwi
 
   const v: VaultView = q.data;
   const p = v.vault.policy;
-  const pending = v.proposals.filter((x) => x.status === Status.PENDING);
+
+  const palette = [C.accent, C.info, C.success, C.warning, C.error];
+  const normalized = v.assets.map((a, i) => ({
+    label: coinSymbol(a.coinType),
+    value: Number(a.balance) / 10 ** coinDecimals(a.coinType),
+    color: palette[i % palette.length],
+  }));
+  const primary = [...v.assets].sort(
+    (a, b) => Number(b.balance) / 10 ** coinDecimals(b.coinType) - Number(a.balance) / 10 ** coinDecimals(a.coinType),
+  )[0];
 
   return (
     <Screen
-      top={
-        <TopBar
-          left={<Identicon address={v.vault.id} size={32} />}
-          title={v.vault.name}
-          right={<IconButton name="repeat" label="Switch vault" onPress={onSwitch} />}
-        />
-      }
+      top={<TopBar title="Treasury" right={<IconButton name="repeat" label="Switch vault" onPress={onSwitch} />} />}
       refreshControl={
         <RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={C.text2} />
       }
     >
-      <View style={{ gap: 20 }}>
+      <View style={{ gap: 16 }}>
         {v.vault.mode !== Mode.NORMAL ? <Tape /> : null}
 
         {v.vault.mode === Mode.LOCKDOWN ? (
@@ -95,19 +106,26 @@ export function Home({ onOpenQueue, onSwitch }: { onOpenQueue: () => void; onSwi
         ) : null}
 
         <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ gap: 4 }}>
-              <SectionLabel>Posture</SectionLabel>
-              <ModeBadge mode={v.vault.mode} />
+          <SectionLabel>Total balance</SectionLabel>
+          <Text style={{ fontFamily: F.display, fontSize: 36, color: C.text, letterSpacing: -0.5 }}>
+            {primary ? fmtAmount(primary.balance, coinDecimals(primary.coinType)) : '0'}
+            <Text style={{ fontSize: 20, color: C.text2 }}> {primary ? coinSymbol(primary.coinType) : ''}</Text>
+          </Text>
+          {normalized.length > 1 ? (
+            <View style={{ marginTop: 14 }}>
+              <PortfolioBar slices={normalized} />
             </View>
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <SectionLabel>Awaiting action</SectionLabel>
-              <Text style={{ fontFamily: F.display, fontSize: 28, color: C.text }}>
-                {pending.length}
-              </Text>
-            </View>
-          </View>
+          ) : null}
         </Card>
+
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Button style={{ flex: 1 }} icon="arrow-up-right" onPress={onSend}>
+            Send
+          </Button>
+          <Button style={{ flex: 1 }} kind="secondary" icon="download" onPress={onRequest}>
+            Request
+          </Button>
+        </View>
 
         <View style={{ gap: 8 }}>
           <SectionLabel>Holdings</SectionLabel>
@@ -142,16 +160,10 @@ export function Home({ onOpenQueue, onSwitch }: { onOpenQueue: () => void; onSwi
           )}
         </View>
 
-        {pending.length > 0 ? (
-          <Card flush>
-            <Row
-              leading={<Identicon address={v.vault.id} size={36} badge={String(pending.length)} />}
-              title={`${pending.length} proposal${pending.length === 1 ? '' : 's'} open`}
-              subtitle="Review what is waiting"
-              onPress={onOpenQueue}
-              chevron
-              last
-            />
+        {normalized.length > 0 ? (
+          <Card>
+            <SectionLabel>Asset breakdown</SectionLabel>
+            <BarChart items={normalized.map((n) => ({ label: n.label, value: n.value }))} />
           </Card>
         ) : null}
 
@@ -170,6 +182,12 @@ export function Home({ onOpenQueue, onSwitch }: { onOpenQueue: () => void; onSwi
             last
           />
         </Card>
+
+        {onOpenQueue ? (
+          <Card flush>
+            <Row title="Open proposals" subtitle="Review what is waiting" onPress={onOpenQueue} chevron last />
+          </Card>
+        ) : null}
 
         <Card>
           <SectionLabel>This vault</SectionLabel>

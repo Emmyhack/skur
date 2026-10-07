@@ -19,6 +19,7 @@ import {
   Notice,
   Screen,
   SectionLabel,
+  Tabs,
   TierBadge,
   TopBar,
   TrustBadge,
@@ -46,6 +47,7 @@ export function Send({ onDone }: { onDone: () => void }) {
   const tx = useTx(vaultId);
 
   const approved = (q.data?.assets ?? []).filter((a) => a.limits.approved);
+  const [direction, setDirection] = useState<'send' | 'request'>('send');
   const [coinType, setCoinType] = useState<string>('');
   const [to, setTo] = useState('');
   const [amountText, setAmountText] = useState('');
@@ -87,7 +89,7 @@ export function Send({ onDone }: { onDone: () => void }) {
 
   if (approved.length === 0) {
     return (
-      <Screen top={<TopBar title="Pay" />}>
+      <Screen top={<TopBar title="New Transaction" />}>
         <Notice tone="warn">
           No asset is approved for this vault yet. An owner has to approve one through governance
           before anything can be paid.
@@ -96,9 +98,38 @@ export function Send({ onDone }: { onDone: () => void }) {
     );
   }
 
+  if (direction === 'request') {
+    return (
+      <Screen top={<TopBar title="New Transaction" />}>
+        <View style={{ gap: 16 }}>
+          <Tabs
+            value={direction}
+            options={[
+              ['send', 'Send'],
+              ['request', 'Request'],
+            ]}
+            onChange={setDirection}
+          />
+          <Notice tone="info">
+            Deposits are never gated — in any mode, from any address. Share this vault's address
+            and the funds land directly on it.
+          </Notice>
+          <Card>
+            <SectionLabel>Vault address</SectionLabel>
+            <Address value={vaultId ?? ''} full />
+          </Card>
+          <Text style={{ fontFamily: F.body, fontSize: 13, lineHeight: 20, color: C.text3 }}>
+            Sending a coin type this vault has not approved will fail. Approving one is a
+            governance action.
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen
-      top={<TopBar title="Pay" />}
+      top={<TopBar title="New Transaction" />}
       footer={
         <View style={{ gap: 10 }}>
           <TxStatus state={tx.state} />
@@ -134,6 +165,14 @@ export function Send({ onDone }: { onDone: () => void }) {
       }
     >
       <View style={{ gap: 18 }}>
+        <Tabs
+          value={direction}
+          options={[
+            ['send', 'Send'],
+            ['request', 'Request'],
+          ]}
+          onChange={setDirection}
+        />
         <Text style={{ fontFamily: F.body, fontSize: 14, lineHeight: 21, color: C.text2 }}>
           Opening a payment is not approving it. The vault scores it first and then says what it
           needs.
@@ -178,7 +217,13 @@ export function Send({ onDone }: { onDone: () => void }) {
           <Input big mono value={amountText} onChangeText={setAmountText} placeholder="0.00" keyboardType="decimal-pad" />
         </Field>
 
-        <Field label="Reference">
+        {amount > 0n ? (
+          <Text style={{ fontFamily: F.mono, fontSize: 12, color: C.text3, marginTop: -10 }}>
+            = {amount.toString()} base units
+          </Text>
+        ) : null}
+
+        <Field label="Purpose (optional)">
           <Input value={memo} onChangeText={setMemo} placeholder="What this is for" maxLength={120} />
         </Field>
 

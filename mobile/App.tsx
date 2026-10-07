@@ -32,16 +32,30 @@ import { persister } from './src/lib/persist';
 import { StoreProvider, useStore } from './src/state/store';
 import { ThemeProvider, useScheme, useTheme } from './src/state/theme';
 import { F } from './src/theme';
+
+import { Launch } from './src/screens/onboarding/Launch';
+import { Tour } from './src/screens/onboarding/Tour';
+import { Start } from './src/screens/onboarding/Start';
+import { CreateAccount } from './src/screens/onboarding/CreateAccount';
+import { CreateOrg, type OrgDraft } from './src/screens/onboarding/CreateOrg';
+import { AddMembers, type MemberDraft } from './src/screens/onboarding/AddMembers';
+import { ConnectWallet } from './src/screens/onboarding/ConnectWallet';
+
+import { ActivityLog } from './src/screens/ActivityLog';
+import { Dashboard } from './src/screens/Dashboard';
+import { Help } from './src/screens/Help';
 import { Home } from './src/screens/Home';
-import { Onboard } from './src/screens/Onboard';
+import { More } from './src/screens/More';
 import { OpenVault } from './src/screens/OpenVault';
+import { Policies } from './src/screens/Policies';
 import { Receive } from './src/screens/Receive';
+import { Roles } from './src/screens/Roles';
 import { Security } from './src/screens/Security';
 import { Send } from './src/screens/Send';
 import { Settings } from './src/screens/Settings';
+import { Team } from './src/screens/Team';
 import { Transactions } from './src/screens/Transactions';
 import { TxDetail } from './src/screens/TxDetail';
-import { Welcome } from './src/screens/Welcome';
 
 /**
  * Reads are cached to disk, so a cold start offline shows the vault as it last was — the offline
@@ -72,39 +86,121 @@ const persistOptions = {
 };
 
 /** Route params are serialisable by contract, so a proposal id travels as a string. */
-type ActivityParams = { Queue: undefined; Proposal: { id: string } };
+type ProposalsParams = { Queue: undefined; Proposal: { id: string }; New: undefined };
+type TeamParams = { Members: undefined; Roles: undefined };
+type MoreParams = {
+  Menu: undefined;
+  SecurityCenter: undefined;
+  Policies: undefined;
+  Logs: undefined;
+  ReceiveScreen: undefined;
+  SettingsScreen: undefined;
+  Help: undefined;
+};
 type TabParams = {
+  Home: undefined;
   Treasury: undefined;
-  Activity: NavigatorScreenParams<ActivityParams>;
-  Pay: undefined;
-  Receive: undefined;
-  Security: undefined;
-  Settings: undefined;
+  Proposals: NavigatorScreenParams<ProposalsParams>;
+  Team: NavigatorScreenParams<TeamParams>;
+  More: NavigatorScreenParams<MoreParams>;
 };
 
 const Tab = createBottomTabNavigator<TabParams>();
-const ActivityNav = createNativeStackNavigator<ActivityParams>();
+const ProposalsNav = createNativeStackNavigator<ProposalsParams>();
+const TeamNav = createNativeStackNavigator<TeamParams>();
+const MoreNav = createNativeStackNavigator<MoreParams>();
 const navRef = createNavigationContainerRef<TabParams>();
 
 /**
- * The queue and a proposal are a real stack, not a component swapped by local state. That is what
- * makes Android's hardware back close the proposal instead of the app, gives iOS its swipe-back,
- * and gives a deep link something to target.
+ * Stacks, not component swaps: Android's hardware back closes the inner screen instead of the
+ * app, iOS keeps its swipe-back, and a deep link has something to target.
  */
-function ActivityStack() {
+function ProposalsStack() {
   return (
-    <ActivityNav.Navigator screenOptions={{ headerShown: false }}>
-      <ActivityNav.Screen name="Queue">
+    <ProposalsNav.Navigator screenOptions={{ headerShown: false }}>
+      <ProposalsNav.Screen name="Queue">
         {({ navigation }) => (
           <Transactions onOpen={(id) => navigation.navigate('Proposal', { id: id.toString() })} />
         )}
-      </ActivityNav.Screen>
-      <ActivityNav.Screen name="Proposal">
-        {({ route, navigation }: NativeStackScreenProps<ActivityParams, 'Proposal'>) => (
+      </ProposalsNav.Screen>
+      <ProposalsNav.Screen name="Proposal">
+        {({ route, navigation }: NativeStackScreenProps<ProposalsParams, 'Proposal'>) => (
           <TxDetail id={BigInt(route.params.id)} onBack={() => navigation.goBack()} />
         )}
-      </ActivityNav.Screen>
-    </ActivityNav.Navigator>
+      </ProposalsNav.Screen>
+      <ProposalsNav.Screen name="New">
+        {({ navigation }) => <Send onDone={() => navigation.navigate('Queue')} />}
+      </ProposalsNav.Screen>
+    </ProposalsNav.Navigator>
+  );
+}
+
+function TeamStack() {
+  return (
+    <TeamNav.Navigator screenOptions={{ headerShown: false }}>
+      <TeamNav.Screen name="Members">
+        {({ navigation }) => <Team onOpenRoles={() => navigation.navigate('Roles')} />}
+      </TeamNav.Screen>
+      <TeamNav.Screen name="Roles">
+        {({ navigation }) => <Roles onBack={() => navigation.goBack()} />}
+      </TeamNav.Screen>
+    </TeamNav.Navigator>
+  );
+}
+
+function MoreStack() {
+  return (
+    <MoreNav.Navigator screenOptions={{ headerShown: false }}>
+      <MoreNav.Screen name="Menu">
+        {({ navigation }) => (
+          <More
+            onOpen={(screen) =>
+              navigation.navigate(
+                screen === 'Security'
+                  ? 'SecurityCenter'
+                  : screen === 'Receive'
+                    ? 'ReceiveScreen'
+                    : screen === 'Settings'
+                      ? 'SettingsScreen'
+                      : screen,
+              )
+            }
+          />
+        )}
+      </MoreNav.Screen>
+      <MoreNav.Screen name="SecurityCenter" component={Security} />
+      <MoreNav.Screen name="Policies">
+        {({ navigation }) => <Policies onBack={() => navigation.goBack()} />}
+      </MoreNav.Screen>
+      <MoreNav.Screen name="Logs">
+        {({ navigation }) => <ActivityLog onBack={() => navigation.goBack()} />}
+      </MoreNav.Screen>
+      <MoreNav.Screen name="ReceiveScreen" component={Receive} />
+      <MoreNav.Screen name="SettingsScreen">
+        {({ navigation }) => (
+          <Settings
+            onOpenHelp={() => navigation.navigate('Help')}
+            onOpenSecurity={() => navigation.navigate('SecurityCenter')}
+          />
+        )}
+      </MoreNav.Screen>
+      <MoreNav.Screen name="Help">
+        {({ navigation }) => <Help onBack={() => navigation.goBack()} />}
+      </MoreNav.Screen>
+    </MoreNav.Navigator>
+  );
+}
+
+function HomeTab() {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParams>>();
+  const { closeVault } = useStore();
+  return (
+    <Dashboard
+      onOpenProposals={() => navigation.navigate('Proposals', { screen: 'Queue' })}
+      onOpenProposal={(id) => navigation.navigate('Proposals', { screen: 'Proposal', params: { id: id.toString() } })}
+      onOpenTreasury={() => navigation.navigate('Treasury')}
+      onSwitch={closeVault}
+    />
   );
 }
 
@@ -113,16 +209,12 @@ function TreasuryTab() {
   const { closeVault } = useStore();
   return (
     <Home
-      onOpenQueue={() => navigation.navigate('Activity', { screen: 'Queue' })}
+      onOpenQueue={() => navigation.navigate('Proposals', { screen: 'Queue' })}
+      onSend={() => navigation.navigate('Proposals', { screen: 'New' })}
+      onRequest={() => navigation.navigate('More', { screen: 'ReceiveScreen' })}
       onSwitch={closeVault}
     />
   );
-}
-
-function PayTab() {
-  const navigation = useNavigation<BottomTabNavigationProp<TabParams>>();
-  // After a payment opens, land on the queue — that is where it now lives.
-  return <Send onDone={() => navigation.navigate('Activity', { screen: 'Queue' })} />;
 }
 
 /** The banner sits above the tabs, with the age of what is on screen. */
@@ -149,27 +241,24 @@ function Tabs() {
           tabBarLabelStyle: { fontFamily: F.bodyMedium, fontSize: 11 },
           tabBarIcon: ({ color }) => {
             const name =
-              route.name === 'Treasury'
+              route.name === 'Home'
                 ? 'home'
-                : route.name === 'Activity'
-                  ? 'list'
-                  : route.name === 'Pay'
-                    ? 'arrow-up-right'
-                    : route.name === 'Receive'
-                      ? 'download'
-                      : route.name === 'Security'
-                        ? 'shield'
-                        : 'settings';
+                : route.name === 'Treasury'
+                  ? 'pie-chart'
+                  : route.name === 'Proposals'
+                    ? 'list'
+                    : route.name === 'Team'
+                      ? 'users'
+                      : 'more-horizontal';
             return <Icon name={name} size={19} color={color} />;
           },
         })}
       >
+        <Tab.Screen name="Home" component={HomeTab} />
         <Tab.Screen name="Treasury" component={TreasuryTab} />
-        <Tab.Screen name="Activity" component={ActivityStack} />
-        <Tab.Screen name="Pay" component={PayTab} />
-        <Tab.Screen name="Receive" component={Receive} />
-        <Tab.Screen name="Security" component={Security} />
-        <Tab.Screen name="Settings" component={Settings} />
+        <Tab.Screen name="Proposals" component={ProposalsStack} />
+        <Tab.Screen name="Team" component={TeamStack} />
+        <Tab.Screen name="More" component={MoreStack} />
       </Tab.Navigator>
     </>
   );
@@ -180,8 +269,7 @@ function Tabs() {
  *
  * A link can arrive before the navigator mounts, before the store loads, or before any vault is
  * open — tapping a notification cold-starts the app into exactly that state. So links queue, and
- * the queue drains when everything the link needs is ready. The old build lost early links for
- * precisely this reason.
+ * the queue drains when everything the link needs is ready.
  */
 function DeepLinks({ navReady }: { navReady: boolean }) {
   const url = Linking.useURL();
@@ -201,14 +289,85 @@ function DeepLinks({ navReady }: { navReady: boolean }) {
   useEffect(() => {
     const link = pending.current;
     if (!link || !navReady || !ready || !address || !vaultId) return;
-    const proposalId = link.kind === 'proposal' ? link.proposalId : link.proposalId;
+    const proposalId = link.proposalId;
     pending.current = null;
     if (proposalId && navRef.isReady()) {
-      navRef.navigate('Activity', { screen: 'Proposal', params: { id: proposalId } });
+      navRef.navigate('Proposals', { screen: 'Proposal', params: { id: proposalId } });
     }
   });
 
   return null;
+}
+
+type OnboardStep = 'launch' | 'tour' | 'start' | 'account' | 'org' | 'members' | 'wallet';
+
+/**
+ * Screens 1–7 as one flow. "Create" walks the whole path and ends with the vault created on
+ * chain; "Join" skips the organisation and lands on the key, then the vault picker.
+ */
+function Onboarding({ onDone }: { onDone: () => void }) {
+  const { address } = useStore();
+  // A device that already holds a key skips the marketing and goes straight to the fork — but a
+  // key created mid-flow must NOT reset the flow, so this is the initial step only.
+  const [step, setStep] = useState<OnboardStep>(address ? 'start' : 'launch');
+  const [org, setOrg] = useState<OrgDraft | null>(null);
+  const [members, setMembers] = useState<MemberDraft[]>([]);
+  const [joining, setJoining] = useState(false);
+
+  switch (step) {
+    case 'launch':
+      return <Launch onStart={() => setStep('tour')} />;
+    case 'tour':
+      return <Tour onDone={() => setStep('start')} />;
+    case 'start':
+      return (
+        <Start
+          onCreate={() => {
+            setJoining(false);
+            setStep('account');
+          }}
+          onJoin={() => {
+            setJoining(true);
+            setStep('account');
+          }}
+        />
+      );
+    case 'account':
+      return (
+        <CreateAccount onBack={() => setStep('start')} onDone={() => setStep(joining ? 'wallet' : 'org')} />
+      );
+    case 'org':
+      return (
+        <CreateOrg
+          draft={org}
+          onBack={() => setStep('account')}
+          onDone={(draft) => {
+            setOrg(draft);
+            setStep('members');
+          }}
+        />
+      );
+    case 'members':
+      return (
+        <AddMembers
+          members={members}
+          onBack={() => setStep('org')}
+          onDone={(list) => {
+            setMembers(list);
+            setStep('wallet');
+          }}
+        />
+      );
+    case 'wallet':
+      return (
+        <ConnectWallet
+          draft={joining ? null : org}
+          members={members}
+          onBack={() => setStep(joining ? 'account' : 'members')}
+          onDone={onDone}
+        />
+      );
+  }
 }
 
 /** An introduction, a key to set up, a vault to pick, or the vault. */
@@ -217,7 +376,6 @@ function Root() {
   const C = useTheme();
   const { dark } = useScheme();
   const { ready, onboarded, address, vaultId, finishOnboarding } = useStore();
-  const [seenWelcome, setSeenWelcome] = useState(false);
   const [navReady, setNavReady] = useState(false);
 
   if (!ready) {
@@ -244,16 +402,15 @@ function Root() {
     <NavigationContainer ref={navRef} theme={nav} onReady={() => setNavReady(true)}>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <DeepLinks navReady={navReady} />
-      {!onboarded && !address && !seenWelcome ? (
-        // A device that already holds a key never re-sees the tour, even if the onboarded flag
-        // was lost — the key is the stronger evidence.
-        <Welcome onStart={() => setSeenWelcome(true)} />
-      ) : !address ? (
-        <Onboard onDone={finishOnboarding} />
-      ) : !vaultId ? (
-        <OpenVault />
-      ) : (
+      {address && vaultId ? (
         <Tabs />
+      ) : !onboarded || !address ? (
+        // The flow owns the screen until it says it is done. Creating the key mid-flow flips
+        // `address`, and an address-based gate here would unmount the flow one step before it
+        // creates the organisation — which is exactly the bug this ordering exists to prevent.
+        <Onboarding onDone={finishOnboarding} />
+      ) : (
+        <OpenVault />
       )}
     </NavigationContainer>
   );
