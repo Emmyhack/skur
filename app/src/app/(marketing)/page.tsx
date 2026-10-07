@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { MarketingShell } from '@/marketing/Shell';
-import { AppMockup } from '@/marketing/Mockup';
+import { AppMockup, PhoneMockup } from '@/marketing/Mockup';
 import { ScoreTicker } from '@/marketing/Ticker';
 import { Reveal } from '@/marketing/Reveal';
 import {
@@ -151,6 +151,9 @@ export default function Landing() {
             </div>
             <div className="float">
               <ScoreTicker />
+            </div>
+            <div className="float-phone">
+              <PhoneMockup />
             </div>
           </div>
         </div>
@@ -481,8 +484,8 @@ export default function Landing() {
               <Link href="/solutions#guardians">
                 What a guardian can do <IconArrowRight width={16} height={16} />
               </Link>
-              <div className="art">
-                <AppMockup variant="queue" />
+              <div className="art art-phone">
+                <PhoneMockup variant="security" />
               </div>
             </div>
           </Reveal>

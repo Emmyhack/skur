@@ -844,3 +844,40 @@ input:read-only { color: var(--text-2); }
   .docs-nav button { width: auto; margin: 0; border: 1px solid #e9ecef; font-size: 14px; }
   .docs-body h1 { font-size: 34px; line-height: 38px; }
 }
+
+/* ================================================================== the phone: the mobile app as artwork */
+.mock-phone { width: 272px; border-radius: 42px; background: #0b0d0f; padding: 10px; border: 1px solid #343a40; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3); }
+.mock-phone .mp-screen { border-radius: 33px; overflow: hidden; background: #212529; color: #f8f9fa; font-size: 11px; padding: 10px 12px 0; display: flex; flex-direction: column; gap: 10px; min-height: 480px; }
+.mp-status { display: flex; align-items: center; justify-content: space-between; color: #adb5bd; font-weight: 700; font-size: 10px; }
+.mp-island { width: 64px; height: 16px; border-radius: 10px; background: #0b0d0f; }
+.mp-head { display: flex; align-items: center; gap: 8px; font-size: 15px; letter-spacing: -0.01em; padding-top: 2px; }
+.mp-card { background: #2b3035; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.mp-label { color: #6c757d; font-size: 9px; letter-spacing: 1px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.mp-ok { color: #75b798; font-weight: 700; letter-spacing: 0; }
+.mp-rv { color: #ffcd39; font-weight: 700; }
+.mp-donut { width: 128px; height: 128px; border-radius: 50%; margin: 6px auto; background: conic-gradient(#ffd000 0 100%); display: grid; place-items: center; }
+.mp-donut > div { width: 92px; height: 92px; border-radius: 50%; background: #2b3035; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.mp-donut b { font-size: 22px; letter-spacing: -0.02em; }
+.mp-donut span { color: #adb5bd; font-size: 10px; }
+.mp-tiles { display: flex; gap: 8px; }
+.mp-tile { flex: 1; background: #2b3035; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+.mp-tile b { font-size: 18px; }
+.mp-tile span { color: #adb5bd; font-size: 10px; }
+.mp-list .mp-row { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-top: 1px solid #343a40; }
+.mp-list .mp-row:first-of-type { border-top: 0; }
+.mp-shield { font-size: 30px; }
+.mp-meter { height: 6px; border-radius: 3px; background: #343a40; overflow: hidden; margin-top: 4px; }
+.mp-meter i { display: block; height: 6px; border-radius: 3px; background: #ffd000; }
+.mp-btn { border-radius: 10px; padding: 10px; text-align: center; font-weight: 800; }
+.mp-btn-soft { background: #343a40; color: #ffcd39; }
+.mp-btn-danger { background: #4a1c22; color: #ea868f; }
+.mp-tabs { margin-top: auto; display: flex; justify-content: space-between; gap: 2px; border-top: 1px solid #343a40; padding: 9px 2px 12px; color: #6c757d; font-size: 8.5px; font-weight: 700; }
+.mp-tabs .on { color: #ffd000; }
+
+/* in the hero, the phone leans on the desktop mock */
+.mockwrap { position: relative; }
+.float-phone { position: absolute; right: -18px; bottom: -34px; transform: rotate(4deg); z-index: 3; }
+@media (max-width: 1100px) { .float-phone { display: none; } }
+/* in the audience cards, it stands alone */
+.art-phone { display: flex; justify-content: center; padding: 18px 0 6px; }
+.art-phone .mock-phone { transform: rotate(-2deg); }

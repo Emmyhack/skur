@@ -5,7 +5,8 @@ export function AppMockup({ variant = "overview" }: { variant?: "overview" | "qu
   return (
     <div className="mock-app" aria-hidden>
       <div className="sb">
-        <div className="pill">S &nbsp;Home</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div className="pill"><img src="/mark.png" alt="" width={14} height={14} /> Home</div>
         <div className="ntx">+ New transaction</div>
         {["Overview", "Queue", "Pay", "Policy", "People", "Security"].map((n, i) => (
           <div key={n} className={`it ${(variant === "queue" ? i === 2 : i === 0) ? "on" : ""}`}>{n}</div>
@@ -57,6 +58,64 @@ export function AppMockup({ variant = "overview" }: { variant?: "overview" | "qu
             <div className="li"><span>Guardian key compromised</span><span className="ok">Not possible</span></div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+/**
+ * The phone, drawn in CSS: the redesigned mobile app as the landing page's second piece of
+ * artwork. "home" is the dashboard with the donut; "security" is the guardian's brake.
+ */
+export function PhoneMockup({ variant = "home" }: { variant?: "home" | "security" }) {
+  return (
+    <div className="mock-phone" aria-hidden>
+      <div className="mp-screen">
+        <div className="mp-status"><span>9:41</span><span className="mp-island" /><span>●●</span></div>
+        {variant === "home" ? (
+          <>
+            <div className="mp-head">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/mark.png" alt="" width={20} height={20} />
+              <b>Lenzypay Treasury</b>
+            </div>
+            <div className="mp-card">
+              <div className="mp-label">TOTAL TREASURY VALUE <span className="mp-ok">Normal</span></div>
+              <div className="mp-donut"><div><b>800</b><span>SUI total</span></div></div>
+            </div>
+            <div className="mp-tiles">
+              <div className="mp-tile"><b>0</b><span>Pending approvals</span></div>
+              <div className="mp-tile"><b>3</b><span>Active members</span></div>
+            </div>
+            <div className="mp-card mp-list">
+              <div className="mp-label">RECENT ACTIVITY</div>
+              <div className="mp-row"><span>5 SUI · Contractor invoice</span><span className="mp-ok">Executed</span></div>
+              <div className="mp-row"><span>Policy change</span><span className="mp-rv">1 of 2</span></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mp-head"><b>Security Center</b></div>
+            <div className="mp-card" style={{ textAlign: "center" }}>
+              <div className="mp-shield">🛡</div>
+              <b>Your assets are protected</b>
+              <div className="mp-meter"><i style={{ width: "86%" }} /></div>
+              <div className="mp-label" style={{ textAlign: "center" }}>6 of 7 controls hold</div>
+            </div>
+            <div className="mp-btn mp-btn-soft">⚠ Raise to Elevated</div>
+            <div className="mp-btn mp-btn-danger">🔒 Freeze the vault</div>
+            <div className="mp-card mp-list">
+              <div className="mp-row"><span>Veto a critical payment</span><span className="mp-ok">✓</span></div>
+              <div className="mp-row"><span>Never touches a coin</span><span className="mp-ok">✓</span></div>
+            </div>
+          </>
+        )}
+        <div className="mp-tabs">
+          {["Home", "Treasury", "Proposals", "Team", "More"].map((t, i) => (
+            <span key={t} className={i === (variant === "home" ? 0 : 4) ? "on" : ""}>{t}</span>
+          ))}
+        </div>
       </div>
     </div>
   );
