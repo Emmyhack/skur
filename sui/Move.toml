@@ -1,0 +1,23 @@
+[package]
+name = "skur"
+edition = "2024"
+license = "MIT"
+authors = ["Olajumoke Emmanuel"]
+
+# The Sui framework is an implicit dependency, resolved from the toolchain that builds this
+# package. That keeps the build hermetic and pins the framework to the CLI you deploy with.
+[dependencies]
+
+# `mainnet` and `testnet` are system environments: they are built in and must not be redeclared
+# here. Publishing to either works with no `[environments]` section at all, and the resulting
+# address lands in Published.toml, which is committed so other packages can depend on this one.
+#
+# A local network or a devnet needs an entry, because their chain identifiers are not fixed —
+# devnet's changes every time the network is wiped. Get the current one with
+# `sui client chain-identifier` and add it:
+#
+#   [environments]
+#   local = "9f2b7fec"
+#
+# Or skip the bookkeeping entirely and use `sui client test-publish`, which publishes
+# ephemerally against whatever network is active.

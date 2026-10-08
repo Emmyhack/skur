@@ -1,0 +1,6 @@
+build/
+.env
+
+# `sui client test-publish` writes an ephemeral publication record per environment. It is a local
+# artifact of a throwaway network, unlike Published.toml, which is committed.
+Pub.*.toml

@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "Skur",
+    "slug": "skur",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "skur",
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#000000",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "io.skur.app",
+      "usePrecompiledModules": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Skur unlocks your signing key with Face ID so a payment cannot be approved without you.",
+        "NSCameraUsageDescription": "Skur uses the camera to scan a vault or recipient address."
+      }
+    },
+    "android": {
+      "package": "io.skur.app",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Skur unlocks your signing key with Face ID so a payment cannot be approved without you."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Skur uses the camera to scan a vault or recipient address."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#ffd000"
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "extra": {
+      "SKUR_NETWORK": "testnet",
+      "SKUR_PACKAGE_ID": "0x0"
+    }
+  }
+}
