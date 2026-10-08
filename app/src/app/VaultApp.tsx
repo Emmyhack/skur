@@ -8,6 +8,7 @@ import { useVaultTx, useVaultView } from '@/hooks/useVault';
 import { Overview } from '@/components/Overview';
 import { People } from '@/components/People';
 import { PolicyPanel } from '@/components/PolicyPanel';
+import { PublishPackage } from '@/components/PublishPackage';
 import { Queue } from '@/components/Queue';
 import { Security } from '@/components/Security';
 import { Send } from '@/components/Send';
@@ -41,10 +42,7 @@ export default function VaultApp({ vaultId }: { vaultId: string }) {
       }))}
     >
       {!CONFIGURED ? (
-        <Notice kind="warn">
-          No package is configured for this network. Publish the Move package and set{' '}
-          <code className="mono">NEXT_PUBLIC_SKUR_PACKAGE_ID</code>.
-        </Notice>
+        <PublishPackage />
       ) : query.isLoading ? (
         <div className="empty">Reading the vault…</div>
       ) : query.error ? (

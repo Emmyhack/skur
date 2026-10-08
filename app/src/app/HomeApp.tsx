@@ -7,6 +7,7 @@ import { MODE_LABELS, describeRoles } from '@skur/sdk';
 import { API_URL, CONFIGURED, KNOWN_VAULTS, NETWORK } from '@/config';
 import { useMyVaults, useVaultTx } from '@/hooks/useVault';
 import { CreateVault } from '@/components/CreateVault';
+import { PublishPackage } from '@/components/PublishPackage';
 import { Shell } from '@/components/Shell';
 import { Addr, Notice } from '@/components/ui';
 
@@ -129,12 +130,7 @@ export default function HomeApp() {
               </div>
             ) : null}
 
-            {!CONFIGURED ? (
-              <Notice kind="warn">
-                No package is published for {NETWORK} yet. Run{' '}
-                <code className="mono">sui/scripts/publish.sh {NETWORK}</code>.
-              </Notice>
-            ) : null}
+            {!CONFIGURED ? <PublishPackage /> : null}
           </div>
         </div>
       )}
