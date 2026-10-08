@@ -247,7 +247,8 @@ export default function Landing() {
                     animation: 'float 4s ease-in-out infinite',
                   }}
                 >
-                  S
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/mark.png" alt="" width={44} height={44} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
                   <span style={{ background: '#ffd000', color: '#212529', padding: '10px 16px', borderRadius: 6, fontWeight: 700, fontSize: 14 }}>
