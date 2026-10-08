@@ -576,8 +576,9 @@
 .land .dashed p { color: #adb5bd; }
 .land .badges { display: flex; gap: 40px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 40px 0; border-top: 1px solid #343a40; color: #adb5bd; font-weight: 700; font-size: 18px; }
 .land .badges .lbl { font-weight: 400; font-size: 14px; }
-.land .shield { background: #2b3035; border: 1px solid #343a40; border-radius: 8px; padding: 48px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; align-items: center; overflow: hidden; }
-.land .shield h2 { text-align: left; font-size: 40px; margin-bottom: 16px; }
+/* A dark panel inside a light section: it must carry its own ink, or it inherits the page's near-black and the words vanish into the ground. */
+.land .shield { background: #2b3035; border: 1px solid #343a40; border-radius: 8px; padding: 48px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; align-items: center; overflow: hidden; color: #f8f9fa; }
+.land .shield h2 { text-align: left; font-size: 40px; margin-bottom: 16px; color: #fff; }
 .land .shield p { color: #adb5bd; margin-bottom: 32px; max-width: 320px; }
 .land .shield ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 16px; font-size: 20px; font-weight: 700; }
 .land .shield ul li { display: flex; gap: 12px; align-items: center; }
