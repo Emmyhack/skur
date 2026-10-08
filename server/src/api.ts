@@ -42,6 +42,20 @@ export function makeApi() {
   const app = express();
   app.use(express.json());
 
+  // Everything this API serves is public chain state read back out of the indexer; the browser
+  // is a first-class client. Without these headers every fetch from the web app dies in CORS
+  // preflight and the UI degrades to "the indexer is not reachable".
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+
   app.get('/health', wrap(async (_req, res) => {
     const { rows } = await pool.query<{ cursor: string | null; events_seen: string; last_event_at: Date | null }>(
       `SELECT cursor, events_seen, last_event_at FROM indexer_cursor WHERE network = $1`,

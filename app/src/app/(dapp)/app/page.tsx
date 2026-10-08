@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Providers } from '@/app/providers';
+import { Boundary } from '@/components/Boundary';
 
 // Wallet detection needs a browser, so nothing in the app tree is server-rendered.
 const HomeApp = dynamic(() => import('@/app/HomeApp'), {
@@ -11,8 +12,10 @@ const HomeApp = dynamic(() => import('@/app/HomeApp'), {
 
 export default function Page() {
   return (
-    <Providers>
+    <Boundary>
+      <Providers>
       <HomeApp />
-    </Providers>
+      </Providers>
+    </Boundary>
   );
 }

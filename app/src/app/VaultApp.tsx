@@ -50,6 +50,11 @@ export default function VaultApp({ vaultId }: { vaultId: string }) {
       ) : query.error ? (
         <Notice kind="bad">
           Could not read that vault. Check the id and the network.
+          <p className="small soft" style={{ marginTop: 6 }}>
+            A vault id names the shared vault object — it is not a wallet address, even though the
+            two look alike. If you pasted your account address, go back and open one of your
+            vaults instead, or create one.
+          </p>
           <p className="small faint" style={{ marginTop: 6 }}>
             {query.error instanceof Error ? query.error.message : String(query.error)}
           </p>
