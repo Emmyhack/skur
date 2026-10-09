@@ -1,8 +1,8 @@
 'use client';
 
-import { useCurrentAccount } from '@mysten/dapp-kit-react';
+import { useCurrentAccount, useCurrentClient } from '@mysten/dapp-kit-react';
 import { Transaction } from '@mysten/sui/transactions';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { dAppKit } from '@/dapp-kit';
 import { NETWORK } from '@/config';
 import { Notice } from '@/components/ui';
@@ -25,7 +25,29 @@ type State =
 
 export function PublishPackage() {
   const account = useCurrentAccount();
+  const client = useCurrentClient();
   const [state, setState] = useState<State>({ phase: 'idle' });
+  const [balance, setBalance] = useState<bigint | null>(null);
+
+  // Preflight: what this account actually holds on THIS network. Wallet extensions follow their
+  // own network switch, and a mismatch (or an empty account) comes back as a blank error — so
+  // the page states the number before the wallet is ever asked.
+  useEffect(() => {
+    let live = true;
+    setBalance(null);
+    if (!account) return;
+    client.core
+      .getBalance({ owner: account.address, coinType: '0x2::sui::SUI' })
+      .then((r) => {
+        if (live) setBalance(BigInt((r as { balance?: { balance?: string | bigint } }).balance?.balance ?? 0));
+      })
+      .catch(() => {
+        if (live) setBalance(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [account, client]);
 
   const publish = async () => {
     if (!account) return;
@@ -39,7 +61,7 @@ export function PublishPackage() {
       const cap = tx.publish({ modules: dump.modules, dependencies: dump.dependencies });
       tx.transferObjects([cap], account.address);
 
-      const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
+      const result = await dAppKit.signAndExecuteTransaction({ transaction: tx, network: NETWORK });
       if ('FailedTransaction' in result && result.FailedTransaction) {
         throw new Error(
           result.FailedTransaction.status?.error?.message ?? 'the network refused the publish',
@@ -61,9 +83,14 @@ export function PublishPackage() {
       setState({ phase: 'done', digest: executed.digest, packageId });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
+      const blank = !message || message === '{}' || /^\[object/.test(message);
       setState({
         phase: 'error',
-        message: /reject|denied|dismiss/i.test(message) ? 'The wallet declined it. Nothing was published.' : message,
+        message: /reject|denied|dismiss/i.test(message)
+          ? 'The wallet declined it. Nothing was published.'
+          : blank
+            ? `The wallet returned an empty error. The usual causes: the wallet's own network switch is not on ${NETWORK}, or this account holds no SUI on ${NETWORK}. Check both and try again.`
+            : message,
       });
     }
   };
@@ -93,6 +120,17 @@ export function PublishPackage() {
         it right here — publishing is a transaction like any other, and costs a fraction of a SUI
         in storage. The upgrade rights land in your wallet.
       </p>
+      {account ? (
+        <p className="small faint" style={{ marginTop: 10 }}>
+          Signing as <code className="mono">{account.address.slice(0, 10)}…{account.address.slice(-4)}</code>
+          {balance !== null ? (
+            <>
+              {' '}· holds <b>{(Number(balance) / 1e9).toFixed(2)} SUI</b> on {NETWORK}
+              {balance < 400_000_000n ? ' — not enough to publish (~0.4 SUI needed); fund it or switch account' : ''}
+            </>
+          ) : null}
+        </p>
+      ) : null}
       {!account ? (
         <p className="small faint" style={{ marginTop: 10 }}>Connect a wallet first.</p>
       ) : (
