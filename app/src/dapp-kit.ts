@@ -11,7 +11,11 @@ import { NETWORK } from './config';
  * of decommissioning.
  */
 export const dAppKit = createDAppKit({
-  networks: ['mainnet', 'testnet', 'devnet', 'localnet'] as const,
+  // One build, one network. dApp Kit persists the selected network in the browser, and a list
+  // here let a stale 'localnet' from an earlier session be restored over the build's own
+  // setting — the wallet then received sign requests stamped for a chain it has never heard
+  // of and answered with an empty error. With a single entry there is nothing to restore.
+  networks: [NETWORK] as const,
   defaultNetwork: NETWORK,
   createClient: (network) =>
     new SuiGrpcClient({
