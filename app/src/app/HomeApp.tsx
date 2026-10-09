@@ -20,12 +20,10 @@ export default function HomeApp() {
 
   return (
     <Shell>
-      <div style={{ maxWidth: 680, marginBottom: 32 }}>
+      <div style={{ maxWidth: 680, marginBottom: 24 }}>
         <h1>A valid signature is not a safe payment</h1>
-        <p className="soft" style={{ marginTop: 12 }}>
-          Skur decides how much authorization a payment needs, and whether it may settle right now,
-          from the amount, the destination, the recent outflow and the vault&apos;s own security
-          posture. The rules are enforced in Move, in a shared object anyone can read.
+        <p className="soft" style={{ marginTop: 10 }}>
+          Policy-enforced treasuries on Sui. Open yours, or create one.
         </p>
       </div>
 
@@ -39,7 +37,7 @@ export default function HomeApp() {
       </nav>
 
       {mode === 'create' ? (
-        <CreateVault tx={tx} />
+        CONFIGURED ? <CreateVault tx={tx} /> : <PublishPackage />
       ) : (
         <div className="grid cols-2">
           <div className="card">
@@ -87,10 +85,7 @@ export default function HomeApp() {
           <div className="stack">
             <div className="card">
               <h3>Open by id</h3>
-              <p className="small soft">
-                A vault is a shared object. Anyone can read one; acting on it needs the key that
-                holds the role.
-              </p>
+              <p className="small soft">Anyone can read a vault; acting needs a role.</p>
               <div className="row" style={{ marginTop: 14 }}>
                 <input
                   placeholder="0x…"

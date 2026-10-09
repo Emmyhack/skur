@@ -40,10 +40,7 @@ export function Shell({
         {!account ? (
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Connect a wallet to act</h3>
-            <p className="soft small">
-              Reading a vault needs no wallet — the policy, the queue and the history are public.
-              Approving, executing or opening a payment needs the key that holds the role.
-            </p>
+            <p className="soft small">Reading is public. Acting needs the key that holds the role.</p>
           </div>
         ) : null}
         {children}

@@ -2,7 +2,7 @@
 
 import { useCurrentAccount, useCurrentClient } from '@mysten/dapp-kit-react';
 import { Transaction } from '@mysten/sui/transactions';
-import { fromBase64, toBase64 } from '@mysten/sui/utils';
+import { signAndExecute } from '@/lib/execute';
 import { useEffect, useState } from 'react';
 import { dAppKit } from '@/dapp-kit';
 import { NETWORK } from '@/config';
@@ -61,38 +61,8 @@ export function PublishPackage() {
       const tx = new Transaction();
       const cap = tx.publish({ modules: dump.modules, dependencies: dump.dependencies });
       tx.transferObjects([cap], account.address);
-      tx.setSender(account.address);
 
-      // The division of labour that leaves the wallet nothing to get wrong: THIS page builds
-      // the bytes against its own testnet client (gas selection included), the wallet only
-      // signs them, and this page executes the signed bytes through the same client. The
-      // wallet's build/preview/execute machinery — where every blank '{}' error so far was
-      // born — is out of the loop entirely.
-      const built = await tx.build({ client });
-      const signed = await dAppKit.signTransaction({ transaction: toBase64(built), network: NETWORK });
-
-      const result = await client.core.executeTransaction({
-        transaction: fromBase64(signed.bytes),
-        signatures: [signed.signature],
-        include: { effects: true },
-      });
-      if (result.FailedTransaction) {
-        throw new Error(
-          (result.FailedTransaction as { status?: { error?: { message?: string } } }).status?.error?.message ??
-            'the network refused the publish',
-        );
-      }
-      const executed = result.Transaction as unknown as {
-        digest: string;
-        effects?: {
-          status?: { success?: boolean; error?: { message?: string } };
-          changedObjects?: { objectId?: string; id?: string; idOperation?: string; outputOwner?: { $kind?: string } }[];
-        };
-      };
-      if (executed.effects?.status && executed.effects.status.success === false) {
-        throw new Error(executed.effects.status.error?.message ?? 'the network refused the publish');
-      }
-      await client.core.waitForTransaction({ digest: executed.digest });
+      const executed = await signAndExecute(client, tx, account.address);
 
       // A published package lands as an immutable created object; that id is the package id.
       let packageId: string | null = null;

@@ -92,10 +92,7 @@ export function CreateVault({ tx }: { tx: TxState }) {
     <div className="grid cols-2">
       <div className="card">
         <h3>Pick a starting policy</h3>
-        <p className="small soft">
-          Each one is a complete, valid policy. Start with the closest fit and tighten it afterwards
-          through governance.
-        </p>
+        <p className="small soft">Complete policies. Tighten later through governance.</p>
         <div className="stack tight" style={{ marginTop: 14 }}>
           {TEMPLATES.map((t) => (
             <label
@@ -125,13 +122,10 @@ export function CreateVault({ tx }: { tx: TxState }) {
               <p className="small soft" style={{ marginTop: 5 }}>
                 {t.tagline}
               </p>
-              <p className="small faint" style={{ marginTop: 3 }}>
-                {t.audience}
-              </p>
-              <p className="small faint" style={{ marginTop: 5 }}>
-                Critical payments wait {fmtDuration(t.policy.delayCritical)} · new recipients wait{' '}
-                {fmtDuration(t.policy.recipientActivationDelay)} · loss envelope{' '}
-                {t.policy.envelopeBps / 100}% per {fmtDuration(t.policy.envelopeWindow)}
+              <p className="small faint" style={{ marginTop: 4 }}>
+                Critical waits {fmtDuration(t.policy.delayCritical)} · new recipients{' '}
+                {fmtDuration(t.policy.recipientActivationDelay)} · envelope {t.policy.envelopeBps / 100}%/
+                {fmtDuration(t.policy.envelopeWindow)}
               </p>
             </label>
           ))}
@@ -148,10 +142,7 @@ export function CreateVault({ tx }: { tx: TxState }) {
 
         <div className="card">
           <h3>Who holds what</h3>
-          <p className="small soft">
-            You are the first owner, approver and executor. Add the rest — and note that the
-            contract will not let one address be both a guardian and anything else.
-          </p>
+          <p className="small soft">You hold all roles to start. A guardian can hold nothing else.</p>
 
           {me ? (
             <div className="card sunk" style={{ marginTop: 14, padding: 12 }}>
