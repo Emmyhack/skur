@@ -56,7 +56,7 @@ export function Team({ onOpenRoles }: { onOpenRoles: () => void }) {
       </Screen>
     );
   }
-  if (q.error || !q.data) {
+  if (!q.data) {
     return (
       <Screen top={<TopBar title="Team" />}>
         <ErrorState onRetry={() => q.refetch()} />

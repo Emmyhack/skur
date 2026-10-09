@@ -72,10 +72,20 @@ export function TxDetail({ id, onBack }: { id: bigint; onBack: () => void }) {
     enabled: simulating && Boolean(isTransfer && p?.asset),
   });
 
-  if (!p || !q.data) {
+  if (!q.data) {
     return (
       <Screen top={<TopBar left={<BackButton onPress={onBack} />} title="Proposal" />}>
         <Text style={{ fontFamily: F.body, color: C.text2 }}>Reading…</Text>
+      </Screen>
+    );
+  }
+  if (!p) {
+    return (
+      <Screen top={<TopBar left={<BackButton onPress={onBack} />} title={`#${id}`} />}>
+        <Notice tone="info">
+          Proposal #{String(id)} is not in the vault&apos;s recent window. It may have settled long
+          ago — the chain remembers it even when this list does not.
+        </Notice>
       </Screen>
     );
   }

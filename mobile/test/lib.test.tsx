@@ -161,3 +161,14 @@ describe('restoring the open vault', () => {
     expect(await AsyncStorage.getItem('skur.vault')).toBeNull();
   });
 });
+
+describe('amount input', () => {
+  it('drops grouping and keeps the decimal point', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { normalizeAmount } = require('../src/lib/amount') as typeof import('../src/lib/amount');
+    // This machine is a dot-decimal locale: commas are grouping, never value.
+    expect(normalizeAmount('1,500')).toBe('1500');
+    expect(normalizeAmount('1 000.5')).toBe('1000.5');
+    expect(normalizeAmount('2_000')).toBe('2000');
+  });
+});

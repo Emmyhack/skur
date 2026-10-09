@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { API_URL } from './config';
 
 /**
@@ -33,7 +34,24 @@ function projectId(): string | null {
 
 export type PushResult = { ok: true; token: string } | { ok: false; reason: string };
 
+/**
+ * Android 8+ routes every notification through a channel, and without one Expo falls back to a
+ * minimum-importance default: no heads-up, no sound, sometimes nothing visible at all. One
+ * channel, declared before the first token is minted, importance high — a payment that needs a
+ * signer is exactly what heads-up display is for.
+ */
+async function ensureAndroidChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'Vault activity',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 200, 100, 200],
+    lightColor: '#ffd000',
+  });
+}
+
 export async function enablePush(vaultId: string, address: string): Promise<PushResult> {
+  await ensureAndroidChannel();
   if (!API_URL) {
     return { ok: false, reason: 'Push needs the indexer. Set EXPO_PUBLIC_SKUR_API.' };
   }
@@ -66,7 +84,7 @@ export function useNotificationTaps() {
   useEffect(() => {
     const open = (response: Notifications.NotificationResponse | null) => {
       const url = (response?.notification.request.content.data as { url?: string } | null)?.url;
-      if (url && url.startsWith('skur://')) void Linking.openURL(url);
+      if (url && url.startsWith('skur://')) void Linking.openURL(url).catch(() => undefined);
     };
     void Notifications.getLastNotificationResponseAsync().then(open);
     const sub = Notifications.addNotificationResponseReceivedListener(open);

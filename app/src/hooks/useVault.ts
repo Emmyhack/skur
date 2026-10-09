@@ -1,6 +1,6 @@
 'use client';
 
-import { useCurrentClient, useDAppKit } from '@mysten/dapp-kit-react';
+import { useCurrentAccount, useCurrentClient, useDAppKit } from '@mysten/dapp-kit-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import type { Transaction } from '@mysten/sui/transactions';
@@ -11,6 +11,7 @@ import {
   type TransferPreview,
   type VaultView,
 } from '@skur/sdk';
+import { signAndExecute } from '@/lib/execute';
 import { NETWORK, PACKAGE_ID } from '@/config';
 
 /** Everything one vault screen needs, in as few round trips as the transport allows. */
@@ -86,17 +87,12 @@ export function useVaultTx(vaultId: string | undefined): TxState {
   const [error, setError] = useState<string | null>(null);
   const [lastDigest, setLastDigest] = useState<string | null>(null);
 
+  const account = useCurrentAccount();
   const mutation = useMutation({
     mutationFn: async ({ tx }: { tx: Transaction; label: string }) => {
-      const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
-      if (result.FailedTransaction) {
-        throw new Error(
-          describeFailure(result.FailedTransaction.status.error?.message ?? 'the vault refused it'),
-        );
-      }
-      const digest = result.Transaction.digest;
-      await client.core.waitForTransaction({ digest });
-      return digest;
+      if (!account) throw new Error('connect a wallet first');
+      const executed = await signAndExecute(client, tx, account.address);
+      return executed.digest;
     },
   });
 

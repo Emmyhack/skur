@@ -98,7 +98,7 @@ export function Transactions({ onOpen }: { onOpen: (id: bigint) => void }) {
         />
 
         {q.isLoading ? <Skeleton lines={4} /> : null}
-        {q.error ? <ErrorState onRetry={() => q.refetch()} /> : null}
+        {q.error && !q.data ? <ErrorState onRetry={() => q.refetch()} /> : null}
 
         {filter === 'all' ? (
           <>
