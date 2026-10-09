@@ -34,7 +34,7 @@ export function Screen({ children, top, footer, refreshControl, padded = true, c
       {top ? <View style={{ paddingTop: insets.top + 6 }}>{top}</View> : null}
       {/* `centered`: sparse screens (the launch, the fork, a lone empty state) sit in the
           middle of the viewport instead of hugging the status bar with a void below. */}
-      <ScrollView contentContainerStyle={{ padding: padded ? 16 : 0, paddingBottom: footer ? 120 : 40, ...(centered ? { flexGrow: 1, justifyContent: "center" } : null) }} refreshControl={refreshControl as never} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" indicatorStyle={C.canvas === "#ffffff" ? "black" : "white"}>{children}</ScrollView>
+      <ScrollView contentContainerStyle={{ padding: padded ? 16 : 0, paddingTop: top ? (padded ? 16 : 0) : insets.top + 16, paddingBottom: footer ? 120 : 40, ...(centered ? { flexGrow: 1, justifyContent: "center" } : null) }} refreshControl={refreshControl as never} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" indicatorStyle={C.canvas === "#ffffff" ? "black" : "white"}>{children}</ScrollView>
       {footer ? <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>{footer}</View> : null}
     </KeyboardAvoidingView>
   );
@@ -367,7 +367,8 @@ export function Tape({ height = 8 }: { height?: number }) {
 export function Sheet({ open, onClose, title, children, action }: { open: boolean; onClose: () => void; title: string; children: ReactNode; action?: ReactNode }) {
   const s = useStyles(); const insets = useSafeAreaInsets();
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <KeyboardAvoidingView style={{ flex: 1, justifyContent: "flex-end" }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Pressable style={s.sheetBackdrop} onPress={onClose} />
       <View style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View style={s.grabber} />
@@ -377,6 +378,7 @@ export function Sheet({ open, onClose, title, children, action }: { open: boolea
         </View>
         <ScrollView style={{ maxHeight: 520 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

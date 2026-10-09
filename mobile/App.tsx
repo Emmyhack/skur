@@ -16,6 +16,7 @@ import { createBottomTabNavigator, type BottomTabNavigationProp } from '@react-n
 import { createNativeStackNavigator, type NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
@@ -56,6 +57,9 @@ import { Settings } from './src/screens/Settings';
 import { Team } from './src/screens/Team';
 import { Transactions } from './src/screens/Transactions';
 import { TxDetail } from './src/screens/TxDetail';
+
+// Keep the mark on screen until the fonts exist; hiding early flashes a bare canvas.
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 /**
  * Reads are cached to disk, so a cold start offline shows the vault as it last was — the offline
@@ -434,6 +438,10 @@ export default function App() {
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
   });
+
+  useEffect(() => {
+    if (loaded) void SplashScreen.hideAsync().catch(() => undefined);
+  }, [loaded]);
 
   return (
     <SafeAreaProvider>

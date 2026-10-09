@@ -51,7 +51,7 @@ export function Dashboard({
       </Screen>
     );
   }
-  if (q.error || !q.data) {
+  if (!q.data) {
     const message = q.error instanceof Error ? q.error.message : '';
     const badId = /not found|deleted|invalid|parse/i.test(message);
     return (

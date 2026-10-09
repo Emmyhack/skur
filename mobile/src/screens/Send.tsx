@@ -24,6 +24,7 @@ import {
   TrustBadge,
   TxStatus,
 } from '../components/ui';
+import { normalizeAmount } from '../lib/amount';
 import { Segmented } from '../components/kit';
 import { ScanSheet } from '../components/Scan';
 import { IconButton } from '../components/ui';
@@ -59,7 +60,7 @@ export function Send({ onDone }: { onDone: () => void }) {
   const asset = approved.find((a) => a.coinType === coinType) ?? approved[0];
   const activeType = asset?.coinType ?? '';
   const decimals = activeType ? coinDecimals(activeType) : 9;
-  const amount = useMemo(() => parseAmount(amountText, decimals) ?? 0n, [amountText, decimals]);
+  const amount = useMemo(() => parseAmount(normalizeAmount(amountText), decimals) ?? 0n, [amountText, decimals]);
   const validTo = /^0x[0-9a-fA-F]{1,64}$/.test(to);
 
   const known = q.data?.recipients.find((r) => r.address === to);

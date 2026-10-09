@@ -121,7 +121,7 @@ export function ActivityLog({ onBack }: { onBack: () => void }) {
           onChange={setFilter}
         />
         {q.isLoading ? <Skeleton lines={5} /> : null}
-        {q.error ? <ErrorState onRetry={() => q.refetch()} /> : null}
+        {q.error && !q.data ? <ErrorState onRetry={() => q.refetch()} /> : null}
         {!q.isLoading && visible.length === 0 ? (
           <Empty icon="file-text">Nothing in this view yet.</Empty>
         ) : (

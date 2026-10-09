@@ -35,7 +35,7 @@ export function Help({ onBack }: { onBack: () => void }) {
     <Screen
       top={<TopBar left={<BackButton onPress={onBack} />} title="Help & Support" />}
       footer={
-        <Button icon="message-circle" onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}>
+        <Button icon="message-circle" onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => undefined)}>
           Chat with Support
         </Button>
       }
@@ -67,21 +67,21 @@ export function Help({ onBack }: { onBack: () => void }) {
             leading={<CircleIcon name="book-open" size={34} />}
             title="Documentation"
             subtitle="Learn more about Skur"
-            onPress={() => void Linking.openURL(DOCS_URL)}
+            onPress={() => void Linking.openURL(DOCS_URL).catch(() => undefined)}
             chevron
           />
           <Row
             leading={<CircleIcon name="mail" size={34} />}
             title="Contact Support"
             subtitle={SUPPORT_EMAIL}
-            onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
+            onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => undefined)}
             chevron
           />
           <Row
             leading={<CircleIcon name="alert-octagon" size={34} />}
             title="Report an Issue"
             subtitle="Bug or feedback"
-            onPress={() => void Linking.openURL(ISSUES_URL)}
+            onPress={() => void Linking.openURL(ISSUES_URL).catch(() => undefined)}
             chevron
             last
           />

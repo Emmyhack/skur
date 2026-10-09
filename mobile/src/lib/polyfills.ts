@@ -246,3 +246,23 @@ if (typeof signalProto.throwIfAborted !== 'function') {
     }
   };
 }
+
+/**
+ * Nightly Connect's base package touches `localStorage` at import time (via
+ * isomorphic-localstorage, which otherwise reaches for node's fs). Hermes has neither. An
+ * in-memory shim is enough: session persistence is handled explicitly with AsyncStorage and the
+ * relay's `persistentSessionId`, not through this.
+ */
+if (typeof (globalThis as { localStorage?: unknown }).localStorage === 'undefined') {
+  const mem = new Map<string, string>();
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
+    setItem: (k: string, v: string) => void mem.set(k, String(v)),
+    removeItem: (k: string) => void mem.delete(k),
+    clear: () => mem.clear(),
+    key: (i: number) => [...mem.keys()][i] ?? null,
+    get length() {
+      return mem.size;
+    },
+  };
+}

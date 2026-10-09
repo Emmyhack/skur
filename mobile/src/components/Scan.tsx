@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Button, Notice, Sheet } from './ui';
@@ -23,10 +23,17 @@ export function ScanSheet({
   const C = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [rejected, setRejected] = useState<string | null>(null);
+  // The camera fires for every frame the code stays visible; the first accepted hit wins and
+  // everything after it is ignored, or the sheet closes twice and state lands after unmount.
+  const done = useRef(false);
+
+  if (!open && done.current) done.current = false;
 
   const handle = (data: string) => {
+    if (done.current) return;
     const match = ADDRESS.exec(data.trim());
     if (match) {
+      done.current = true;
       setRejected(null);
       onAddress(match[0]);
       onClose();

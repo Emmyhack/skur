@@ -281,7 +281,7 @@ export function ConnectWallet({
         ) : null}
 
         <Text
-          onPress={() => void Linking.openURL('mailto:support@skur.app')}
+          onPress={() => void Linking.openURL('mailto:support@skur.app').catch(() => undefined)}
           accessibilityRole="link"
           style={{ fontFamily: F.bodyMedium, fontSize: 14, color: C.info, textAlign: 'center', paddingVertical: 6 }}
         >
