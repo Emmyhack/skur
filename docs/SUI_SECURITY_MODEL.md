@@ -1,6 +1,7 @@
 # Skur security model (Sui / Move)
 
-What each control is, where it is enforced, and which test proves it.
+What each control is, where it is enforced, and which test proves it. The adversary-first view —
+who the attackers are and what each class can actually take — is [THREAT_MODEL.md](THREAT_MODEL.md).
 
 The claim is bounded and worth stating before anything else: **Skur adds independent, programmable
 controls that can limit or delay damage even when authorized credentials are misused.** It does not

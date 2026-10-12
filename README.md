@@ -28,7 +28,8 @@ treasury sits behind.
 | **An agent role** | `PROPOSER` can open a payment and nothing else. A compromised automation key produces a queue nobody approved, not a withdrawal. |
 
 Details, with the test that proves each invariant, in
-[docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md).
+[docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md); the adversary-first analysis with
+loss bounds per attacker class in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Repository layout
 
@@ -84,7 +85,7 @@ genuinely breaks.
 cd sui
 sui move build
 sui move test                      # 75 tests: the engine vectors and the end-to-end suite
-scripts/verify-local.sh            # publish to a throwaway local network and drive it
+scripts/verify.sh                  # everything CI runs, locally
 
 # the SDK
 cd ../sdk
@@ -154,6 +155,20 @@ app, the SDK or the backend hardcodes one.
    is refused and the vault latches into Lockdown.
 4. **Governance** follows the same path with owner approvals. Anything that gives up a control waits
    out the policy-change delay, is vetoable, and is refused in Lockdown.
+
+## Deploying to a network
+
+The Move package ships compiled next to the web app, and **publishing is a transaction like any
+other** — no privileged machine required:
+
+- **From the browser**: open `/app` on a network with no package and the page offers
+  *Publish Skur* — your connected wallet signs, pays the ~0.4 SUI storage, and receives the
+  `UpgradeCap`. Whoever publishes holds the upgrade rights, explicitly.
+- **From the CLI**: fund an address in your `sui client` keystore and `sui client publish` from
+  [sui/](sui/). Keep that keystore somewhere permanent.
+
+Then put the package id in each surface's env (`NEXT_PUBLIC_SKUR_PACKAGE_ID`,
+`EXPO_PUBLIC_SKUR_PACKAGE_ID`, the indexer's `SKUR_PACKAGE_ID`) and restart.
 
 ## Status
 
