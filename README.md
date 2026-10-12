@@ -28,7 +28,8 @@ treasury sits behind.
 | **An agent role** | `PROPOSER` can open a payment and nothing else. A compromised automation key produces a queue nobody approved, not a withdrawal. |
 
 Details, with the test that proves each invariant, in
-[docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md).
+[docs/SUI_SECURITY_MODEL.md](docs/SUI_SECURITY_MODEL.md); the adversary-first analysis with
+loss bounds per attacker class in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Repository layout
 
